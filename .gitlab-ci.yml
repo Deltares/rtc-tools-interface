@@ -1,0 +1,13 @@
+image: python:3.9-buster
+
+stages:
+  - style
+
+# style
+flake8:
+  stage: style
+  script:
+    - pip install --upgrade flake8==5
+    - flake8 --exclude=_version.py rtctools_interface  
+  tags:
+    - docker

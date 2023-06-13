@@ -1,0 +1,26 @@
+# Byte-compiled / optimized / DLL files
+__pycache__
+*.py[cod]
+
+# C extensions
+*.c
+*.so
+
+# Distribution & Packaging
+.eggs
+build
+dist
+
+# Testing & Coverage
+.pytest_cache
+.tox
+.coverage
+*.egg-info
+
+# Model caches
+*.pymoca_cache
+
+# Editors
+.idea
+.ipynb_checkpoints
+.vscode

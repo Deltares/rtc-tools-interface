@@ -12,6 +12,7 @@ flake8:
     - flake8 --exclude=_version.py rtctools_interface  
   tags:
     - docker
+    - linux
 
 # test
 test39:
@@ -22,3 +23,4 @@ test39:
     - pytest tests 
   tags:
     - docker
+    - linux

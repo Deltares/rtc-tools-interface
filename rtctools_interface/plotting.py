@@ -134,7 +134,9 @@ class PlotGoalsMixin:
             axs[n_rows - 1, i].set_xlabel("Time")
         os.makedirs("goal_figures", exist_ok=True)
         fig.tight_layout()
-        fig.savefig("goal_figures/after_priority_{}.png".format(priority))
+        new_output_folder = os.path.join(self._output_folder, "goal_figures")
+        os.makedirs(new_output_folder, exist_ok=True)
+        fig.savefig(os.path.join(new_output_folder, "after_priority_{}.png".format(priority)))
 
     def priority_completed(self, priority: int) -> None:
         # Store results required for plotting

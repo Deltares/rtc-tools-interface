@@ -8,7 +8,7 @@ from rtctools_interface.plotting import PlotGoalsMixin
 from .get_test import get_test_data
 
 
-class BaseOptimizationProblemPlotting(BaseOptimizationProblem, PlotGoalsMixin):
+class BaseOptimizationProblemPlotting(PlotGoalsMixin, BaseOptimizationProblem):
     def __init__(
         self,
         _plot_table_file,

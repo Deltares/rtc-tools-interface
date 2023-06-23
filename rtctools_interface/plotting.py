@@ -36,7 +36,7 @@ class PlotGoalsMixin:
     def plot_goals_results(self, result_dict, results_dict_prev=None):
         timeseries_import_times = self.io.datetimes
         extract_result = result_dict["extract_result"]
-        all_goals = self.plot_table.to_dict('records')
+        all_goals = self.plot_table.to_dict("records")
         range_goals = [goal for goal in all_goals if goal["goal_type"] == "range"]
         min_q_goals = [goal for goal in all_goals if goal["goal_type"] == "minimization"]
         priority = result_dict["priority"]
@@ -49,11 +49,8 @@ class PlotGoalsMixin:
         n_plots = len(range_goals + min_q_goals)
         n_cols = math.ceil(n_plots / self.plot_max_rows)
         n_rows = math.ceil(n_plots / n_cols)
-        fig, axs = plt.subplots(
-            nrows=n_rows, ncols=n_cols, figsize=(n_cols * 9, n_rows * 3), dpi=80, squeeze=False
-        )
-        fig.suptitle("Results after optimizing until priority {}".format(
-            priority), fontsize=14)
+        fig, axs = plt.subplots(nrows=n_rows, ncols=n_cols, figsize=(n_cols * 9, n_rows * 3), dpi=80, squeeze=False)
+        fig.suptitle("Results after optimizing until priority {}".format(priority), fontsize=14)
         i_plot = -1
 
         # Function to apply the general settings used by all goal types
@@ -66,9 +63,8 @@ class PlotGoalsMixin:
             i_c = math.ceil((i_plot + 1) / n_rows) - 1
             i_r = i_plot - i_c * n_rows
 
-            goal_variable = g['state']
-            axs[i_r, i_c].plot(
-                t_datetime, results[goal_variable], label=goal_variable)
+            goal_variable = g["state"]
+            axs[i_r, i_c].plot(t_datetime, results[goal_variable], label=goal_variable)
 
             if results_dict_prev:
                 results_prev = results_dict_prev["extract_result"]
@@ -82,21 +78,18 @@ class PlotGoalsMixin:
             return i_c, i_r
 
         def apply_additional_settings(goal_settings):
-            """ Sets some additional settings, like additional variables to plot.
+            """Sets some additional settings, like additional variables to plot.
             The second list of variables has a specific style, the first not.
             """
 
             for var in goal_settings["variables_plot_1"]:
                 axs[i_row, i_col].plot(t_datetime, results[var], label=var)
             for var in goal_settings["variables_plot_2"]:
-                axs[i_row, i_col].plot(
-                    t_datetime, results[var], linestyle="solid", linewidth="0.5", label=var
-                )
+                axs[i_row, i_col].plot(t_datetime, results[var], linestyle="solid", linewidth="0.5", label=var)
             axs[i_row, i_col].set_ylabel(goal_settings["y_axis_title"])
             axs[i_row, i_col].legend()
             axs[i_row, i_col].set_title(
-                "Goal for {} (active from priority {})".format(
-                    goal_settings["state"], goal_settings["priority"])
+                "Goal for {} (active from priority {})".format(goal_settings["state"], goal_settings["priority"])
             )
             dateFormat = mdates.DateFormatter("%d%b%H")
             axs[i_row, i_col].xaxis.set_major_formatter(dateFormat)
@@ -118,26 +111,22 @@ class PlotGoalsMixin:
                 target_min = self.get_timeseries(g["target_min"]).values
                 target_max = self.get_timeseries(g["target_max"]).values
             else:
-                logger.error("Target type {} not known.".format(g["target_data_type"]))
-                raise
+                message = "Target type {} not known.".format(g["target_data_type"])
+                logger.error(message)
+                raise ValueError(message)
 
             if np.array_equal(target_min, target_max, equal_nan=True):
-                axs[i_row, i_col].plot(
-                    t_datetime, target_min, "r--", label="Target")
+                axs[i_row, i_col].plot(t_datetime, target_min, "r--", label="Target")
             else:
-                axs[i_row, i_col].plot(
-                    t_datetime, target_min, "r--", label="Target min")
-                axs[i_row, i_col].plot(
-                    t_datetime, target_max, "r--", label="Target max")
+                axs[i_row, i_col].plot(t_datetime, target_min, "r--", label="Target min")
+                axs[i_row, i_col].plot(t_datetime, target_max, "r--", label="Target max")
 
             apply_additional_settings(g)
 
         # Add plots needed for minimization of discharge
         for g in min_q_goals:
             i_plot += 1
-
             i_col, i_row = apply_general_settings()
-
             apply_additional_settings(g)
 
         # TODO: this should be expanded when there are more columns
@@ -149,10 +138,7 @@ class PlotGoalsMixin:
 
     def priority_completed(self, priority: int) -> None:
         # Store results required for plotting
-        to_store = {
-            "extract_result": self.extract_results(),
-            "priority": priority
-        }
+        to_store = {"extract_result": self.extract_results(), "priority": priority}
         self.intermediate_results.append(to_store)
         super().priority_completed(priority)
 
@@ -161,5 +147,4 @@ class PlotGoalsMixin:
         for intermediate_result_prev, intermediate_result in zip(
             [None] + self.intermediate_results[:-1], self.intermediate_results
         ):
-            self.plot_goal_results_from_dict(
-                intermediate_result, intermediate_result_prev)
+            self.plot_goal_results_from_dict(intermediate_result, intermediate_result_prev)

@@ -27,7 +27,7 @@ class PlotGoalsMixin:
 
     def plot_goal_results_from_self(self, priority=None):
         result_dict = {
-            "timeseries_import_times": self.timeseries_import.times,
+            "timeseries_import_times": self.io.datetimes,
             "extract_result": self.extract_results(),
             "priority": priority,
         }
@@ -149,7 +149,7 @@ class PlotGoalsMixin:
         # Store results required for plotting
         to_store = {
             "extract_result": self.extract_results(),
-            "timeseries_import_times": self.timeseries_import.times,
+            "timeseries_import_times": self.io.datetimes,
             "priority": priority
         }
         self.intermediate_results.append(to_store)

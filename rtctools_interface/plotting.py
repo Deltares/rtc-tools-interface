@@ -7,10 +7,16 @@ import matplotlib.pyplot as plt
 
 import numpy as np
 
+from rtctools_interface.optimization.read_plot_table import read_plot_table
+
 logger = logging.getLogger("rtctools")
 
 
 class PlotGoalsMixin:
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.plot_table = read_plot_table(self._plot_table_file, self._goal_table_file)
 
     def pre(self):
         super().pre()
@@ -23,8 +29,6 @@ class PlotGoalsMixin:
         result_dict = {
             "timeseries_import_times": self.timeseries_import.times,
             "extract_result": self.extract_results(),
-            "min_q_goals": self.min_q_goals,
-            "range_goals": self.range_goals,
             "priority": priority,
         }
         self.plot_goals_results(result_dict)
@@ -32,8 +36,9 @@ class PlotGoalsMixin:
     def plot_goals_results(self, result_dict, results_dict_prev=None):
         timeseries_import_times = result_dict["timeseries_import_times"]
         extract_result = result_dict["extract_result"]
-        range_goals = result_dict["range_goals"]
-        min_q_goals = result_dict["min_q_goals"]
+        all_goals = self.plot_table.to_dict('records')
+        range_goals = [goal for goal in all_goals if goal["goal_type"] == "range"]
+        min_q_goals = [goal for goal in all_goals if goal["goal_type"] == "minimization"]
         priority = result_dict["priority"]
 
         t = self.times()
@@ -61,7 +66,7 @@ class PlotGoalsMixin:
             i_c = math.ceil((i_plot + 1) / n_rows) - 1
             i_r = i_plot - i_c * n_rows
 
-            goal_variable = g[0]
+            goal_variable = g['state']
             axs[i_r, i_c].plot(
                 t_datetime, results[goal_variable], label=goal_variable)
 
@@ -74,84 +79,43 @@ class PlotGoalsMixin:
                     color="gray",
                     linestyle="dotted",
                 )
-
-            # prio = result_dict["priority"]
-
-            # def add_variable_effects(constraints):
-            #     if goal_variable in constraints:
-            #         for xr in constraints[goal_variable]["timesteps"]:
-            #             if constraints[goal_variable]["effect_direction"] == "+":
-            #                 modification = "Increase"
-            #                 marker_type = matplotlib.markers.CARETUPBASE
-            #                 marker_color = "g"
-
-            #             else:
-            #                 modification = "Decrease"
-            #                 marker_type = matplotlib.markers.CARETDOWNBASE
-            #                 marker_color = "r"
-
-            #             label = "{} {} to improve {}".format(modification, goal_variable, prio)
-            #             if label in axs[i_r, i_c].get_legend_handles_labels()[1]:
-            #                 label = "_nolegend_"
-            #             axs[i_r, i_c].plot(
-            #                 t_datetime[int(xr)],
-            #                 results[goal_variable][int(xr)],
-            #                 marker=marker_type,
-            #                 color=marker_color,
-            #                 label=label,
-            #                 markersize=5,
-            #                 alpha=0.6,
-            #             )
-
-            # upper_constraints = {
-            #     name.replace(".", "_"): value
-            #     for name, value in result_dict["upper_constraint_dict"].items()
-            # }
-            # lower_constraints = {
-            #     name.replace(".", "_"): value
-            #     for name, value in result_dict["lower_constraint_dict"].items()
-            # }
-            # add_variable_effects(upper_constraints)
-            # add_variable_effects(lower_constraints)
-
             return i_c, i_r
 
         def apply_additional_settings(goal_settings):
             """ Sets some additional settings, like additional variables to plot.
             The second list of variables has a specific style, the first not.
             """
-            add_settings = goal_settings[-1]
 
-            for var in add_settings[1]:
+            for var in goal_settings["variables_plot_1"]:
                 axs[i_row, i_col].plot(t_datetime, results[var], label=var)
-            for var in add_settings[2]:
+            for var in goal_settings["variables_plot_2"]:
                 axs[i_row, i_col].plot(
                     t_datetime, results[var], linestyle="solid", linewidth="0.5", label=var
                 )
-            axs[i_row, i_col].set_ylabel(add_settings[0])
+            axs[i_row, i_col].set_ylabel(goal_settings["y_axis_title"])
             axs[i_row, i_col].legend()
             axs[i_row, i_col].set_title(
                 "Goal for {} (active from priority {})".format(
-                    goal_settings[0], goal_settings[4])
+                    goal_settings["state"], goal_settings["priority"])
             )
             dateFormat = mdates.DateFormatter("%d%b%H")
             axs[i_row, i_col].xaxis.set_major_formatter(dateFormat)
             axs[i_row, i_col].grid(which="both", axis="x")
 
         # Add plots needed for range goals
-        for g in sorted(self.range_goals, key=lambda goal: goal[4]):
+        for g in sorted(range_goals, key=lambda goal: goal["priority"]):
             i_plot += 1
 
             i_col, i_row = apply_general_settings()
 
-            if g[1] == "parameter":
-                target_min = np.full_like(t, 1) * self.parameters(0)[g[2]]
-                target_max = np.full_like(t, 1) * self.parameters(0)[g[3]]
-            elif g[1] == "timeseries":
-                target_min = self.get_timeseries(g[2]).values
-                target_max = self.get_timeseries(g[3]).values
+            if g["target_data_type"] == "parameter":
+                target_min = np.full_like(t, 1) * self.parameters(0)[g["target_min"]]
+                target_max = np.full_like(t, 1) * self.parameters(0)[g["target_max"]]
+            elif g["target_data_type"] == "timeseries":
+                target_min = self.get_timeseries(g["target_min"]).values
+                target_max = self.get_timeseries(g["target_max"]).values
             else:
-                logger.error("Target type {} not known.".format(g[1]))
+                logger.error("Target type {} not known.".format(g["target_type"]))
                 raise
 
             if np.array_equal(target_min, target_max, equal_nan=True):
@@ -185,8 +149,6 @@ class PlotGoalsMixin:
         # Store results required for plotting
         to_store = {
             "extract_result": self.extract_results(),
-            "range_goals": self.range_goals,
-            "min_q_goals": self.min_q_goals,
             "timeseries_import_times": self.timeseries_import.times,
             "priority": priority
         }

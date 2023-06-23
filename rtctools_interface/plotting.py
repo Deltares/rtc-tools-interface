@@ -28,14 +28,13 @@ class PlotGoalsMixin:
 
     def plot_goal_results_from_self(self, priority=None):
         result_dict = {
-            "timeseries_import_times": self.io.datetimes,
             "extract_result": self.extract_results(),
             "priority": priority,
         }
         self.plot_goals_results(result_dict)
 
     def plot_goals_results(self, result_dict, results_dict_prev=None):
-        timeseries_import_times = result_dict["timeseries_import_times"]
+        timeseries_import_times = self.io.datetimes
         extract_result = result_dict["extract_result"]
         all_goals = self.plot_table.to_dict('records')
         range_goals = [goal for goal in all_goals if goal["goal_type"] == "range"]
@@ -147,13 +146,11 @@ class PlotGoalsMixin:
         os.makedirs("goal_figures", exist_ok=True)
         fig.tight_layout()
         fig.savefig("goal_figures/after_priority_{}.png".format(priority))
-        # plt.show()
 
     def priority_completed(self, priority: int) -> None:
         # Store results required for plotting
         to_store = {
             "extract_result": self.extract_results(),
-            "timeseries_import_times": self.io.datetimes,
             "priority": priority
         }
         self.intermediate_results.append(to_store)

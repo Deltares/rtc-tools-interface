@@ -13,6 +13,7 @@ logger = logging.getLogger("rtctools")
 
 
 class PlotGoalsMixin:
+    plot_max_rows = 4
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -111,11 +112,14 @@ class PlotGoalsMixin:
             if g["target_data_type"] == "parameter":
                 target_min = np.full_like(t, 1) * self.parameters(0)[g["target_min"]]
                 target_max = np.full_like(t, 1) * self.parameters(0)[g["target_max"]]
+            elif g["target_data_type"] == "value":
+                target_min = np.full_like(t, 1) * g["target_min"]
+                target_max = np.full_like(t, 1) * g["target_max"]
             elif g["target_data_type"] == "timeseries":
                 target_min = self.get_timeseries(g["target_min"]).values
                 target_max = self.get_timeseries(g["target_max"]).values
             else:
-                logger.error("Target type {} not known.".format(g["target_type"]))
+                logger.error("Target type {} not known.".format(g["target_data_type"]))
                 raise
 
             if np.array_equal(target_min, target_max, equal_nan=True):

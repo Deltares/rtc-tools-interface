@@ -14,13 +14,13 @@ logger = logging.getLogger("rtctools")
 
 class PlotGoalsMixin:
     plot_max_rows = 4
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         try:
             plot_table_file = self._plot_table_file
-        except:
+        except AttributeError:
             plot_table_file = os.path.join(self._input_folder, "plot_table.csv")
-
         self.plot_table = read_plot_table(plot_table_file, self._goal_table_file)
 
     def pre(self):

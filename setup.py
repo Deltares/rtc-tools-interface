@@ -1,4 +1,4 @@
-from setuptools import setup
+from setuptools import find_packages, setup
 
 import versioneer
 
@@ -7,6 +7,7 @@ setup(
     name='rtc-tools-interface',
     version=versioneer.get_version(),
     maintainer='Deltares',
+    packages=find_packages("."),
     author='Deltares',
     description="Toolbox for user interfaces for RTC-Tools",
     install_requires=["pandas",

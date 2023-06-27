@@ -11,23 +11,20 @@ from .get_test import get_test_data
 class BaseOptimizationProblemPlotting(PlotGoalsMixin, BaseOptimizationProblem):
     def __init__(
         self,
-        _plot_table_file,
-        _goal_table_file,
+        plot_table_file,
+        goal_table_file,
         **kwargs,
     ):
-        self._goal_table_file = _goal_table_file
-        self._plot_table_file = _plot_table_file
-        self._goals = _goal_table_file
-        super().__init__(**kwargs)
+        self.plot_table_file = plot_table_file
+        super().__init__(goal_table_file=goal_table_file, **kwargs)
 
 
 class TestPlotGoalsMixin(unittest.TestCase):
     def run_test(self, test):
         test_data = get_test_data(test)
         problem = BaseOptimizationProblemPlotting(
-            goals=test_data["goals_file"],
-            _goal_table_file=test_data["goals_file"],
-            _plot_table_file=test_data["plot_table_file"],
+            goal_table_file=test_data["goals_file"],
+            plot_table_file=test_data["plot_table_file"],
             model_folder=test_data["model_folder"],
             model_name=test_data["model_name"],
             input_folder=test_data["model_input_folder"],

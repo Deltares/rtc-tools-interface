@@ -18,10 +18,10 @@ class PlotGoalsMixin:
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         try:
-            plot_table_file = self._plot_table_file
+            plot_table_file = self.plot_table_file
         except AttributeError:
             plot_table_file = os.path.join(self._input_folder, "plot_table.csv")
-        self.plot_table = read_plot_table(plot_table_file, self._goal_table_file)
+        self.plot_table = read_plot_table(plot_table_file, self.goal_table_file)
 
     def pre(self):
         super().pre()

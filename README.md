@@ -43,7 +43,21 @@ See the table below for an example content of the `goal_table.csv`.
 
 | id     | state | active | goal_type    | function_min | function_max | function_nominal | target_data_type | target_min | target_max | priority | weight | order |
 |--------|-------|--------|--------------|--------------|--------------|------------------|------------------|------------|------------|----------|--------|-------|
-| 1 | reservoir_1_waterlevel     | 1      | range        | 0            | 15           | 10               | value            | 5.0        | 10.0       | 5       |        |       |
-| 2 | reservoir_2_waterlevel     | 1      | range        | 0            | 15           | 10               | timeseries            | "target_series"        | "target_series"       | 10       |        |       |
-| 3 | electricity_cost     | 1      | minimization |              |              |                  |                  |            |            | 20       |        |       |
+| goal_1 | reservoir_1_waterlevel     | 1      | range        | 0            | 15           | 10               | value            | 5.0        | 10.0       | 5       |        |       |
+| goal_2 | reservoir_2_waterlevel     | 1      | range        | 0            | 15           | 10               | timeseries            | "target_series"        | "target_series"       | 10       |        |       |
+| goal_3 | electricity_cost     | 1      | minimization |              |              |                  |                  |            |            | 20       |        |       |
 
+## Plot resuls after each priority
+By using the `PlotGoalsMixin`, plots will be generated after optimizing for each unique priority. To utilize this functionality, import the mixin as follows:
+```python
+from rtctools_interface.optimization.plot_goals_mixin import PlotGoalsMixin
+```
+Then, add the `PlotGoalsMixin` to your optimization problem class. Set the class variable `plot_max_rows` to an integer number for the maximum number of rows. The number of columns will be derived from that. By default, the Mixin will look for the configuration table `input\plot_table.csv`. This table should contain the columns `id`, `y_axis_title`, `variables_plot_1` and `variables_plot_2`. Each `id` in the `id` column should also appear in the table defining the goals. The table could thus look like:
+
+|    id   |  y_axis_title   | variables_plot_1 | variables_plot_2 |
+|---------|-----------------|------------------|------------------|
+| goal_1  | Volume (\$m^3\$)  |      "PowerPlant1.QOut.Q"            |                  |
+| goal_2  | Volume (\$m^3\$)  |      "PowerPlant1.QOut.Q, PowerPlant2.QOut.Q"            |                  |
+
+
+After running the model, in your output folder the folder `goal_figures` containing the figures is created.

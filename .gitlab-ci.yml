@@ -2,7 +2,9 @@ image: python:3.9-buster
 
 stages:
   - style
+  - build
   - test
+  - deploy
 
 # style
 flake8:
@@ -24,3 +26,24 @@ test39:
   tags:
     - docker
     - linux
+
+build:
+  stage: build
+  script:
+    - python setup.py sdist bdist_wheel
+  artifacts:
+    paths:
+      - dist/
+    expire_in: 1 week
+  tags:
+    - docker
+
+deploy:
+  stage: deploy
+  dependencies:
+    - build
+  script:
+      - pip install -U twine
+      - twine upload -u $PYPI_USER -p $PYPI_PASSWORD dist/*
+  only:
+      - tags

@@ -1,0 +1,4 @@
+test,model_folder,model_name,model_input_folder,goals_file,output_folder
+basic,.,BasicModel,basic,basic.csv,basic
+target_bounds_as_parameters,.,BasicModel,target_bounds_as_parameters,target_bounds_as_parameters.csv,target_bounds_as_parameters
+target_bounds_as_timeseries,.,BasicModel,target_bounds_as_timeseries,target_bounds_as_timeseries.csv,target_bounds_as_timeseries

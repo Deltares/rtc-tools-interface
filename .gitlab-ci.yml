@@ -2,6 +2,7 @@ image: python:3.9-buster
 
 stages:
   - style
+  - test
 
 # style
 flake8:
@@ -11,3 +12,15 @@ flake8:
     - flake8 --exclude=_version.py rtctools_interface  
   tags:
     - docker
+    - linux
+
+# test
+test39:
+  stage: test
+  script:
+    - pip install -e .
+    - pip install pytest
+    - pytest tests 
+  tags:
+    - docker
+    - linux

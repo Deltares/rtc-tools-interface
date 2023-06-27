@@ -9,7 +9,7 @@ class TestBaseOptimizationProblem(unittest.TestCase):
     def run_test(self, test):
         test_data = get_test_data(test)
         problem = BaseOptimizationProblem(
-            goals=test_data["goals_file"],
+            goal_table_file=test_data["goals_file"],
             model_folder=test_data["model_folder"],
             model_name=test_data["model_name"],
             input_folder=test_data["model_input_folder"],

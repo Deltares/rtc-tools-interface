@@ -1,8 +1,11 @@
 """Module for a basic Goal."""
+import logging
 import numpy as np
 
 from rtctools.optimization.goal_programming_mixin import Goal
 from rtctools.optimization.optimization_problem import OptimizationProblem
+
+logger = logging.getLogger("rtctools")
 
 GOAL_TYPES = [
     "range",
@@ -17,17 +20,17 @@ TARGET_DATA_TYPES = [
 
 
 class BaseGoal(Goal):
-    r"""
+    """
     Basic optimization goal for a given state.
 
     :cvar goal_type:
-        Type of goal ("range" or "minimization").
+        Type of goal ('range' or 'minimization').
     :cvar target_data_type:
-        Type of target data ("value", "parameter", "timeseries").
-        If "value", set the target bounds by value.
-        If "parameter", set the bounds by a parameter. The target_min
+        Type of target data ('value', 'parameter', 'timeseries').
+        If 'value', set the target bounds by value.
+        If 'parameter', set the bounds by a parameter. The target_min
         and/or target_max are expected to be the name of the parameter.
-        If "timeseries", set the bounds by a timeseries. The target_min
+        If 'timeseries', set the bounds by a timeseries. The target_min
         and/or target_max are expected to be the name of the timeseries.
     """
 
@@ -100,6 +103,7 @@ class BaseGoal(Goal):
                 self.function_nominal = np.sum(self.function_range) / 2
             else:
                 self.function_nominal = 1.0
+                logger.warning("Function nominal not specified, nominal is set to 1.0")
 
     def _set_target_bounds(
         self,

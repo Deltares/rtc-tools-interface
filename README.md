@@ -50,7 +50,7 @@ See the table below for an example content of the `goal_table.csv`.
 ## Plot resuls after each priority
 By using the `PlotGoalsMixin`, plots will be generated after optimizing for each unique priority. To utilize this functionality, import the mixin as follows:
 ```python
-from rtctools_interface.plotting import PlotGoalsMixin
+from rtctools_interface.plot_goals_mixin import PlotGoalsMixin
 ```
 Then, add the `PlotGoalsMixin` to your optimization problem class. Set the class variable `plot_max_rows` to an integer number for the maximum number of rows. The number of columns will be derived from that. By default, the Mixin will look for the configuration table `input\plot_table.csv`. This table should contain the columns `id`, `y_axis_title`, `variables_plot_1` and `variables_plot_2`. Each `id` in the `id` column should also appear in the table defining the goals. The table could thus look like:
 

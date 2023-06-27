@@ -3,7 +3,7 @@ import unittest
 from rtctools_interface.optimization.base_optimization_problem import (
     BaseOptimizationProblem,
 )
-from rtctools_interface.plotting import PlotGoalsMixin
+from rtctools_interface.plot_goals_mixin import PlotGoalsMixin
 
 from .get_test import get_test_data
 

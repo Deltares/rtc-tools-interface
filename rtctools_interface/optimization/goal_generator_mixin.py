@@ -27,6 +27,7 @@ class GoalGeneratorMixin:
         return BaseGoal(optimization_problem=self, **goal_data.to_dict())
 
     def path_goals(self):
+        goals = super().path_goals()
         goal_df = read_goals(self.goal_table_file)
-        goals = goal_df.apply(self._goal_data_to_goal, axis=1)
+        goals = goals + list(goal_df.apply(self._goal_data_to_goal, axis=1))
         return goals

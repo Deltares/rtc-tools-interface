@@ -36,7 +36,7 @@ To use to goal_generator, first import it as follows:
 from rtctools_interface.optimization.goal_generator_mixin import GoalGeneratorMixin
 ```
 
-and add the `GoalGeneratorMixin` to your optimization problem class. Also, define the `goal_table.csv` in the input folder of your problem.
+and add the `GoalGeneratorMixin` to your optimization problem class. It must be added before `GoalProgrammingMixin`. Also, define the `goal_table.csv` in the input folder of your problem.
 
 ### Example goal table
 See the table below for an example content of the `goal_table.csv`. 

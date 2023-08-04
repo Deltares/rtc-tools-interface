@@ -22,12 +22,26 @@ class GoalGeneratorMixin:
         if not hasattr(self, "goal_table_file"):
             self.goal_table_file = os.path.join(self._input_folder, "goal_table.csv")
 
+    # def _path_goal_data_to_goal(self, goal_data: pd.Series):
+    #     """Convert a series with goal data to a BaseGoal."""
+    #     return BaseGoal(optimization_problem=self, **goal_data.to_dict())
+    
     def _goal_data_to_goal(self, goal_data: pd.Series):
         """Convert a series with goal data to a BaseGoal."""
         return BaseGoal(optimization_problem=self, **goal_data.to_dict())
 
     def path_goals(self):
         goals = super().path_goals()
-        goal_df = read_goals(self.goal_table_file)
+        goal_df = read_goals(self.goal_table_file, 'y')
         goals = goals + list(goal_df.apply(self._goal_data_to_goal, axis=1))
+        return goals
+    
+    def goals(self):
+        goals = super().goals()
+        goal_df = read_goals(self.goal_table_file, 'n')
+        if bool(goals) or not goal_df.empty:
+        # what to do if there are no goals??
+            goals = goals + list(goal_df.apply(self._goal_data_to_goal, axis=1))
+        else:
+            goals = []
         return goals

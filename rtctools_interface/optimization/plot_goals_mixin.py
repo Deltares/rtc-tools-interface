@@ -1,3 +1,4 @@
+"""Module for plotting."""
 import logging
 import math
 import os
@@ -13,6 +14,9 @@ logger = logging.getLogger("rtctools")
 
 
 class PlotGoalsMixin:
+    """
+    Class for plotting results.
+    """
     plot_max_rows = 4
 
     def __init__(self, **kwargs):
@@ -24,13 +28,16 @@ class PlotGoalsMixin:
         self.plot_table = read_plot_table(plot_table_file, self.goal_table_file)
 
     def pre(self):
+        """Tasks before optimizing."""
         super().pre()
         self.intermediate_results = []
 
     def plot_goal_results_from_dict(self, result_dict, results_dict_prev=None):
+        """Plot results, given a dict."""
         self.plot_goals_results(result_dict, results_dict_prev)
 
     def plot_goal_results_from_self(self, priority=None):
+        """Plot results."""
         result_dict = {
             "extract_result": self.extract_results(),
             "priority": priority,
@@ -38,6 +45,10 @@ class PlotGoalsMixin:
         self.plot_goals_results(result_dict)
 
     def plot_goals_results(self, result_dict, results_dict_prev=None):
+        # TODO: fix the pylint issues below by refactoring this function.
+        # pylint: disable=too-many-locals
+        # pylint: disable=too-many-statements
+        """Plot results."""
         timeseries_import_times = self.io.datetimes
         extract_result = result_dict["extract_result"]
         all_goals = self.plot_table.to_dict("records")
@@ -67,7 +78,7 @@ class PlotGoalsMixin:
             i_c = math.ceil((i_plot + 1) / n_rows) - 1
             i_r = i_plot - i_c * n_rows
 
-            goal_variable = g["state"]
+            goal_variable = goal_["state"]
             axs[i_r, i_c].plot(t_datetime, results[goal_variable], label=goal_variable)
 
             if results_dict_prev:
@@ -95,27 +106,27 @@ class PlotGoalsMixin:
             axs[i_row, i_col].set_title(
                 "Goal for {} (active from priority {})".format(goal_settings["state"], goal_settings["priority"])
             )
-            dateFormat = mdates.DateFormatter("%d%b%H")
-            axs[i_row, i_col].xaxis.set_major_formatter(dateFormat)
+            date_format = mdates.DateFormatter("%d%b%H")
+            axs[i_row, i_col].xaxis.set_major_formatter(date_format)
             axs[i_row, i_col].grid(which="both", axis="x")
 
         # Add plots needed for range goals
-        for g in sorted(range_goals, key=lambda goal: goal["priority"]):
+        for goal_ in sorted(range_goals, key=lambda goal: goal["priority"]):
             i_plot += 1
 
             i_col, i_row = apply_general_settings()
 
-            if g["target_data_type"] == "parameter":
-                target_min = np.full_like(t, 1) * self.parameters(0)[g["target_min"]]
-                target_max = np.full_like(t, 1) * self.parameters(0)[g["target_max"]]
-            elif g["target_data_type"] == "value":
-                target_min = np.full_like(t, 1) * g["target_min"]
-                target_max = np.full_like(t, 1) * g["target_max"]
-            elif g["target_data_type"] == "timeseries":
-                target_min = self.get_timeseries(g["target_min"]).values
-                target_max = self.get_timeseries(g["target_max"]).values
+            if goal_["target_data_type"] == "parameter":
+                target_min = np.full_like(t, 1) * self.parameters(0)[goal_["target_min"]]
+                target_max = np.full_like(t, 1) * self.parameters(0)[goal_["target_max"]]
+            elif goal_["target_data_type"] == "value":
+                target_min = np.full_like(t, 1) * goal_["target_min"]
+                target_max = np.full_like(t, 1) * goal_["target_max"]
+            elif goal_["target_data_type"] == "timeseries":
+                target_min = self.get_timeseries(goal_["target_min"]).values
+                target_max = self.get_timeseries(goal_["target_max"]).values
             else:
-                message = "Target type {} not known.".format(g["target_data_type"])
+                message = "Target type {} not known.".format(goal_["target_data_type"])
                 logger.error(message)
                 raise ValueError(message)
 
@@ -125,13 +136,13 @@ class PlotGoalsMixin:
                 axs[i_row, i_col].plot(t_datetime, target_min, "r--", label="Target min")
                 axs[i_row, i_col].plot(t_datetime, target_max, "r--", label="Target max")
 
-            apply_additional_settings(g)
+            apply_additional_settings(goal_)
 
         # Add plots needed for minimization of discharge
-        for g in min_q_goals:
+        for goal_ in min_q_goals:
             i_plot += 1
             i_col, i_row = apply_general_settings()
-            apply_additional_settings(g)
+            apply_additional_settings(goal_)
 
         # TODO: this should be expanded when there are more columns
         for i in range(0, n_cols):
@@ -143,12 +154,14 @@ class PlotGoalsMixin:
         fig.savefig(os.path.join(new_output_folder, "after_priority_{}.png".format(priority)))
 
     def priority_completed(self, priority: int) -> None:
+        """Tasks after a priority has been completed."""
         # Store results required for plotting
         to_store = {"extract_result": self.extract_results(), "priority": priority}
         self.intermediate_results.append(to_store)
         super().priority_completed(priority)
 
     def post(self):
+        """Tasks after optimizing."""
         super().post()
         for intermediate_result_prev, intermediate_result in zip(
             [None] + self.intermediate_results[:-1], self.intermediate_results

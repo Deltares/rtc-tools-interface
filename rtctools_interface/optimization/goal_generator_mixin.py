@@ -1,15 +1,18 @@
+"""Module for a basic optimization problem."""
 import logging
 import os
 
 import pandas as pd
 
-from rtctools_interface.optimization.read_goals import read_goals
 from rtctools_interface.optimization.base_goal import BaseGoal
+from rtctools_interface.optimization.read_goals import read_goals
 
 logger = logging.getLogger("rtctools")
 
 
 class GoalGeneratorMixin:
+    # TODO: remove pylint disable below once we have more public functions.
+    # pylint: disable=too-few-public-methods
     """Add path goals as specified in the goal_table.
 
     By default, the mixin looks for the csv in the in the default input
@@ -27,6 +30,7 @@ class GoalGeneratorMixin:
         return BaseGoal(optimization_problem=self, **goal_data.to_dict())
 
     def path_goals(self):
+        """Return the list of path goals."""
         goals = super().path_goals()
         goal_df = read_goals(self.goal_table_file)
         goals = goals + list(goal_df.apply(self._goal_data_to_goal, axis=1))

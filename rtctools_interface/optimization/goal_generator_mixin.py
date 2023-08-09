@@ -3,8 +3,8 @@ import os
 
 import pandas as pd
 
-from rtctools_interface.optimization.read_goals import read_goals
 from rtctools_interface.optimization.base_goal import BaseGoal
+from rtctools_interface.optimization.read_goals import read_goals
 
 logger = logging.getLogger("rtctools")
 
@@ -25,7 +25,7 @@ class GoalGeneratorMixin:
     # def _path_goal_data_to_goal(self, goal_data: pd.Series):
     #     """Convert a series with goal data to a BaseGoal."""
     #     return BaseGoal(optimization_problem=self, **goal_data.to_dict())
-    
+
     def _goal_data_to_goal(self, goal_data: pd.Series):
         """Convert a series with goal data to a BaseGoal."""
         return BaseGoal(optimization_problem=self, **goal_data.to_dict())
@@ -33,15 +33,13 @@ class GoalGeneratorMixin:
     def path_goals(self):
         goals = super().path_goals()
         goal_df = read_goals(self.goal_table_file, 'y')
-        goals = goals + list(goal_df.apply(self._goal_data_to_goal, axis=1))
+        if not goal_df.empty:
+            goals = goals + list(goal_df.apply(self._goal_data_to_goal, axis=1))
         return goals
-    
+
     def goals(self):
         goals = super().goals()
         goal_df = read_goals(self.goal_table_file, 'n')
-        if bool(goals) or not goal_df.empty:
-        # what to do if there are no goals??
+        if not goal_df.empty:
             goals = goals + list(goal_df.apply(self._goal_data_to_goal, axis=1))
-        else:
-            goals = []
         return goals

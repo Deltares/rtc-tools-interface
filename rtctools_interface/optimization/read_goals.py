@@ -17,11 +17,11 @@ GOAL_PARAMETERS = [
 ]
 
 
-def read_goals(file, type):
+def read_goals(file, goal_type):
     """Read goals from a cvs file.
     """
     goals = pd.read_csv(file, sep=",")
     is_active = (goals['active'] == 1)
-    type = (goals['pathgoal'] == type)
-    sorted = is_active*type
-    return goals.loc[sorted, GOAL_PARAMETERS]
+    goal_type = (goals['pathgoal'] == goal_type)
+    filter_goals = is_active*goal_type
+    return goals.loc[filter_goals, GOAL_PARAMETERS]

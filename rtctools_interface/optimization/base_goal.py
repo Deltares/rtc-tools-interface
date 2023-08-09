@@ -1,9 +1,11 @@
 """Module for a basic Goal."""
 import logging
+
 import numpy as np
 
 from rtctools.optimization.goal_programming_mixin import Goal
 from rtctools.optimization.optimization_problem import OptimizationProblem
+from rtctools.optimization.timeseries import Timeseries
 
 logger = logging.getLogger("rtctools")
 
@@ -97,18 +99,6 @@ class BaseGoal(Goal):
                 return tot
         else:
             return optimization_problem.state(self.state)
-        # except KeyError:
-        #     # state_vars = self.state.split('.')[0]
-        #     # state_vars = state_vars.split(',')
-        #     # state_operators = self.state.split('.')[1]
-        #     # state_operators = state_operators.split(',')
-        #     # op = {'+': lambda x, y: x + y,
-        #     #       '-': lambda x, y: x - y}
-        #     # self.state = ''
-        #     # for i in range(0, len(state_vars)):
-        #     return optimization_problem.state(self.state)
-        #     # return optimization_problem.state([op[state_operators[i]] statevars[i] for i in range(0,len(state_vars))])
-        #     # return optimization_problem.state([2*a for a in x if a % 2 == 1])
 
     def _set_goal_type(
         self,
@@ -129,27 +119,27 @@ class BaseGoal(Goal):
         """Set function bounds and nominal."""
         self.function_range = [function_min, function_max]
         if not np.isfinite(function_min):
-            try:
-                self.function_range[0] = optimization_problem.bounds()[self.state][0].values
-            except AttributeError:
+            if isinstance(optimization_problem.bounds()[self.state][0], float):
                 self.function_range[0] = optimization_problem.bounds()[self.state][0]
+            elif isinstance(optimization_problem.bounds()[self.state][0], Timeseries):
+                self.function_range[0] = optimization_problem.bounds()[self.state][0].values
         if not np.isfinite(function_max):
-            try:
-                self.function_range[1] = optimization_problem.bounds()[self.state][1].values
-            except AttributeError:
+            if isinstance(optimization_problem.bounds()[self.state][1], float):
                 self.function_range[1] = optimization_problem.bounds()[self.state][1]
+            elif isinstance(optimization_problem.bounds()[self.state][0], Timeseries):
+                self.function_range[1] = optimization_problem.bounds()[self.state][1].values
 
     def _set_function_nominal(self, function_nominal):
         """Set function nominal"""
         self.function_nominal = function_nominal
         if not np.isfinite(self.function_nominal):
-            try:
+            if isinstance(self.function_range, (list, tuple)):
                 if np.all(np.isfinite(self.function_range)):
                     self.function_nominal = np.sum(self.function_range) / 2
                 else:
                     self.function_nominal = 1.0
                     logger.warning("Function nominal not specified, nominal is set to 1.0")
-            except TypeError:
+            elif isinstance(self.function_range, Timeseries):
                 if np.all(np.isfinite(self.function_range[1].values)):
                     self.function_nominal = np.sum(self.function_range[1].values) / 2
                 else:
@@ -170,34 +160,20 @@ class BaseGoal(Goal):
             self.target_min = float(target_min)
             self.target_max = float(target_max)
         elif target_data_type == "parameter":
-            try:
-                if np.isnan(target_max):
-                    self.target_max = np.nan
-                else:
-                    self.target_max = optimization_problem.parameters(0)[target_max]
-            except TypeError:
+            if isinstance(target_max, str):
                 self.target_max = optimization_problem.parameters(0)[target_max]
-            try:
-                if np.isnan(target_min):
-                    self.target_min = np.nan
-                else:
-                    self.target_min = optimization_problem.parameters(0)[target_min]
-            except TypeError:
+            elif np.isnan(target_max):
+                self.target_max = np.nan
+            if isinstance(target_max, str):
                 self.target_min = optimization_problem.parameters(0)[target_min]
-            # self.target_min = optimization_problem.parameters(0)[target_min]
+            elif np.isnan(target_min):
+                self.target_min = np.nan
         elif target_data_type == "timeseries":
-            try:
-                if np.isnan(target_max):
-                    self.target_max = np.nan
-                else:
-                    self.target_max = optimization_problem.get_timeseries(target_max)
-            except TypeError:
+            if isinstance(target_max, str):
                 self.target_max = optimization_problem.get_timeseries(target_max)
-            try:
-                if np.isnan(target_min):
-                    self.target_min = np.nan
-                else:
-                    self.target_min = optimization_problem.get_timeseries(target_min)
-            except TypeError:
+            elif np.isnan(target_max):
+                self.target_max = np.nan
+            if isinstance(target_min, str):
                 self.target_min = optimization_problem.get_timeseries(target_min)
-
+            elif np.isnan(target_min):
+                self.target_min = np.nan

@@ -23,7 +23,7 @@ def read_goals(file, path_goal):
     goals = pd.read_csv(file, sep=",")
     is_active = (goals['active'] == 1)
     # goal_type = (goals['pathgoal'] == goal_type)
-    if path_goal == True:
+    if path_goal:
         goal_type = (goals['goal_type'] == 'minimization')\
                     + (goals['goal_type'] == 'range')\
                     + (goals['goal_type'] == 'maximization')

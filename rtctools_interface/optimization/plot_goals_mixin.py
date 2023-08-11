@@ -123,8 +123,12 @@ class PlotGoalsMixin:
             i_col, i_row = apply_general_settings()
 
             if g["target_data_type"] == "parameter":
-                target_min = np.full_like(t, 1) * self.parameters(0)[g["target_min"]]
-                target_max = np.full_like(t, 1) * self.parameters(0)[g["target_max"]]
+                try:
+                    target_min = np.full_like(t, 1) * self.parameters(0)[g["target_min"]]
+                    target_max = np.full_like(t, 1) * self.parameters(0)[g["target_max"]]
+                except TypeError:
+                    target_min = np.full_like(t, 1) * self.io.get_parameter(g["target_min"])
+                    target_max = np.full_like(t, 1) * self.io.get_parameter(g["target_max"])
             elif g["target_data_type"] == "value":
                 target_min = np.full_like(t, 1) * g["target_min"]
                 target_max = np.full_like(t, 1) * g["target_max"]

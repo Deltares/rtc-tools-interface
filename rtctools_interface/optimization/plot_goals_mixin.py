@@ -22,6 +22,8 @@ class PlotGoalsMixin:
         except AttributeError:
             plot_table_file = os.path.join(self._input_folder, "plot_table.csv")
         self.plot_table = read_plot_table(plot_table_file, self.goal_table_file)
+        self.custom_variables = [custom_state for custom_state in self.plot_table["custom_state"]
+                                 if isinstance(custom_state, str)]
 
     def pre(self):
         super().pre()
@@ -46,6 +48,7 @@ class PlotGoalsMixin:
         max_q_goals = [goal for goal in all_goals if goal["goal_type"] == "maximization_path"]
         min_sum_goals = [goal for goal in all_goals if goal["goal_type"] == "minimization_sum"]
         max_sum_goals = [goal for goal in all_goals if goal["goal_type"] == "maximization_sum"]
+        python_goals = [goal for goal in all_goals if goal["specified_in"] == "python"]
         priority = result_dict["priority"]
 
         t = self.times()
@@ -53,7 +56,7 @@ class PlotGoalsMixin:
         results = extract_result
 
         # Prepare the plot
-        n_plots = len(range_goals + min_q_goals + max_q_goals + min_sum_goals + max_sum_goals)
+        n_plots = len(range_goals + min_q_goals + max_q_goals + min_sum_goals + max_sum_goals + python_goals)
         if n_plots == 0:
             logger.info("PlotGoalsMixin did not find anything to plot." +
                         " Are there any goals that are active and described in the plot_table?")
@@ -65,24 +68,22 @@ class PlotGoalsMixin:
         i_plot = -1
 
         # Function to apply the general settings used by all goal types
-        def apply_general_settings():
+        def apply_general_settings(state_name: str):
             """Add line with the results for a particular goal. If previous results
             are available, a line with the timeseries for those results is also plotted.
-
             Note that this function does also determine the current row and column index
             """
             i_c = math.ceil((i_plot + 1) / n_rows) - 1
             i_r = i_plot - i_c * n_rows
 
-            goal_variable = g["state"]
-            axs[i_r, i_c].plot(t_datetime, results[goal_variable], label=goal_variable)
+            axs[i_r, i_c].plot(t_datetime, results[state_name], label=state_name)
 
             if results_dict_prev:
                 results_prev = results_dict_prev["extract_result"]
                 axs[i_r, i_c].plot(
                     t_datetime,
-                    results_prev[goal_variable],
-                    label=goal_variable + " at previous priority optimization",
+                    results_prev[state_name],
+                    label=state_name + " at previous priority optimization",
                     color="gray",
                     linestyle="dotted",
                 )
@@ -113,9 +114,13 @@ class PlotGoalsMixin:
                                            label=var)
             axs[i_row, i_col].set_ylabel(goal_settings["y_axis_title"])
             axs[i_row, i_col].legend()
-            axs[i_row, i_col].set_title(
-                "Goal for {} (active from priority {})".format(goal_settings["state"], goal_settings["priority"])
-            )
+            if isinstance(goal_settings["custom_title"], str):
+                axs[i_row, i_col].set_title(goal_settings["custom_title"])
+            else:
+                axs[i_row, i_col].set_title(
+                    "Goal for {} (active from priority {})".format(goal_settings["state"], goal_settings["priority"])
+                )
+
             dateFormat = mdates.DateFormatter("%d%b%H")
             axs[i_row, i_col].xaxis.set_major_formatter(dateFormat)
             axs[i_row, i_col].grid(which="both", axis="x")
@@ -124,7 +129,7 @@ class PlotGoalsMixin:
         for g in sorted(range_goals, key=lambda goal: goal["priority"]):
             i_plot += 1
 
-            i_col, i_row = apply_general_settings()
+            i_col, i_row = apply_general_settings(g["state"])
 
             if g["target_data_type"] == "parameter":
                 try:
@@ -161,21 +166,26 @@ class PlotGoalsMixin:
         # Add plots needed for minimization of discharge
         for g in min_q_goals:
             i_plot += 1
-            i_col, i_row = apply_general_settings()
+            i_col, i_row = apply_general_settings(g["state"])
             apply_additional_settings(g)
 
         for g in max_q_goals:
             i_plot += 1
-            i_col, i_row = apply_general_settings()
+            i_col, i_row = apply_general_settings(g["state"])
             apply_additional_settings(g)
         for g in min_sum_goals:
             i_plot += 1
-            i_col, i_row = apply_general_settings()
+            i_col, i_row = apply_general_settings(g["state"])
             apply_additional_settings(g)
 
         for g in max_sum_goals:
             i_plot += 1
-            i_col, i_row = apply_general_settings()
+            i_col, i_row = apply_general_settings(g["state"])
+            apply_additional_settings(g)
+
+        for g in python_goals:
+            i_plot += 1
+            i_col, i_row = apply_general_settings(g["custom_state"])
             apply_additional_settings(g)
 
         # TODO: this should be expanded when there are more columns
@@ -188,8 +198,15 @@ class PlotGoalsMixin:
         fig.savefig(os.path.join(new_output_folder, "after_priority_{}.png".format(priority)))
 
     def priority_completed(self, priority: int) -> None:
-        # Store results required for plotting
-        to_store = {"extract_result": self.extract_results(), "priority": priority}
+        # Store results required for plottingy
+        import copy
+        extracted_results = copy.deepcopy(self.extract_results())
+        # TODO Make more robust on non-existant variables/timeseries (get_timeseries part)
+        results_custom_variables = {custom_variable: self.get_timeseries(custom_variable)
+                                    for custom_variable in self.custom_variables
+                                    if custom_variable not in extracted_results}
+        extracted_results.update(results_custom_variables)
+        to_store = {"extract_result": extracted_results, "priority": priority}
         self.intermediate_results.append(to_store)
         super().priority_completed(priority)
 

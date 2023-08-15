@@ -3,7 +3,8 @@ import pandas as pd
 
 from rtctools_interface.optimization.read_goals import GOAL_PARAMETERS
 
-PLOT_PARAMETERS = ["id", "y_axis_title", "variables_plot_1", "variables_plot_2"]
+PLOT_PARAMETERS = ["id", "y_axis_title", "variables_plot_1",
+                   "variables_plot_2", "custom_state", "custom_title", "specified_in"]
 
 
 def string_to_list(string):
@@ -24,7 +25,7 @@ def read_plot_table(plot_table_file, goal_table_file):
         ["variables_plot_1", "variables_plot_2"]
     ].applymap(string_to_list)
     goals = pd.read_csv(goal_table_file, sep=",")
-    joined_table = plot_table.merge(goals, on="id")
+    joined_table = plot_table.merge(goals, on="id", how="left")
     joined_table["active"].replace(pd.NA, 1, inplace=True)
-    is_active = joined_table["active"] == 1
+    is_active = (joined_table["active"] == 1) | (joined_table["specified_in"] == "python")
     return joined_table.loc[is_active, PLOT_PARAMETERS + GOAL_PARAMETERS]

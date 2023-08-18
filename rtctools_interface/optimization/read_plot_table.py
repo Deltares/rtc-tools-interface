@@ -25,5 +25,6 @@ def read_plot_table(plot_table_file, goal_table_file):
     ].applymap(string_to_list)
     goals = pd.read_csv(goal_table_file, sep=",")
     joined_table = plot_table.merge(goals, on="id")
-    is_active = goals["active"] == 1
+    joined_table["active"].replace(pd.NA, 1, inplace=True)
+    is_active = joined_table["active"] == 1
     return joined_table.loc[is_active, PLOT_PARAMETERS + GOAL_PARAMETERS]

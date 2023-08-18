@@ -130,8 +130,8 @@ class PlotGoalsMixin:
                     target_min = np.full_like(t, 1) * self.io.get_parameter(g["target_min"])
                     target_max = np.full_like(t, 1) * self.io.get_parameter(g["target_max"])
             elif g["target_data_type"] == "value":
-                target_min = np.full_like(t, 1) * g["target_min"]
-                target_max = np.full_like(t, 1) * g["target_max"]
+                target_min = np.full_like(t, 1) * float(g["target_min"])
+                target_max = np.full_like(t, 1) * float(g["target_max"])
             elif g["target_data_type"] == "timeseries":
                 if isinstance(g["target_min"], str):
                     target_min = self.get_timeseries(g["target_min"]).values

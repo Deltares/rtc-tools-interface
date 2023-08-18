@@ -42,8 +42,8 @@ class PlotGoalsMixin:
         extract_result = result_dict["extract_result"]
         all_goals = self.plot_table.to_dict("records")
         range_goals = [goal for goal in all_goals if goal["goal_type"] == "range"]
-        min_q_goals = [goal for goal in all_goals if goal["goal_type"] == "minimization"]
-        max_q_goals = [goal for goal in all_goals if goal["goal_type"] == "maximization"]
+        min_q_goals = [goal for goal in all_goals if goal["goal_type"] == "minimization_path"]
+        max_q_goals = [goal for goal in all_goals if goal["goal_type"] == "maximization_path"]
         min_sum_goals = [goal for goal in all_goals if goal["goal_type"] == "minimization_sum"]
         max_sum_goals = [goal for goal in all_goals if goal["goal_type"] == "maximization_sum"]
         priority = result_dict["priority"]

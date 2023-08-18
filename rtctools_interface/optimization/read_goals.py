@@ -24,9 +24,9 @@ def read_goals(file, path_goal):
     is_active = (goals['active'] == 1)
     # goal_type = (goals['pathgoal'] == goal_type)
     if path_goal:
-        goal_type = (goals['goal_type'] == 'minimization')\
+        goal_type = (goals['goal_type'] == 'minimization_path')\
                     + (goals['goal_type'] == 'range')\
-                    + (goals['goal_type'] == 'maximization')
+                    + (goals['goal_type'] == 'maximization_path')
     else:
         goal_type = (goals['goal_type'] == 'minimization_sum') \
                     + (goals['goal_type'] == 'maximization_sum')

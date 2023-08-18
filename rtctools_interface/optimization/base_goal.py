@@ -11,10 +11,10 @@ logger = logging.getLogger("rtctools")
 
 GOAL_TYPES = [
     "range",
-    "minimization",
+    "minimization_path",
+    "maximization_path",
     "minimization_sum",
     "maximization_sum",
-    "maximization",
 ]
 
 TARGET_DATA_TYPES = [
@@ -29,7 +29,7 @@ class BaseGoal(Goal):
     Basic optimization goal for a given state.
 
     :cvar goal_type:
-        Type of goal ('range' or 'minimization' or 'maximization or 'minimization_sum' or "maximization_sum").
+        Type of goal ('range' or 'minimization_path' or 'maximization_path' or 'minimization_sum' or 'maximization_sum')
     :cvar target_data_type:
         Type of target data ('value', 'parameter', 'timeseries').
         If 'value', set the target bounds by value.
@@ -43,7 +43,7 @@ class BaseGoal(Goal):
         self,
         optimization_problem: OptimizationProblem,
         state,
-        goal_type="minimization",
+        goal_type="minimization_path",
         function_min=np.nan,
         function_max=np.nan,
         function_nominal=np.nan,
@@ -86,8 +86,10 @@ class BaseGoal(Goal):
 
     def function(self, optimization_problem, ensemble_member):
         del ensemble_member
-        if self.goal_type == "maximization":
+        if self.goal_type == "maximization_path":
             return -optimization_problem.state(self.state)
+        elif self.goal_type == "minimization_path" or self.goal_type == "range":
+            return optimization_problem.state(self.state)
         elif self.goal_type in ["minimization_sum", "maximization_sum"]:
             times = optimization_problem.times(self.state)
             tot = 0.0
@@ -95,7 +97,7 @@ class BaseGoal(Goal):
                 tot += optimization_problem.state_at(self.state, t)
             return tot
         else:
-            return optimization_problem.state(self.state)
+            raise ValueError("Unsupported goal type '{}', supported are {}".format(self.goal_type, GOAL_TYPES))
 
     def _set_goal_type(
         self,

@@ -11,7 +11,10 @@ pip install rtc-tools-interface
 ## Goal generator
 The `goal generator` can be used to automatically add goals based on a csv file. Currently, the following goal types are supported:
 - range
-- minimization
+- minimization_path
+- maximization_path
+- minimization_sum
+- maximization_sum
 
 For the range goals, the target need to be specified. This can either be a value, a parameter or a timeseries. 
 
@@ -19,7 +22,7 @@ The `goal_table` should have the following columns:
 
 - `id`: A unique string for each goal.
 - `state`: State (variable) on which the goal should act on.
-- `goal_type`: Choose from path goals: `range`,  `minimization` or `maximization`, or goals: `minimization_sum` or `maximization_sum`.
+- `goal_type`: Choose from path goals: `range`,  `minimization_path` or `maximization_path`, or goals: `minimization_sum` or `maximization_sum`.
 - `function_min`: For goals of type `range`, `minimization_sum` or `maximization_sum, specify the minimum possible value for the selected state. 
 - `function_max`: For goals of type `range`, `minimization_sum` or `maximization_sum, specify the maximum possible value for the selected state.
 - `function_nominal`: Approximate order of the state.
@@ -47,7 +50,7 @@ See the table below for an example content of the `goal_table.csv`.
 |--------|-------|--------|--------------|--------------|--------------|------------------|------------------|------------|------------|----------|--------|-------|
 | goal_1 | reservoir_1_waterlevel     | 1      | range        | 0            | 15           | 10               | value            | 5.0        | 10.0       | 5       |        |       |
 | goal_2 | reservoir_2_waterlevel     | 1      | range        | 0            | 15           | 10               | timeseries            | "target_series"        | "target_series"       | 10       |        |       |
-| goal_3 | electricity_cost     | 1      | minimization |              |              |                  |                  |            |            | 20       |        |       |
+| goal_3 | electricity_cost     | 1      | minimization_path |              |              |                  |                  |            |            | 20       |        |       |
 
 ## Plot resuls after each priority
 By using the `PlotGoalsMixin`, plots will be generated after optimizing for each unique priority. To utilize this functionality, import the mixin as follows:

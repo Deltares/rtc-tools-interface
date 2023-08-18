@@ -57,12 +57,16 @@ By using the `PlotGoalsMixin`, plots will be generated after optimizing for each
 ```python
 from rtctools_interface.optimization.plot_goals_mixin import PlotGoalsMixin
 ```
-Then, add the `PlotGoalsMixin` to your optimization problem class. Set the class variable `plot_max_rows` to an integer number for the maximum number of rows. The number of columns will be derived from that. By default, the Mixin will look for the configuration table `input\plot_table.csv`. This table should contain the columns `id`, `y_axis_title`, `variables_plot_1` and `variables_plot_2`. Each `id` in the `id` column should also appear in the table defining the goals. The table could thus look like:
+Then, add the `PlotGoalsMixin` to your optimization problem class. Set the class variable `plot_max_rows` to an integer number for the maximum number of rows. The number of columns will be derived from that. By default, the Mixin will look for the configuration table `input\plot_table.csv`. This table should contain the columns `id`, `y_axis_title`, `variables_plot_1`, `variables_plot_2`, `custom_state`, `custom_title`, `specified_in`. The `id` in the `id` column should appear in the goal_table, _unless_ specified_in is set to `python`. In that case, the `custom_state` should be non-empty. The PlotGoalsMixin will add a plot for this custom state, without looking for any goal.
 
-|    id   |  y_axis_title   | variables_plot_1 | variables_plot_2 |
-|---------|-----------------|------------------|------------------|
+The table could thus look like:
+
+
+|    id   |  y_axis_title   | variables_plot_1 | variables_plot_2 | custom_state | custom_title | specified_in
+|---------|-----------------|------------------|------------------|------------------|------------------|------------------|
 | goal_1  | Volume (\$m^3\$)  |      "PowerPlant1.QOut.Q"            |                  |
 | goal_2  | Volume (\$m^3\$)  |      "PowerPlant1.QOut.Q, PowerPlant2.QOut.Q"            |                  |
+|  | Volume (\$m^3\$)  |                |                  | electricity_cost | "Goal for minimizing electricity cost, at priority 10" | python
 
 
 After running the model, in your output folder the folder `goal_figures` containing the figures is created.

@@ -22,8 +22,12 @@ class PlotGoalsMixin:
         except AttributeError:
             plot_table_file = os.path.join(self._input_folder, "plot_table.csv")
         self.plot_table = read_plot_table(plot_table_file, self.goal_table_file)
-        self.custom_variables = [custom_state for custom_state in self.plot_table["custom_state"]
-                                 if isinstance(custom_state, str)]
+
+        # Store list of variable-names that may not be present in the results.
+        custom_states = [c_state for c_state in self.plot_table["custom_state"] if isinstance(c_state, str)]
+        variables_plot_1 = [var for var_list in self.plot_table["variables_plot_1"] for var in var_list]
+        variables_plot_2 = [var for var_list in self.plot_table["variables_plot_2"] for var in var_list]
+        self.custom_variables = custom_states + variables_plot_1 + variables_plot_2
 
     def pre(self):
         super().pre()

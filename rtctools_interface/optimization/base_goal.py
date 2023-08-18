@@ -9,13 +9,9 @@ from rtctools.optimization.timeseries import Timeseries
 
 logger = logging.getLogger("rtctools")
 
-GOAL_TYPES = [
-    "range",
-    "minimization_path",
-    "maximization_path",
-    "minimization_sum",
-    "maximization_sum",
-]
+PATH_GOALS = ["minimization_path", "maximization_path", "range"]
+NON_PATH_GOALS = ["minimization_sum", "maximization_sum"]
+GOAL_TYPES = PATH_GOALS + NON_PATH_GOALS
 
 TARGET_DATA_TYPES = [
     "value",

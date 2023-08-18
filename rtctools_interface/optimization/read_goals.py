@@ -1,6 +1,7 @@
 """Module for reading goals from a csv file."""
 import pandas as pd
 
+from rtctools_interface.optimization.base_goal import PATH_GOALS, NON_PATH_GOALS
 
 GOAL_PARAMETERS = [
     'state',
@@ -19,16 +20,13 @@ GOAL_PARAMETERS = [
 
 def read_goals(file, path_goal):
     """Read goals from a cvs file.
+    Returns either only the path_goals or only the non_path goals
     """
     goals = pd.read_csv(file, sep=",")
     is_active = (goals['active'] == 1)
-    # goal_type = (goals['pathgoal'] == goal_type)
     if path_goal:
-        goal_type = (goals['goal_type'] == 'minimization_path')\
-                    + (goals['goal_type'] == 'range')\
-                    + (goals['goal_type'] == 'maximization_path')
+        requested_goal_type = goals['goal_type'].isin(PATH_GOALS)
     else:
-        goal_type = (goals['goal_type'] == 'minimization_sum') \
-                    + (goals['goal_type'] == 'maximization_sum')
-    filter_goals = is_active*goal_type
+        requested_goal_type = goals['goal_type'].isin(NON_PATH_GOALS)
+    filter_goals = is_active*requested_goal_type
     return goals.loc[filter_goals, GOAL_PARAMETERS]

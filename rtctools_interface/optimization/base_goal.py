@@ -88,10 +88,13 @@ class BaseGoal(Goal):
             return optimization_problem.state(self.state)
         elif self.goal_type in ["minimization_sum", "maximization_sum"]:
             times = optimization_problem.times(self.state)
-            tot = 0.0
+            summation = 0.0
             for t in times:
-                tot += optimization_problem.state_at(self.state, t)
-            return tot
+                summation += optimization_problem.state_at(self.state, t)
+            if self.goal_type == "maximization_sum":
+                return -summation
+            else:
+                return summation
         else:
             raise ValueError("Unsupported goal type '{}', supported are {}".format(self.goal_type, GOAL_TYPES))
 

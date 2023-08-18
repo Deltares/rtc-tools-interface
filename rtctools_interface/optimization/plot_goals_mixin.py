@@ -54,6 +54,10 @@ class PlotGoalsMixin:
 
         # Prepare the plot
         n_plots = len(range_goals + min_q_goals + max_q_goals + min_sum_goals + max_sum_goals)
+        if n_plots == 0:
+            logger.info("PlotGoalsMixin did not find anything to plot." +
+                        " Are there any goals that are active and described in the plot_table?")
+            return
         n_cols = math.ceil(n_plots / self.plot_max_rows)
         n_rows = math.ceil(n_plots / n_cols)
         fig, axs = plt.subplots(nrows=n_rows, ncols=n_cols, figsize=(n_cols * 9, n_rows * 3), dpi=80, squeeze=False)

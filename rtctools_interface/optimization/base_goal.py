@@ -55,27 +55,27 @@ class BaseGoal(Goal):
         self._set_goal_type(goal_type)
         if goal_type == "range":
             self._set_function_bounds(
-                optimization_problem=optimization_problem,
-                function_min=function_min,
-                function_max=function_max)
+                optimization_problem=optimization_problem, function_min=function_min, function_max=function_max
+            )
         elif goal_type in ["minimization_sum", "maximization_sum"]:
             self._set_function_bounds(
-                optimization_problem=optimization_problem,
-                function_min=function_min,
-                function_max=function_max)
+                optimization_problem=optimization_problem, function_min=function_min, function_max=function_max
+            )
         self._set_function_nominal(function_nominal)
         if goal_type == "range":
             self._set_target_bounds(
                 optimization_problem=optimization_problem,
                 target_data_type=target_data_type,
                 target_min=target_min,
-                target_max=target_max)
+                target_max=target_max,
+            )
         elif goal_type in ["minimization_sum", "maximization_sum"]:
             self._set_target_bounds(
                 optimization_problem=optimization_problem,
                 target_data_type=target_data_type,
                 target_min=target_min,
-                target_max=target_max)
+                target_max=target_max,
+            )
         self.priority = priority if np.isfinite(priority) else 1
         self.weight = weight if np.isfinite(weight) else 1.0
         self.order = order if np.isfinite(order) else 2
@@ -117,12 +117,14 @@ class BaseGoal(Goal):
         """Set function bounds and nominal."""
         self.function_range = [function_min, function_max]
         if not np.isfinite(function_min):
-            if self.goal_type in ['maximization_sum', 'minimization_sum']:
-                logger.warning("Setting automatic function min for '{}' goal on state {}".format(self.goal_type,
-                                                                                                 self.state))
+            if self.goal_type in ["maximization_sum", "minimization_sum"]:
+                logger.warning(
+                    "Setting automatic function min for '{}' goal on state {}".format(self.goal_type, self.state)
+                )
                 if isinstance(optimization_problem.bounds()[self.state][0], float):
-                    self.function_range[0] = (optimization_problem.bounds()[self.state][0]
-                                              * len(optimization_problem.timeseries_import.times))
+                    self.function_range[0] = optimization_problem.bounds()[self.state][0] * len(
+                        optimization_problem.timeseries_import.times
+                    )
                 elif isinstance(optimization_problem.bounds()[self.state][0], Timeseries):
                     self.function_range[0] = sum(optimization_problem.bounds()[self.state][0].values)
             elif isinstance(optimization_problem.bounds()[self.state][0], float):
@@ -130,12 +132,14 @@ class BaseGoal(Goal):
             elif isinstance(optimization_problem.bounds()[self.state][0], Timeseries):
                 self.function_range[0] = optimization_problem.bounds()[self.state][0].values
         if not np.isfinite(function_max):
-            if self.goal_type in ['maximization_sum', 'minimization_sum']:
-                logger.warning("Setting automatic function max for '{}' goal on state {}".format(self.goal_type,
-                                                                                                 self.state))
+            if self.goal_type in ["maximization_sum", "minimization_sum"]:
+                logger.warning(
+                    "Setting automatic function max for '{}' goal on state {}".format(self.goal_type, self.state)
+                )
                 if isinstance(optimization_problem.bounds()[self.state][1], float):
-                    self.function_range[1] = (optimization_problem.bounds()[self.state][1]
-                                              * len(optimization_problem.timeseries_import.times))
+                    self.function_range[1] = optimization_problem.bounds()[self.state][1] * len(
+                        optimization_problem.timeseries_import.times
+                    )
                 elif isinstance(optimization_problem.bounds()[self.state][1], Timeseries):
                     self.function_range[1] = sum(optimization_problem.bounds()[self.state][1].values)
             elif isinstance(optimization_problem.bounds()[self.state][1], float):
@@ -169,12 +173,13 @@ class BaseGoal(Goal):
     ):
         """Set the target bounds."""
         if target_data_type not in TARGET_DATA_TYPES:
-            if self.goal_type not in ['maximization_sum', 'minimization_sum']:
+            if self.goal_type not in ["maximization_sum", "minimization_sum"]:
                 raise ValueError(f"target_data_type should be one of {TARGET_DATA_TYPES}.")
             else:
-                logger.warning("Setting automatic target bounds for '{}' goal on state {}".format(self.goal_type,
-                                                                                                  self.state))
-                if self.goal_type == 'minimization_sum':
+                logger.warning(
+                    "Setting automatic target bounds for '{}' goal on state {}".format(self.goal_type, self.state)
+                )
+                if self.goal_type == "minimization_sum":
                     self.target_min = np.nan
                     if isinstance(self.function_range[0], float):
                         function_sum = self.function_range[0]
@@ -183,8 +188,8 @@ class BaseGoal(Goal):
                     if function_sum == 0:
                         self.target_max = 0.00001
                     else:
-                        self.target_max = function_sum*1.00001
-                elif self.goal_type == 'maximization_sum':
+                        self.target_max = function_sum * 1.00001
+                elif self.goal_type == "maximization_sum":
                     if isinstance(self.function_range[1], float):
                         function_sum = self.function_range[1]
                     else:
@@ -192,7 +197,7 @@ class BaseGoal(Goal):
                     if function_sum == 0:
                         self.target_min = -0.00001
                     else:
-                        self.target_min = function_sum*0.99999
+                        self.target_min = function_sum * 0.99999
                     self.target_max = np.nan
         if target_data_type == "value":
             self.target_min = float(target_min)

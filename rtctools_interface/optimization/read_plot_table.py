@@ -3,8 +3,15 @@ import pandas as pd
 
 from rtctools_interface.optimization.read_goals import GOAL_PARAMETERS
 
-PLOT_PARAMETERS = ["id", "y_axis_title", "variables_plot_1",
-                   "variables_plot_2", "custom_state", "custom_title", "specified_in"]
+PLOT_PARAMETERS = [
+    "id",
+    "y_axis_title",
+    "variables_plot_1",
+    "variables_plot_2",
+    "custom_state",
+    "custom_title",
+    "specified_in",
+]
 
 
 def string_to_list(string):

@@ -47,12 +47,6 @@ class PlotGoalsMixin:
         timeseries_import_times = self.io.datetimes
         extract_result = result_dict["extract_result"]
         all_goals = self.plot_table.to_dict("records")
-        range_goals = [goal for goal in all_goals if goal["goal_type"] == "range"]
-        min_q_goals = [goal for goal in all_goals if goal["goal_type"] == "minimization_path"]
-        max_q_goals = [goal for goal in all_goals if goal["goal_type"] == "maximization_path"]
-        min_sum_goals = [goal for goal in all_goals if goal["goal_type"] == "minimization_sum"]
-        max_sum_goals = [goal for goal in all_goals if goal["goal_type"] == "maximization_sum"]
-        python_goals = [goal for goal in all_goals if goal["specified_in"] == "python"]
         priority = result_dict["priority"]
 
         t = self.times()
@@ -60,7 +54,7 @@ class PlotGoalsMixin:
         results = extract_result
 
         # Prepare the plot
-        n_plots = len(range_goals + min_q_goals + max_q_goals + min_sum_goals + max_sum_goals + python_goals)
+        n_plots = len(all_goals)
         if n_plots == 0:
             logger.info("PlotGoalsMixin did not find anything to plot." +
                         " Are there any goals that are active and described in the plot_table?")
@@ -129,12 +123,7 @@ class PlotGoalsMixin:
             axs[i_row, i_col].xaxis.set_major_formatter(dateFormat)
             axs[i_row, i_col].grid(which="both", axis="x")
 
-        # Add plots needed for range goals
-        for g in sorted(range_goals, key=lambda goal: goal["priority"]):
-            i_plot += 1
-
-            i_col, i_row = apply_general_settings(g["state"])
-
+        def add_ranges():
             if g["target_data_type"] == "parameter":
                 try:
                     target_min = np.full_like(t, 1) * self.parameters(0)[g["target_min"]]
@@ -165,31 +154,15 @@ class PlotGoalsMixin:
                 axs[i_row, i_col].plot(t_datetime, target_min, "r--", label="Target min")
                 axs[i_row, i_col].plot(t_datetime, target_max, "r--", label="Target max")
 
-            apply_additional_settings(g)
-
-        # Add plots needed for minimization of discharge
-        for g in min_q_goals:
+        for g in all_goals:
             i_plot += 1
-            i_col, i_row = apply_general_settings(g["state"])
-            apply_additional_settings(g)
-
-        for g in max_q_goals:
-            i_plot += 1
-            i_col, i_row = apply_general_settings(g["state"])
-            apply_additional_settings(g)
-        for g in min_sum_goals:
-            i_plot += 1
-            i_col, i_row = apply_general_settings(g["state"])
-            apply_additional_settings(g)
-
-        for g in max_sum_goals:
-            i_plot += 1
-            i_col, i_row = apply_general_settings(g["state"])
-            apply_additional_settings(g)
-
-        for g in python_goals:
-            i_plot += 1
-            i_col, i_row = apply_general_settings(g["custom_state"])
+            if g["goal_type"] == "python":
+                state = g["custom_state"]
+            else:
+                state = g["state"]
+            i_col, i_row = apply_general_settings(state)
+            if g["goal_type"] in ["range"]:
+                add_ranges()
             apply_additional_settings(g)
 
         # TODO: this should be expanded when there are more columns

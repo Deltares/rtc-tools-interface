@@ -1,7 +1,7 @@
 """Module for reading goals from a csv file."""
 import pandas as pd
 
-from rtctools_interface.optimization.base_goal import PATH_GOALS, NON_PATH_GOALS
+from rtctools_interface.optimization.base_goal import PATH_GOALS, NON_PATH_GOALS, GOAL_TYPES
 
 GOAL_PARAMETERS = [
     'state',
@@ -23,6 +23,12 @@ def read_goals(file, path_goal):
     Returns either only the path_goals or only the non_path goals
     """
     goals = pd.read_csv(file, sep=",")
+    unsupported_goals = goals[~goals["goal_type"].isin(GOAL_TYPES)]
+    if not unsupported_goals.empty:
+        error_messages = []
+        for _, goal in unsupported_goals.iterrows():
+            error_messages.append(f"Goal with ID '{goal['id']}' has unsupported type '{goal['goal_type']}'")
+        raise ValueError("\n".join(error_messages) + f"\nSupported goal_types are: {GOAL_TYPES}")
     is_active = (goals['active'] == 1)
     if path_goal:
         requested_goal_type = goals['goal_type'].isin(PATH_GOALS)

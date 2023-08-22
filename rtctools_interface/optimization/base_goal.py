@@ -68,6 +68,11 @@ class BaseGoal(Goal):
         self.priority = priority if np.isfinite(priority) else 1
         self.weight = weight if np.isfinite(weight) else 1.0
         self.order = order if np.isfinite(order) else 2
+        if goal_type == "maximization_path" and self.order % 2 == 0:
+            logger.warning(
+                f"Using even order '{self.order}' for a maximization_path goal"
+                + "results in a minimization_path goal."
+            )
 
     def function(self, optimization_problem, ensemble_member):
         del ensemble_member

@@ -68,6 +68,12 @@ class BaseGoal(Goal):
         self.priority = priority if np.isfinite(priority) else 1
         self.weight = weight if np.isfinite(weight) else 1.0
         self.order = order if np.isfinite(order) else 2
+        if np.isfinite(order):
+            self.order = order
+        elif goal_type in ["maximization_path", "minimization_path"]:
+            self.order = 1
+        else:
+            self.order = 2
         if goal_type == "maximization_path" and self.order % 2 == 0:
             logger.warning(
                 f"Using even order '{self.order}' for a maximization_path goal" + " results in a minimization_path goal."

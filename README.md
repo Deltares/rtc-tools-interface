@@ -13,8 +13,6 @@ The `goal generator` can be used to automatically add goals based on a csv file.
 - range
 - minimization_path
 - maximization_path
-- minimization_sum
-- maximization_sum
 
 For the range goals, the target need to be specified. This can either be a value, a parameter or a timeseries. 
 
@@ -22,18 +20,16 @@ The `goal_table` should have the following columns:
 
 - `id`: A unique string for each goal.
 - `state`: State (variable) on which the goal should act on.
-- `goal_type`: Choose from path goals: `range`,  `minimization_path` or `maximization_path`, or goals: `minimization_sum` or `maximization_sum`.
-- `function_min`: For goals of type `range`, `minimization_sum` or `maximization_sum, specify the minimum possible value for the selected state. 
-- `function_max`: For goals of type `range`, `minimization_sum` or `maximization_sum, specify the maximum possible value for the selected state.
+- `goal_type`: Choose from path goals: `range`,  `minimization_path` or `maximization_path`.
+- `function_min`: For goals of type `range` specify the minimum possible value for the selected state. 
+- `function_max`: For goals of type `range` specify the maximum possible value for the selected state.
 - `function_nominal`: Approximate order of the state.
 - `target_data_type`: Either `value`, `parameter` or `timeseries`.
-- `target_min`: Only for goals of type `range`, `minimization_sum` or `maximization_sum`: specify either a value or the name of the parameter/timeseries.
-- `target_max`: Only for goals of type `range`, `minimization_sum` or `maximization_sum`: specify either a value or the name of the parameter/timeseries.
+- `target_min`: Only for goals of type `range`: specify either a value or the name of the parameter/timeseries.
+- `target_max`: Only for goals of type `range`: specify either a value or the name of the parameter/timeseries.
 - `priority`: Priority of the goal.
 - `weight`: Weight of the goal.
 - `order`: Only for goals of type `range`, order of the goal.
-
-The `minimization_sum` and `maximization_sum` goals are targte goals on the sum of a state over the optimization time horizon. Therefore, to minimize the sum, only a target_max is required (as small as possible), and for a maximization goal only a target_min is required (as large as possible). If the user does not provide these, these wil be calculated from the function bounds. If the user does not provide function bounds, these will be calculated from the bounds of the state. Note that the user needs to at least provide the function range if the state is unbounded.
 
 To use to goal_generator, first import it as follows:
 

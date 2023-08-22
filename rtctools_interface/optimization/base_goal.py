@@ -76,7 +76,8 @@ class BaseGoal(Goal):
             self.order = 2
         if goal_type == "maximization_path" and self.order % 2 == 0:
             logger.warning(
-                f"Using even order '{self.order}' for a maximization_path goal" + " results in a minimization_path goal."
+                f"Using even order '{self.order}' for a maximization_path goal"
+                + " results in a minimization_path goal."
             )
 
     def function(self, optimization_problem, ensemble_member):

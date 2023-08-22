@@ -11,7 +11,7 @@ def check_pandas_table(table, column_specs, table_name):
     for column, spec in column_specs.items():
         if column not in table.columns and spec["required"]:
             raise ValueError(f"Required column '{column}' is missing in {table_name}.")
-    
+
     for column in table.columns:
         if column not in column_specs.keys():
             logger.info(f"Found unexpected column '{column}' in {table_name}.")

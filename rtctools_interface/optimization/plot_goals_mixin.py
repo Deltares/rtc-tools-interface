@@ -47,7 +47,7 @@ def plot_additional_variables(axs, i_r, i_c, t_datetime, results, goal):
         axs[i_r, i_c].plot(t_datetime, results[var], linestyle="solid", linewidth="0.5", label=var)
 
 
-def format_axs(axs, i_r, i_c, goal):
+def format_axs(axs, i_r, i_c, goal, dateFormat_string="%d%b%H", x_label_rotation=15):
     """Format the current axis and set legend and title."""
     axs[i_r, i_c].set_ylabel(goal["y_axis_title"])
     axs[i_r, i_c].legend()
@@ -56,13 +56,17 @@ def format_axs(axs, i_r, i_c, goal):
     else:
         axs[i_r, i_c].set_title("Goal for {} (active from priority {})".format(goal["state"], goal["priority"]))
 
-    dateFormat = mdates.DateFormatter("%d%b%H")
+    dateFormat = mdates.DateFormatter(dateFormat_string)
     axs[i_r, i_c].xaxis.set_major_formatter(dateFormat)
     axs[i_r, i_c].grid(which="both", axis="x")
+    axs[i_r, i_c].tick_params(axis="x", rotation=x_label_rotation)
 
 
 class PlotGoalsMixin:
     plot_max_rows = 4
+    plot_date_format = "%d %b '%y %H:%M"
+    plot_x_label_rotation = 15
+    plot_xlabel = "Time"
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -120,13 +124,13 @@ class PlotGoalsMixin:
             state = goal["custom_state"] if goal["specified_in"] == "python" else goal["state"]
             add_state_lineplot(axs, state, i_r, i_c, t_datetime, results, results_dict_prev)
             plot_additional_variables(axs, i_r, i_c, t_datetime, results, goal)
-            format_axs(axs, i_r, i_c, goal)
+            format_axs(axs, i_r, i_c, goal, self.plot_date_format, self.plot_x_label_rotation)
             if goal["goal_type"] in ["range"]:
                 self.add_ranges(axs, i_r, i_c, t_datetime, goal)
 
         # Save figure
         for i in range(0, n_cols):
-            axs[n_rows - 1, i].set_xlabel("Time")
+            axs[n_rows - 1, i].set_xlabel(self.plot_xlabel)
         os.makedirs("goal_figures", exist_ok=True)
         fig.tight_layout()
         new_output_folder = os.path.join(self._output_folder, "goal_figures")

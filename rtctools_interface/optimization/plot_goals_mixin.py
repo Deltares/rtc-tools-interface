@@ -22,8 +22,8 @@ def next_subplot(i_plot, n_rows):
     return i_c, i_r, i_plot
 
 
-def add_state_lineplot(axs, state_name, i_r, i_c, t_datetime, results, results_dict_prev):
-    """Add line with the results for a particular goal. If previous results
+def plot_with_history(axs, state_name, i_r, i_c, t_datetime, results, results_dict_prev):
+    """Add line with the results for a particular state. If previous results
     are available, a line with the timeseries for those results is also plotted.
     """
     axs[i_r, i_c].plot(t_datetime, results[state_name], label=state_name)
@@ -39,12 +39,14 @@ def add_state_lineplot(axs, state_name, i_r, i_c, t_datetime, results, results_d
         )
 
 
-def plot_additional_variables(axs, i_r, i_c, t_datetime, results, goal):
-    """Plot the additional variables defined in the plot_table."""
+def plot_additional_variables(axs, i_r, i_c, t_datetime, results, results_dict_prev, goal):
+    """Plot the additional variables defined in the plot_table"""
     for var in goal["variables_plot_1"]:
         axs[i_r, i_c].plot(t_datetime, results[var], label=var)
     for var in goal["variables_plot_2"]:
         axs[i_r, i_c].plot(t_datetime, results[var], linestyle="solid", linewidth="0.5", label=var)
+    for var in goal["variables_plot_history"]:
+        plot_with_history(axs, var, i_r, i_c, t_datetime, results, results_dict_prev)
 
 
 def format_axs(axs, i_r, i_c, goal):
@@ -73,10 +75,10 @@ class PlotGoalsMixin:
         self.plot_table = read_plot_table(plot_table_file, self.goal_table_file)
 
         # Store list of variable-names that may not be present in the results.
-        custom_states = [c_state for c_state in self.plot_table["custom_state"] if isinstance(c_state, str)]
         variables_plot_1 = [var for var_list in self.plot_table["variables_plot_1"] for var in var_list]
         variables_plot_2 = [var for var_list in self.plot_table["variables_plot_2"] for var in var_list]
-        self.custom_variables = custom_states + variables_plot_1 + variables_plot_2
+        variables_plot_history = [var for var_list in self.plot_table["variables_plot_history"] for var in var_list]
+        self.custom_variables = variables_plot_1 + variables_plot_2 + variables_plot_history
 
     def pre(self):
         super().pre()
@@ -117,9 +119,9 @@ class PlotGoalsMixin:
         # Add subplot for each goal
         for goal in all_goals:
             i_c, i_r, i_plot = next_subplot(i_plot, n_rows)
-            state = goal["custom_state"] if goal["specified_in"] == "python" else goal["state"]
-            add_state_lineplot(axs, state, i_r, i_c, t_datetime, results, results_dict_prev)
-            plot_additional_variables(axs, i_r, i_c, t_datetime, results, goal)
+            if goal["specified_in"] == "goal_generator":
+                plot_with_history(axs, goal["state"], i_r, i_c, t_datetime, results, results_dict_prev)
+            plot_additional_variables(axs, i_r, i_c, t_datetime, results, results_dict_prev, goal)
             format_axs(axs, i_r, i_c, goal)
             if goal["goal_type"] in ["range"]:
                 self.add_ranges(axs, i_r, i_c, t_datetime, goal)

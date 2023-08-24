@@ -1,4 +1,4 @@
-id,y_axis_title,variables_plot_1,variables_plot_2,custom_state,custom_title,specified_in
+id,y_axis_title,variables_plot_1,variables_plot_2,variables_plot_history,custom_title,specified_in
 goal_1,Volume ($m^3$),,,,,goal_generator
 goal_2,Volume ($m^3$),,,,,goal_generator
 goal_3," Axis title ($m^3$)",,,x,A custom state at prio 1,python

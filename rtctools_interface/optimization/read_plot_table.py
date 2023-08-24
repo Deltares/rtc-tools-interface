@@ -10,7 +10,7 @@ PLOT_PARAMETERS = [
     "y_axis_title",
     "variables_plot_1",
     "variables_plot_2",
-    "custom_state",
+    "variables_plot_history",
     "custom_title",
     "specified_in",
 ]
@@ -37,8 +37,8 @@ def read_and_check_plot_table(plot_table_file):
 def read_plot_table(plot_table_file, goal_table_file):
     """Read plot table for PlotGoals and merge with goals table"""
     plot_table = read_and_check_plot_table(plot_table_file)
-    plot_table[["variables_plot_1", "variables_plot_2"]] = plot_table[
-        ["variables_plot_1", "variables_plot_2"]
+    plot_table[["variables_plot_1", "variables_plot_2", "variables_plot_history"]] = plot_table[
+        ["variables_plot_1", "variables_plot_2", "variables_plot_history"]
     ].applymap(string_to_list)
     goals = read_and_check_goal_table(goal_table_file)
     joined_table = plot_table.merge(goals, on="id", how="left")

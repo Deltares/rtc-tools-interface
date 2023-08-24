@@ -1,3 +1,3 @@
 id,state,active,goal_type,function_min,function_max,function_nominal,target_data_type,target_min,target_max,priority,weight,order
 goal_1,x,1,range,0,15,10,value,5.0,10.0,10,,
-goal_2,u,1,minimization_path,,,,,,,20,,
+goal_2,u,1,minimization_path,,,,,,,20,,2

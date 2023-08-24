@@ -41,11 +41,11 @@ def plot_with_history(axs, state_name, i_r, i_c, t_datetime, results, results_di
 
 def plot_additional_variables(axs, i_r, i_c, t_datetime, results, results_dict_prev, goal):
     """Plot the additional variables defined in the plot_table"""
-    for var in goal["variables_plot_1"]:
+    for var in goal.get("variables_plot_1", []):
         axs[i_r, i_c].plot(t_datetime, results[var], label=var)
-    for var in goal["variables_plot_2"]:
+    for var in goal.get("variables_plot_2", []):
         axs[i_r, i_c].plot(t_datetime, results[var], linestyle="solid", linewidth="0.5", label=var)
-    for var in goal["variables_plot_history"]:
+    for var in goal.get("variables_plot_history", []):
         plot_with_history(axs, var, i_r, i_c, t_datetime, results, results_dict_prev)
 
 
@@ -75,9 +75,11 @@ class PlotGoalsMixin:
         self.plot_table = read_plot_table(plot_table_file, self.goal_table_file)
 
         # Store list of variable-names that may not be present in the results.
-        variables_plot_1 = [var for var_list in self.plot_table["variables_plot_1"] for var in var_list]
-        variables_plot_2 = [var for var_list in self.plot_table["variables_plot_2"] for var in var_list]
-        variables_plot_history = [var for var_list in self.plot_table["variables_plot_history"] for var in var_list]
+        variables_plot_1 = [var for var_list in self.plot_table.get("variables_plot_1", []) for var in var_list]
+        variables_plot_2 = [var for var_list in self.plot_table.get("variables_plot_2", []) for var in var_list]
+        variables_plot_history = [
+            var for var_list in self.plot_table.get("variables_plot_history", []) for var in var_list
+        ]
         self.custom_variables = variables_plot_1 + variables_plot_2 + variables_plot_history
 
     def pre(self):

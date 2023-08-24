@@ -25,9 +25,7 @@ def check_pandas_table(table, column_specs, table_name):
                         + f" Expected {spec['allowed_types']}, got {type(value)}."
                     )
                 if spec["required"] and pd.isna(value):
-                    raise ValueError(
-                        f"Missing value(s) in required column '{column}' of {table_name}."
-                    )
+                    raise ValueError(f"Missing value(s) in required column '{column}' of {table_name}.")
                 if spec["allowed_values"] is not None and value not in spec["allowed_values"] and spec["required"]:
                     raise ValueError(
                         f"Invalid value in '{column}' column of {table_name}."

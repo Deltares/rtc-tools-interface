@@ -156,7 +156,7 @@ class BaseGoal(Goal):
                     self.target_max = optimization_problem.io.get_parameter(target_max)
             elif np.isnan(target_max):
                 self.target_max = np.nan
-            if isinstance(target_max, str):
+            if isinstance(target_min, str):
                 self.target_min = optimization_problem.parameters(0)[target_min]
                 if self.target_min is None:
                     self.target_min = optimization_problem.io.get_parameter(target_min)

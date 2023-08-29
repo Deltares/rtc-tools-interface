@@ -1,3 +1,4 @@
+"""Tests for goal-plotting functionalities."""
 import unittest
 
 from rtctools_interface.optimization.base_optimization_problem import (
@@ -9,6 +10,9 @@ from .get_test import get_test_data
 
 
 class BaseOptimizationProblemPlotting(PlotGoalsMixin, BaseOptimizationProblem):
+    # Ignore too many ancestors, since the use of mixin classes is how rtc-tools is set up.
+    # pylint: disable=too-many-ancestors
+    """Optimization problem with plotting functionalities."""
     def __init__(
         self,
         plot_table_file,
@@ -20,7 +24,9 @@ class BaseOptimizationProblemPlotting(PlotGoalsMixin, BaseOptimizationProblem):
 
 
 class TestPlotGoalsMixin(unittest.TestCase):
+    """Test for goal-plotting functionalities."""
     def run_test(self, test):
+        """Solve an optimization problem."""
         test_data = get_test_data(test)
         problem = BaseOptimizationProblemPlotting(
             goal_table_file=test_data["goals_file"],
@@ -33,6 +39,7 @@ class TestPlotGoalsMixin(unittest.TestCase):
         problem.optimize()
 
     def test_plot_goals_mixin(self):
+        """Solve several optimization problems."""
         for test in [
             "basic",
             "target_bounds_as_parameters",

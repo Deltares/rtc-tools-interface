@@ -1,3 +1,4 @@
+"""Module for plotting."""
 import logging
 import math
 import os
@@ -64,6 +65,9 @@ def format_axs(axs, i_r, i_c, goal):
 
 
 class PlotGoalsMixin:
+    """
+    Class for plotting results.
+    """
     plot_max_rows = 4
 
     def __init__(self, **kwargs):
@@ -83,13 +87,16 @@ class PlotGoalsMixin:
         self.custom_variables = variables_plot_1 + variables_plot_2 + variables_plot_history
 
     def pre(self):
+        """Tasks before optimizing."""
         super().pre()
         self.intermediate_results = []
 
     def plot_goal_results_from_dict(self, result_dict, results_dict_prev=None):
+        """Plot results, given a dict."""
         self.plot_goals_results(result_dict, results_dict_prev)
 
     def plot_goal_results_from_self(self, priority=None):
+        """Plot results."""
         result_dict = {
             "extract_result": self.extract_results(),
             "priority": priority,
@@ -152,6 +159,7 @@ class PlotGoalsMixin:
         super().priority_completed(priority)
 
     def post(self):
+        """Tasks after optimizing."""
         super().post()
         for intermediate_result_prev, intermediate_result in zip(
             [None] + self.intermediate_results[:-1], self.intermediate_results

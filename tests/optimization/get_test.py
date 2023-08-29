@@ -1,4 +1,4 @@
-"""Module for getting optimization test data."""
+"""Tools for getting optimization test data."""
 import pathlib
 
 import pandas as pd
@@ -8,6 +8,9 @@ DATA_DIR = pathlib.Path(__file__).parent.parent / "data"
 
 
 def get_test_data(test: str):
+    """
+    Get the input data and output folder for a given test.
+    """
     tests_df = pd.read_csv(DATA_DIR / "optimization" / "tests.csv", sep=",")
     tests_df.set_index("test", inplace=True)
     test_data = tests_df.loc[test]

@@ -1,3 +1,4 @@
+"""Schema for the plot_table."""
 plot_table_column_spec = {
     "id": {"allowed_types": [int, float, str], "allowed_values": None, "required": False},
     "y_axis_title": {"allowed_types": [str], "allowed_values": None, "required": True},

@@ -1,3 +1,4 @@
+"""Schema for the goal_table."""
 from rtctools_interface.optimization.base_goal import GOAL_TYPES
 
 goal_table_column_spec = {

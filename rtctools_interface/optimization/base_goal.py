@@ -76,18 +76,17 @@ class BaseGoal(Goal):
             self.order = 2
         if goal_type == "maximization_path" and self.order % 2 == 0:
             logger.warning(
-                f"Using even order '{self.order}' for a maximization_path goal"
-                + " results in a minimization_path goal."
+                "Using even order '%i' for a maximization_path goal" + " results in a minimization_path goal.",
+                self.order,
             )
 
     def function(self, optimization_problem, ensemble_member):
         del ensemble_member
         if self.goal_type == "maximization_path":
             return -optimization_problem.state(self.state)
-        elif self.goal_type == "minimization_path" or self.goal_type == "range":
+        if self.goal_type in ["minimization_path", "range"]:
             return optimization_problem.state(self.state)
-        else:
-            raise ValueError("Unsupported goal type '{}', supported are {}".format(self.goal_type, GOAL_TYPES))
+        raise ValueError("Unsupported goal type '{}', supported are {}".format(self.goal_type, GOAL_TYPES))
 
     def _set_goal_type(
         self,
@@ -142,6 +141,8 @@ class BaseGoal(Goal):
         target_min=np.nan,
         target_max=np.nan,
     ):
+        # Ignore too many ancestors, since the use of mixin classes is how rtc-tools is set up.
+        # pylint: disable=too-many-branches
         """Set the target bounds."""
         if target_data_type not in TARGET_DATA_TYPES:
             raise ValueError(f"target_data_type should be one of {TARGET_DATA_TYPES}.")

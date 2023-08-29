@@ -42,6 +42,7 @@ class GoalGeneratorMixin:
         return goals
 
     def goals(self):
+        """Return the list of goals."""
         goals = super().goals()
         goal_df = read_goals(self.goal_table_file, False)
         if not goal_df.empty:

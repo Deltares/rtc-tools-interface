@@ -59,8 +59,8 @@ def format_axs(axs, i_r, i_c, goal):
     else:
         axs[i_r, i_c].set_title("Goal for {} (active from priority {})".format(goal["state"], goal["priority"]))
 
-    dateFormat = mdates.DateFormatter("%d%b%H")
-    axs[i_r, i_c].xaxis.set_major_formatter(dateFormat)
+    date_format = mdates.DateFormatter("%d%b%H")
+    axs[i_r, i_c].xaxis.set_major_formatter(date_format)
     axs[i_r, i_c].grid(which="both", axis="x")
 
 
@@ -68,6 +68,7 @@ class PlotGoalsMixin:
     """
     Class for plotting results.
     """
+
     plot_max_rows = 4
 
     def __init__(self, **kwargs):
@@ -105,13 +106,10 @@ class PlotGoalsMixin:
 
     def plot_goals_results(self, result_dict, results_dict_prev=None):
         """Creates a figure with a subplot for each row in the plot_table."""
-        t_datetime = np.array(self.io.datetimes)
         results = result_dict["extract_result"]
-        priority = result_dict["priority"]
         all_goals = self.plot_table.to_dict("records")
 
-        n_plots = len(all_goals)
-        if n_plots == 0:
+        if len(all_goals) == 0:
             logger.info(
                 "PlotGoalsMixin did not find anything to plot."
                 + " Are there any goals that are active and described in the plot_table?"
@@ -119,21 +117,21 @@ class PlotGoalsMixin:
             return
 
         # Initalize figure
-        n_cols = math.ceil(n_plots / self.plot_max_rows)
-        n_rows = math.ceil(n_plots / n_cols)
+        n_cols = math.ceil(len(all_goals) / self.plot_max_rows)
+        n_rows = math.ceil(len(all_goals) / n_cols)
         fig, axs = plt.subplots(nrows=n_rows, ncols=n_cols, figsize=(n_cols * 9, n_rows * 3), dpi=80, squeeze=False)
-        fig.suptitle("Results after optimizing until priority {}".format(priority), fontsize=14)
+        fig.suptitle("Results after optimizing until priority {}".format(result_dict["priority"]), fontsize=14)
         i_plot = 0
 
         # Add subplot for each goal
         for goal in all_goals:
             i_c, i_r, i_plot = next_subplot(i_plot, n_rows)
             if goal["specified_in"] == "goal_generator":
-                plot_with_history(axs, goal["state"], i_r, i_c, t_datetime, results, results_dict_prev)
-            plot_additional_variables(axs, i_r, i_c, t_datetime, results, results_dict_prev, goal)
+                plot_with_history(axs, goal["state"], i_r, i_c, np.array(self.io.datetimes), results, results_dict_prev)
+            plot_additional_variables(axs, i_r, i_c, np.array(self.io.datetimes), results, results_dict_prev, goal)
             format_axs(axs, i_r, i_c, goal)
             if goal["goal_type"] in ["range"]:
-                self.add_ranges(axs, i_r, i_c, t_datetime, goal)
+                self.add_ranges(axs, i_r, i_c, np.array(self.io.datetimes), goal)
 
         # Save figure
         for i in range(0, n_cols):
@@ -142,7 +140,7 @@ class PlotGoalsMixin:
         fig.tight_layout()
         new_output_folder = os.path.join(self._output_folder, "goal_figures")
         os.makedirs(new_output_folder, exist_ok=True)
-        fig.savefig(os.path.join(new_output_folder, "after_priority_{}.png".format(priority)))
+        fig.savefig(os.path.join(new_output_folder, "after_priority_{}.png".format(result_dict["priority"])))
 
     def priority_completed(self, priority: int) -> None:
         """Store results required for plotting"""
@@ -167,6 +165,7 @@ class PlotGoalsMixin:
             self.plot_goal_results_from_dict(intermediate_result, intermediate_result_prev)
 
     def add_ranges(self, axs, i_r, i_c, t_datetime, goal):
+        """Add lines for the lower and upper target."""
         t = self.times()
         if goal["target_data_type"] == "parameter":
             try:

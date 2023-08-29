@@ -1,3 +1,4 @@
+"""Tests for the base optimization problem class."""
 import unittest
 
 from rtctools_interface.optimization.base_optimization_problem import BaseOptimizationProblem
@@ -6,7 +7,9 @@ from .get_test import get_test_data
 
 
 class TestBaseOptimizationProblem(unittest.TestCase):
+    """Test for the base optimization problem class."""
     def run_test(self, test):
+        """Solve an optimization problem."""
         test_data = get_test_data(test)
         problem = BaseOptimizationProblem(
             goal_table_file=test_data["goals_file"],
@@ -19,5 +22,6 @@ class TestBaseOptimizationProblem(unittest.TestCase):
 
     # TODO: use pytest instead to parametrise tests.
     def test_base_optimization_problem(self):
+        """Solve several optimization problems."""
         for test in ["basic", "target_bounds_as_parameters", "target_bounds_as_timeseries"]:
             self.run_test(test)

@@ -2,6 +2,7 @@ image: python:3.9-buster
 
 stages:
   - style
+  - quality
   - build
   - test
   - deploy
@@ -12,6 +13,17 @@ flake8:
   script:
     - pip install --upgrade flake8==5
     - flake8 --exclude=_version.py rtctools_interface  
+  tags:
+    - docker
+    - linux
+
+# code quality
+pylint:
+  stage: quality
+  script:
+    - pip install -e .
+    - pip install pylint
+    - pylint rtctools_interface/optimization tests
   tags:
     - docker
     - linux

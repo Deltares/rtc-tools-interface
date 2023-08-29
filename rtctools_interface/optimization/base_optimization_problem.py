@@ -16,6 +16,8 @@ class BaseOptimizationProblem(
     ModelicaMixin,
     CollocatedIntegratedOptimizationProblem,
 ):
+    # Ignore too many ancestors, since the use of mixin classes is how rtc-tools is set up.
+    # pylint: disable=too-many-ancestors
     """
     Basic optimization problem for a given state.
 

@@ -1,5 +1,6 @@
 """Module for a basic Goal."""
 import logging
+
 import numpy as np
 
 from rtctools.optimization.goal_programming_mixin import Goal

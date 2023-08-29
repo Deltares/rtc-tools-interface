@@ -21,5 +21,5 @@ def read_goals(file):
     """Read goals from a cvs file.
     """
     goals = pd.read_csv(file, sep=",")
-    is_active = (goals['active'] == 1)
+    is_active = goals['active'] == 1
     return goals.loc[is_active, GOAL_PARAMETERS]

@@ -69,7 +69,6 @@ class BaseGoal(Goal):
         self.weight = weight if np.isfinite(weight) else 1.0
         self._set_order(order)
 
-
     def function(self, optimization_problem, ensemble_member):
         del ensemble_member
         if self.goal_type == "maximization_path":

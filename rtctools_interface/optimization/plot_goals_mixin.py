@@ -40,24 +40,26 @@ def plot_with_previous(subplot, state_name, t_datetime, results, results_dict_pr
         )
 
 
-def plot_additional_variables(subplot, t_datetime, results, results_dict_prev, goal):
+def plot_additional_variables(subplot, t_datetime, results, results_dict_prev, subplot_config):
     """Plot the additional variables defined in the plot_table"""
-    for var in goal.get("variables_plot_1", []):
+    for var in subplot_config.get("variables_plot_1", []):
         subplot.plot(t_datetime, results[var], label=var)
-    for var in goal.get("variables_plot_2", []):
+    for var in subplot_config.get("variables_plot_2", []):
         subplot.plot(t_datetime, results[var], linestyle="solid", linewidth="0.5", label=var)
-    for var in goal.get("variables_plot_history", []):
+    for var in subplot_config.get("variables_plot_history", []):
         plot_with_previous(subplot, var, t_datetime, results, results_dict_prev)
 
 
-def format_subplot(subplot, goal):
+def format_subplot(subplot, subplot_config):
     """Format the current axis and set legend and title."""
-    subplot.set_ylabel(goal["y_axis_title"])
+    subplot.set_ylabel(subplot_config["y_axis_title"])
     subplot.legend()
-    if isinstance(goal["custom_title"], str):
-        subplot.set_title(goal["custom_title"])
+    if isinstance(subplot_config["custom_title"], str):
+        subplot.set_title(subplot_config["custom_title"])
     else:
-        subplot.set_title("Goal for {} (active from priority {})".format(goal["state"], goal["priority"]))
+        subplot.set_title(
+            "Goal for {} (active from priority {})".format(subplot_config["state"], subplot_config["priority"])
+        )
 
     date_format = mdates.DateFormatter("%d%b%H")
     subplot.xaxis.set_major_formatter(date_format)
@@ -107,9 +109,9 @@ class PlotGoalsMixin:
     def plot_goals_results(self, result_dict, results_prev=None):
         """Creates a figure with a subplot for each row in the plot_table."""
         results = result_dict["extract_result"]
-        all_goals = self.plot_table.to_dict("records")
+        plot_config = self.plot_table.to_dict("records")
 
-        if len(all_goals) == 0:
+        if len(plot_config) == 0:
             logger.info(
                 "PlotGoalsMixin did not find anything to plot."
                 + " Are there any goals that are active and described in the plot_table?"
@@ -117,22 +119,22 @@ class PlotGoalsMixin:
             return
 
         # Initalize figure
-        n_cols = math.ceil(len(all_goals) / self.plot_max_rows)
-        n_rows = math.ceil(len(all_goals) / n_cols)
+        n_cols = math.ceil(len(plot_config) / self.plot_max_rows)
+        n_rows = math.ceil(len(plot_config) / n_cols)
         fig, axs = plt.subplots(nrows=n_rows, ncols=n_cols, figsize=(n_cols * 9, n_rows * 3), dpi=80, squeeze=False)
         fig.suptitle("Results after optimizing until priority {}".format(result_dict["priority"]), fontsize=14)
         i_plot = -1
 
-        # Add subplot for each goal
-        for goal in all_goals:
+        # Add subplot for each row in the plot_table
+        for subplot_config in plot_config:
             i_plot += 1
             subplot = get_subplot(i_plot, n_rows, axs)
-            if goal["specified_in"] == "goal_generator":
-                plot_with_previous(subplot, goal["state"], np.array(self.io.datetimes), results, results_prev)
-            plot_additional_variables(subplot, np.array(self.io.datetimes), results, results_prev, goal)
-            format_subplot(subplot, goal)
-            if goal["goal_type"] in ["range"]:
-                self.add_ranges(subplot, np.array(self.io.datetimes), goal)
+            if subplot_config["specified_in"] == "goal_generator":
+                plot_with_previous(subplot, subplot_config["state"], np.array(self.io.datetimes), results, results_prev)
+            plot_additional_variables(subplot, np.array(self.io.datetimes), results, results_prev, subplot_config)
+            format_subplot(subplot, subplot_config)
+            if subplot_config["goal_type"] in ["range"]:
+                self.add_ranges(subplot, np.array(self.io.datetimes), subplot_config)
 
         # Save figure
         for i in range(0, n_cols):
@@ -164,30 +166,30 @@ class PlotGoalsMixin:
         ):
             self.plot_goal_results_from_dict(intermediate_result, intermediate_result_prev)
 
-    def add_ranges(self, subplot, t_datetime, goal):
+    def add_ranges(self, subplot, t_datetime, subplot_config):
         """Add lines for the lower and upper target."""
         t = self.times()
-        if goal["target_data_type"] == "parameter":
+        if subplot_config["target_data_type"] == "parameter":
             try:
-                target_min = np.full_like(t, 1) * self.parameters(0)[goal["target_min"]]
-                target_max = np.full_like(t, 1) * self.parameters(0)[goal["target_max"]]
+                target_min = np.full_like(t, 1) * self.parameters(0)[subplot_config["target_min"]]
+                target_max = np.full_like(t, 1) * self.parameters(0)[subplot_config["target_max"]]
             except TypeError:
-                target_min = np.full_like(t, 1) * self.io.get_parameter(goal["target_min"])
-                target_max = np.full_like(t, 1) * self.io.get_parameter(goal["target_max"])
-        elif goal["target_data_type"] == "value":
-            target_min = np.full_like(t, 1) * float(goal["target_min"])
-            target_max = np.full_like(t, 1) * float(goal["target_max"])
-        elif goal["target_data_type"] == "timeseries":
-            if isinstance(goal["target_min"], str):
-                target_min = self.get_timeseries(goal["target_min"]).values
+                target_min = np.full_like(t, 1) * self.io.get_parameter(subplot_config["target_min"])
+                target_max = np.full_like(t, 1) * self.io.get_parameter(subplot_config["target_max"])
+        elif subplot_config["target_data_type"] == "value":
+            target_min = np.full_like(t, 1) * float(subplot_config["target_min"])
+            target_max = np.full_like(t, 1) * float(subplot_config["target_max"])
+        elif subplot_config["target_data_type"] == "timeseries":
+            if isinstance(subplot_config["target_min"], str):
+                target_min = self.get_timeseries(subplot_config["target_min"]).values
             else:
-                target_min = np.full_like(t, 1) * goal["target_min"]
-            if isinstance(goal["target_max"], str):
-                target_max = self.get_timeseries(goal["target_max"]).values
+                target_min = np.full_like(t, 1) * subplot_config["target_min"]
+            if isinstance(subplot_config["target_max"], str):
+                target_max = self.get_timeseries(subplot_config["target_max"]).values
             else:
-                target_max = np.full_like(t, 1) * goal["target_max"]
+                target_max = np.full_like(t, 1) * subplot_config["target_max"]
         else:
-            message = "Target type {} not known.".format(goal["target_data_type"])
+            message = "Target type {} not known.".format(subplot_config["target_data_type"])
             logger.error(message)
             raise ValueError(message)
 

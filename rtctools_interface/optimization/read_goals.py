@@ -34,7 +34,7 @@ def read_and_check_goal_table(file):
     return goals
 
 
-def read_goals(file, path_goal):
+def read_goals(file, path_goal: bool):
     """Read goals from a csv file
     Returns either only the path_goals or only the non_path goals
     """

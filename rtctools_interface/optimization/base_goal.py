@@ -67,18 +67,8 @@ class BaseGoal(Goal):
             )
         self.priority = priority if np.isfinite(priority) else 1
         self.weight = weight if np.isfinite(weight) else 1.0
-        self.order = order if np.isfinite(order) else 2
-        if np.isfinite(order):
-            self.order = order
-        elif goal_type in ["maximization_path", "minimization_path"]:
-            self.order = 1
-        else:
-            self.order = 2
-        if goal_type == "maximization_path" and self.order % 2 == 0:
-            logger.warning(
-                "Using even order '%i' for a maximization_path goal" + " results in a minimization_path goal.",
-                self.order,
-            )
+        self._set_order(order)
+
 
     def function(self, optimization_problem, ensemble_member):
         del ensemble_member
@@ -87,6 +77,20 @@ class BaseGoal(Goal):
         if self.goal_type in ["minimization_path", "range"]:
             return optimization_problem.state(self.state)
         raise ValueError("Unsupported goal type '{}', supported are {}".format(self.goal_type, GOAL_TYPES))
+
+    def _set_order(self, order):
+        """Set the order of the goal."""
+        if np.isfinite(order):
+            self.order = order
+        elif self.goal_type in ["maximization_path", "minimization_path"]:
+            self.order = 1
+        else:
+            self.order = 2
+        if self.goal_type == "maximization_path" and self.order % 2 == 0:
+            logger.warning(
+                "Using even order '%i' for a maximization_path goal" + " results in a minimization_path goal.",
+                self.order,
+            )
 
     def _set_goal_type(
         self,

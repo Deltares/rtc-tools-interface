@@ -55,7 +55,9 @@ class BaseGoal(Goal):
         self._set_goal_type(goal_type)
         if goal_type == "range":
             self._set_function_bounds(
-                optimization_problem=optimization_problem, function_min=function_min, function_max=function_max
+                optimization_problem=optimization_problem,
+                function_min=function_min,
+                function_max=function_max,
             )
         self._set_function_nominal(function_nominal)
         if goal_type == "range":
@@ -127,15 +129,9 @@ class BaseGoal(Goal):
             if isinstance(self.function_range, (list, tuple)):
                 if np.all(np.isfinite(self.function_range)):
                     self.function_nominal = np.sum(self.function_range) / 2
-                else:
-                    self.function_nominal = 1.0
-                    logger.warning("Function nominal not specified, nominal is set to 1.0")
-            elif isinstance(self.function_range, Timeseries):
-                if np.all(np.isfinite(self.function_range[1].values)):
-                    self.function_nominal = np.sum(self.function_range[1].values) / 2
-                else:
-                    self.function_nominal = 1.0
-                    logger.warning("Function nominal not specified, nominal is set to 1.0")
+                    return
+            self.function_nominal = 1.0
+            logger.warning("Function nominal not specified, nominal is set to 1.0")
 
     def _set_target_bounds(
         self,

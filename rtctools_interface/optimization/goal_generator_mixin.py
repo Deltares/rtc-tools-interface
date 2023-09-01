@@ -32,6 +32,15 @@ class GoalGeneratorMixin:
     def path_goals(self):
         """Return the list of path goals."""
         goals = super().path_goals()
-        goal_df = read_goals(self.goal_table_file)
-        goals = goals + list(goal_df.apply(self._goal_data_to_goal, axis=1))
+        goal_df = read_goals(self.goal_table_file, path_goal=True)
+        if not goal_df.empty:
+            goals = goals + list(goal_df.apply(self._goal_data_to_goal, axis=1))
+        return goals
+
+    def goals(self):
+        """Return the list of goals."""
+        goals = super().goals()
+        goal_df = read_goals(self.goal_table_file, path_goal=False)
+        if not goal_df.empty:
+            goals = goals + list(goal_df.apply(self._goal_data_to_goal, axis=1))
         return goals

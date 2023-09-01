@@ -12,6 +12,6 @@ class TestGoalReader(unittest.TestCase):
     """Test for reading goals."""
 
     def test_read_csv(self):
-        """Test reading goals from a csv file."""
-        goals = read_goals(CSV_FILE)
+        """Test for reading goals from csv."""
+        goals = read_goals(CSV_FILE, path_goal=True)
         self.assertEqual(len(goals), 2)

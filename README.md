@@ -44,7 +44,7 @@ from rtctools_interface.optimization.goal_generator_mixin import GoalGeneratorMi
 and add the `GoalGeneratorMixin` to your optimization problem class. It must be added before `GoalProgrammingMixin`. Also, define the `goal_table.csv` in the input folder of your problem.
 
 ### Notes
-- The `minimization_path` and `maximization_sum` goals can be used to minimize/maximize the sum of a `state` over all timesteps, but be careful with the order:
+- The `minimization_path` and `maximization_path` goals can be used to minimize/maximize the sum of a `state` over all timesteps, but be careful with the order:
     - For a `maximization_path` goal, if the order is even, the goal is equal to the minimization_path goal, as the minus sign is squared out.
     - A `minimization_path` or `maximization_path` goal with an even order will try to bring the selected `state` as close to 0 as possible, so not necessarily minimizing/maximizing it.
 

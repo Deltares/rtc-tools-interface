@@ -13,6 +13,7 @@ The `goal generator` can be used to automatically add goals based on a csv file.
 - range (default order is 2)
 - minimization_path (default order is 1)
 - maximization_path (default order is 1)
+- minimization_ramping (default order is 2)
 
 For the range goals, the target need to be specified. This can either be a value, a parameter or a timeseries.
 
@@ -21,7 +22,7 @@ The required columns of the `goal_table` are:
 - `id`: A unique string for each goal.
 - `active`: Either `0` or `1`. If `0` goal will not be used.
 - `state`: State (variable) on which the goal should act on.
-- `goal_type`: Choose from path goals: `range`,  `minimization_path` or `maximization_path`.
+- `goal_type`: Choose from path goals: `range`,  `minimization_path`, `maximization_path` or `minimization_ramping`.
 - `priority`: Priority of the goal.
 
 And optional columns are:
@@ -79,6 +80,11 @@ $$
 and $w$ is equal to the `weight` (default is 1), $r$ is equal to the `order` (default is 2), $t$ the timestep, $x$ the selected `state`, $m_{target}$ and $M_{target}$ the lower and upper targets (`target_min` and `target_max`), $m$ and $M$ the actual bounds of $x$ (`function_min` and `function_max`). The auxiliary variable $\epsilon$ is automatically created by rtc-tools. In loose terms, the range goal tries to archieve
 $$ m_{t,target} \leq x_t \leq M_{t,target} \quad \forall t$$
 by minimizing, if any, the sum of exceedances for the timesteps. For more details on the range goal, see [Read the Docs](https://rtc-tools.readthedocs.io/en/latest/optimization/goal_programming/goals.html) of rtc-tools.
+
+#### minimization_ramping
+For the minimization_ramping goal, rtc-tools adds the following equation to the objective function of the specified priority
+$$w\sum_{t} (x_t-x_{t-1})^r $$
+where $w$ is equal to the `weight` (default is 1), $r$ is equal to the `order` (default is 2), $t$ the timestep and $x$ the selected `state`. Note that for the derivative of the first timestep the initial value of $x$ is used. No constraints are added for this goal. 
 
 ### Example goal table
 See the table below for an example content of the `goal_table.csv`.

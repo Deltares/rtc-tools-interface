@@ -9,7 +9,7 @@ from rtctools.optimization.timeseries import Timeseries
 
 logger = logging.getLogger("rtctools")
 
-PATH_GOALS = ["minimization_path", "maximization_path", "range"]
+PATH_GOALS = ["minimization_path", "maximization_path", "range", "minimization_ramping"]
 NON_PATH_GOALS = []
 GOAL_TYPES = PATH_GOALS + NON_PATH_GOALS
 
@@ -77,6 +77,8 @@ class BaseGoal(Goal):
             return -optimization_problem.state(self.state)
         if self.goal_type in ["minimization_path", "range"]:
             return optimization_problem.state(self.state)
+        if self.goal_type == "minimization_ramping":
+            return optimization_problem.der(self.state)
         raise ValueError("Unsupported goal type '{}', supported are {}".format(self.goal_type, GOAL_TYPES))
 
     def _set_order(self, order):

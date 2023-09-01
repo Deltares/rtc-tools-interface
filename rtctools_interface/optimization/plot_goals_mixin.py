@@ -54,9 +54,9 @@ def format_subplot(subplot, subplot_config):
     """Format the current axis and set legend and title."""
     subplot.set_ylabel(subplot_config["y_axis_title"])
     subplot.legend()
-    if isinstance(subplot_config["custom_title"], str):
+    if "custom_title" in subplot_config and isinstance(subplot_config["custom_title"], str):
         subplot.set_title(subplot_config["custom_title"])
-    else:
+    elif subplot_config["specified_in"] == "goal_generator":
         subplot.set_title(
             "Goal for {} (active from priority {})".format(subplot_config["state"], subplot_config["priority"])
         )

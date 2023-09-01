@@ -78,9 +78,9 @@ The (only) required column of this `plot_table` is:
 
 And optional columns are:
 - `id`: Required when a plot for a row in the `goal_table` should be created. Should be equal to the id in the corresponding `goal_table`.
-- `variables_plot_1`: One or more state-names to be plotted, seperated by a comma.
-- `variables_plot_2`: One or more state-names to be plotted, seperated by a comma. Fixed styling is applied for all variables defined here.
-- `variables_plot_history`: One or more state-names to be plotted, seperated by a comma. If available, the results for that variable at the previous priority optimization will also be shown.
+- `variables_style_1`: One or more state-names to be plotted, seperated by a comma.
+- `variables_style_2`: One or more state-names to be plotted, seperated by a comma. Fixed styling is applied for all variables defined here.
+- `variables_with_previous_result`: One or more state-names to be plotted, seperated by a comma. If available, the results for that variable at the previous priority optimization will also be shown.
 - `custom_title`: Custom title overwriting automatic name. Required for goals specified in python.
 - `specified_in`: Either `goal_generator` or `python`. If equal to `goal_generator`, the id field should be set.
 
@@ -88,7 +88,7 @@ And optional columns are:
 The table could thus look like:
 
 
-|    id   |  y_axis_title   | variables_plot_1 | variables_plot_2 | variables_plot_history | custom_title | specified_in
+|    id   |  y_axis_title   | variables_style_1 | variables_style_2 | variables_with_previous_result | custom_title | specified_in
 |---------|-----------------|------------------|------------------|------------------|------------------|------------------|
 | goal_1  | Volume (\$m^3\$)  |      "PowerPlant1.QOut.Q"            |                  | | | goal_generator
 | goal_2  | Volume (\$m^3\$)  |      "PowerPlant1.QOut.Q, PowerPlant2.QOut.Q"            |   | |               | goal_generator

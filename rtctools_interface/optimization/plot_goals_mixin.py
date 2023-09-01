@@ -42,11 +42,11 @@ def plot_with_previous(subplot, state_name, t_datetime, results, results_dict_pr
 
 def plot_additional_variables(subplot, t_datetime, results, results_dict_prev, subplot_config):
     """Plot the additional variables defined in the plot_table"""
-    for var in subplot_config.get("variables_plot_1", []):
+    for var in subplot_config.get("variables_style_1", []):
         subplot.plot(t_datetime, results[var], label=var)
-    for var in subplot_config.get("variables_plot_2", []):
+    for var in subplot_config.get("variables_style_2", []):
         subplot.plot(t_datetime, results[var], linestyle="solid", linewidth="0.5", label=var)
-    for var in subplot_config.get("variables_plot_history", []):
+    for var in subplot_config.get("variables_with_previous_result", []):
         plot_with_previous(subplot, var, t_datetime, results, results_dict_prev)
 
 
@@ -82,12 +82,12 @@ class PlotGoalsMixin:
         self.plot_table = read_plot_table(plot_table_file, self.goal_table_file)
 
         # Store list of variable-names that may not be present in the results.
-        variables_plot_1 = [var for var_list in self.plot_table.get("variables_plot_1", []) for var in var_list]
-        variables_plot_2 = [var for var_list in self.plot_table.get("variables_plot_2", []) for var in var_list]
-        variables_plot_history = [
-            var for var_list in self.plot_table.get("variables_plot_history", []) for var in var_list
+        variables_style_1 = [var for var_list in self.plot_table.get("variables_style_1", []) for var in var_list]
+        variables_style_2 = [var for var_list in self.plot_table.get("variables_style_2", []) for var in var_list]
+        variables_with_previous_result = [
+            var for var_list in self.plot_table.get("variables_with_previous_result", []) for var in var_list
         ]
-        self.custom_variables = variables_plot_1 + variables_plot_2 + variables_plot_history
+        self.custom_variables = variables_style_1 + variables_style_2 + variables_with_previous_result
 
     def pre(self):
         """Tasks before optimizing."""

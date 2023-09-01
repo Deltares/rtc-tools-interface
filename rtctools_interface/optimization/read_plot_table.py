@@ -8,9 +8,9 @@ from rtctools_interface.utils.check_pandas_table import check_pandas_table
 PLOT_PARAMETERS = [
     "id",
     "y_axis_title",
-    "variables_plot_1",
-    "variables_plot_2",
-    "variables_plot_history",
+    "variables_style_1",
+    "variables_style_2",
+    "variables_with_previous_result",
     "custom_title",
     "specified_in",
 ]
@@ -38,7 +38,9 @@ def read_plot_table(plot_table_file, goal_table_file):
     """Read plot table for PlotGoals and merge with goals table"""
     plot_table = read_and_check_plot_table(plot_table_file)
     variable_types = [
-        col for col in plot_table.columns if col in ["variables_plot_1", "variables_plot_2", "variables_plot_history"]
+        col
+        for col in plot_table.columns
+        if col in ["variables_style_1", "variables_style_2", "variables_with_previous_result"]
     ]
     plot_table[variable_types] = plot_table[variable_types].applymap(string_to_list)
     goals = read_and_check_goal_table(goal_table_file)

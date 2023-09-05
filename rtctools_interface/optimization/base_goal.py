@@ -124,6 +124,15 @@ class BaseGoal(Goal):
             elif isinstance(optimization_problem.bounds()[self.state][1], Timeseries):
                 self.function_range[1] = optimization_problem.bounds()[self.state][1].values
 
+        if self.goal_type in ["ramping_range"]:
+            # In case of a range_ramping goal, the function range can be determined automatically
+            # using the bounds of the state that is differenced.
+            maximum_scaled_difference = (self.function_range[1] - self.function_range[0]) / np.diff(
+                optimization_problem.times()
+            ).mean()
+            self.function_range[0] = -maximum_scaled_difference
+            self.function_range[1] = maximum_scaled_difference
+
     def _set_function_nominal(self, function_nominal):
         """Set function nominal"""
         self.function_nominal = function_nominal

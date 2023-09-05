@@ -7,6 +7,7 @@ from rtctools_interface.optimization.goal_table_schema import goal_table_column_
 from rtctools_interface.utils.check_pandas_table import check_pandas_table
 
 GOAL_PARAMETERS = [
+    "id",
     "state",
     "goal_type",
     "function_min",

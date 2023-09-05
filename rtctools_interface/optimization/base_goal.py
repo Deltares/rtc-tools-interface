@@ -49,7 +49,9 @@ class BaseGoal(Goal):
         priority=1,
         weight=1.0,
         order=2,
+        goal_id=None,
     ):
+        self.goal_id = goal_id
         self.state = state
         self.goal_type = None
         self._set_goal_type(goal_type)
@@ -160,8 +162,8 @@ class BaseGoal(Goal):
             raise ValueError(f"target_data_type should be one of {TARGET_DATA_TYPES}.")
         if target_data_type == "value":
             if self.goal_type == "ramping_range":
-                self.target_min = float(target_min)/100 * self.function_nominal
-                self.target_max = float(target_max)/100 * self.function_nominal
+                self.target_min = float(target_min) / 100 * self.function_nominal
+                self.target_max = float(target_max) / 100 * self.function_nominal
             else:
                 self.target_min = float(target_min)
                 self.target_max = float(target_max)

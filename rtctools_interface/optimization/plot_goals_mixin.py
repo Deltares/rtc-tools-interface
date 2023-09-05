@@ -6,12 +6,27 @@ import copy
 
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
+import matplotlib.ticker as mtick
 
 import numpy as np
 
 from rtctools_interface.optimization.read_plot_table import read_plot_table
 
 logger = logging.getLogger("rtctools")
+
+def get_timedeltas(optimization_problem):
+    """Get delta_t for each timestep."""
+    return [np.nan] + [
+        optimization_problem.times()[i] - optimization_problem.times()[i - 1]
+        for i in range(1, len(optimization_problem.times()))
+    ]
+
+def get_goal_nominal(subplot_config, all_goals):
+    """Find the goal belonging to a subplot and return its function nominal."""
+    for goal in all_goals:
+        if goal.goal_id == subplot_config["id"]:
+            return goal.function_nominal
+    return 1
 
 
 def get_subplot(i_plot, n_rows, axs):
@@ -22,35 +37,50 @@ def get_subplot(i_plot, n_rows, axs):
     return subplot
 
 
-def get_differences(timeseries, time_deltas):
+def get_differences(timeseries, time_deltas, nominal=1):
     """Get rate of change timeseries for input timeseries."""
-    return [(st - st_prev) / dt for st, st_prev, dt in zip(timeseries[1:], timeseries[:-1], time_deltas)]
+    timeseries = list(timeseries)
+    return [
+        (st - st_prev) / dt / nominal * 100
+        for st, st_prev, dt in zip(timeseries + [np.nan], [np.nan] + timeseries[:-1], time_deltas)
+    ]
 
 
-def plot_data(subplot, label, data, t_datetime, time_deltas, rate_of_change=False, **plot_kwargs):
+def plot_data(subplot, label, data, t_datetime, time_deltas, rate_of_change=False, nominal=1, **plot_kwargs):
     """Actually plot a timeseries. If rate_of_change is true, the difference series will be plotted."""
     if rate_of_change:
-        to_plot = get_differences(data, time_deltas)
-        t_datetime = t_datetime[1:]
+        to_plot = get_differences(data, time_deltas, nominal)
     else:
         to_plot = data
 
     subplot.plot(t_datetime, to_plot, label=label, **plot_kwargs)
 
 
-def plot_with_previous(subplot, state_name, t_datetime, results, results_dict_prev, time_deltas, rate_of_change=False):
+def plot_with_previous(
+    subplot, state_name, t_datetime, results, results_dict_prev, time_deltas, rate_of_change=False, nominal=1
+):
     """Add line with the results for a particular state. If previous results
     are available, a line with the timeseries for those results is also plotted."""
     label = state_name
     if rate_of_change:
         label = "Rate of Change of " + label
 
-    plot_data(subplot, label, results[state_name], t_datetime, time_deltas, rate_of_change)
+    plot_data(subplot, label, results[state_name], t_datetime, time_deltas, rate_of_change, nominal)
 
     if results_dict_prev:
         prev_data = results_dict_prev["extract_result"][state_name]
         label += " (at previous priority optimization)"
-        plot_data(subplot, label, prev_data, t_datetime, time_deltas, rate_of_change, color="gray", linestyle="dotted")
+        plot_data(
+            subplot,
+            label,
+            prev_data,
+            t_datetime,
+            time_deltas,
+            rate_of_change,
+            nominal,
+            color="gray",
+            linestyle="dotted",
+        )
 
 
 def plot_additional_variables(subplot, t_datetime, results, results_dict_prev, subplot_config, time_deltas):
@@ -76,6 +106,8 @@ def format_subplot(subplot, subplot_config):
 
     date_format = mdates.DateFormatter("%d%b%H")
     subplot.xaxis.set_major_formatter(date_format)
+    if subplot_config["goal_type"] == "ramping_range":
+        subplot.yaxis.set_major_formatter(mtick.PercentFormatter())
     subplot.grid(which="both", axis="x")
 
 
@@ -138,10 +170,14 @@ class PlotGoalsMixin:
         fig, axs = plt.subplots(nrows=n_rows, ncols=n_cols, figsize=(n_cols * 9, n_rows * 3), dpi=80, squeeze=False)
         fig.suptitle("Results after optimizing until priority {}".format(result_dict["priority"]), fontsize=14)
         i_plot = -1
-        time_deltas = [self.times()[i] - self.times()[i - 1] for i in range(1, len(self.times()))]
+        time_deltas = get_timedeltas(self)
 
         # Add subplot for each row in the plot_table
         for subplot_config in plot_config:
+            if subplot_config["specified_in"] == "goal_generator":
+                nominal = get_goal_nominal(subplot_config, self.goals() + self.path_goals())
+            else:
+                nominal = 1
             i_plot += 1
             subplot = get_subplot(i_plot, n_rows, axs)
             rate_of_change = subplot_config["goal_type"] in ["ramping_range", "minimization_ramping"]
@@ -154,6 +190,7 @@ class PlotGoalsMixin:
                     results_prev,
                     time_deltas,
                     rate_of_change,
+                    nominal=nominal,
                 )
             plot_additional_variables(
                 subplot, np.array(self.io.datetimes), results, results_prev, subplot_config, time_deltas

@@ -154,14 +154,19 @@ class BaseGoal(Goal):
         target_min=np.nan,
         target_max=np.nan,
     ):
-        # Ignore too many ancestors, since the use of mixin classes is how rtc-tools is set up.
         # pylint: disable=too-many-branches
         """Set the target bounds."""
         if target_data_type not in TARGET_DATA_TYPES:
             raise ValueError(f"target_data_type should be one of {TARGET_DATA_TYPES}.")
         if target_data_type == "value":
-            self.target_min = float(target_min)
-            self.target_max = float(target_max)
+            if self.goal_type == "ramping_range":
+                self.target_min = float(target_min)/100 * self.function_nominal
+                self.target_max = float(target_max)/100 * self.function_nominal
+            else:
+                self.target_min = float(target_min)
+                self.target_max = float(target_max)
+        elif self.goal_type == "ramping_range":
+            raise ValueError("For ramping_range goal only the `value` target type is supported.")
         elif target_data_type == "parameter":
             if isinstance(target_max, str):
                 self.target_max = optimization_problem.parameters(0)[target_max]

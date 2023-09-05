@@ -4,7 +4,6 @@ import math
 import os
 import copy
 
-
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 
@@ -23,31 +22,45 @@ def get_subplot(i_plot, n_rows, axs):
     return subplot
 
 
-def plot_with_previous(subplot, state_name, t_datetime, results, results_dict_prev):
+def get_differences(timeseries, time_deltas):
+    """Get rate of change timeseries for input timeseries."""
+    return [(st - st_prev) / dt for st, st_prev, dt in zip(timeseries[1:], timeseries[:-1], time_deltas)]
+
+
+def plot_data(subplot, label, data, t_datetime, time_deltas, rate_of_change=False, **plot_kwargs):
+    """Actually plot a timeseries. If rate_of_change is true, the difference series will be plotted."""
+    if rate_of_change:
+        to_plot = get_differences(data, time_deltas)
+        t_datetime = t_datetime[1:]
+    else:
+        to_plot = data
+
+    subplot.plot(t_datetime, to_plot, label=label, **plot_kwargs)
+
+
+def plot_with_previous(subplot, state_name, t_datetime, results, results_dict_prev, time_deltas, rate_of_change=False):
     """Add line with the results for a particular state. If previous results
-    are available, a line with the timeseries for those results is also plotted.
-    """
-    subplot.plot(t_datetime, results[state_name], label=state_name)
+    are available, a line with the timeseries for those results is also plotted."""
+    label = state_name
+    if rate_of_change:
+        label = "Rate of Change of " + label
+
+    plot_data(subplot, label, results[state_name], t_datetime, time_deltas, rate_of_change)
 
     if results_dict_prev:
-        results_prev = results_dict_prev["extract_result"]
-        subplot.plot(
-            t_datetime,
-            results_prev[state_name],
-            label=state_name + " at previous priority optimization",
-            color="gray",
-            linestyle="dotted",
-        )
+        prev_data = results_dict_prev["extract_result"][state_name]
+        label += " (at previous priority optimization)"
+        plot_data(subplot, label, prev_data, t_datetime, time_deltas, rate_of_change, color="gray", linestyle="dotted")
 
 
-def plot_additional_variables(subplot, t_datetime, results, results_dict_prev, subplot_config):
+def plot_additional_variables(subplot, t_datetime, results, results_dict_prev, subplot_config, time_deltas):
     """Plot the additional variables defined in the plot_table"""
     for var in subplot_config.get("variables_style_1", []):
         subplot.plot(t_datetime, results[var], label=var)
     for var in subplot_config.get("variables_style_2", []):
         subplot.plot(t_datetime, results[var], linestyle="solid", linewidth="0.5", label=var)
     for var in subplot_config.get("variables_with_previous_result", []):
-        plot_with_previous(subplot, var, t_datetime, results, results_dict_prev)
+        plot_with_previous(subplot, var, t_datetime, results, results_dict_prev, time_deltas, rate_of_change=False)
 
 
 def format_subplot(subplot, subplot_config):
@@ -107,6 +120,7 @@ class PlotGoalsMixin:
         self.plot_goals_results(result_dict)
 
     def plot_goals_results(self, result_dict, results_prev=None):
+        # pylint: disable=too-many-locals
         """Creates a figure with a subplot for each row in the plot_table."""
         results = result_dict["extract_result"]
         plot_config = self.plot_table.to_dict("records")
@@ -124,16 +138,28 @@ class PlotGoalsMixin:
         fig, axs = plt.subplots(nrows=n_rows, ncols=n_cols, figsize=(n_cols * 9, n_rows * 3), dpi=80, squeeze=False)
         fig.suptitle("Results after optimizing until priority {}".format(result_dict["priority"]), fontsize=14)
         i_plot = -1
+        time_deltas = [self.times()[i] - self.times()[i - 1] for i in range(1, len(self.times()))]
 
         # Add subplot for each row in the plot_table
         for subplot_config in plot_config:
             i_plot += 1
             subplot = get_subplot(i_plot, n_rows, axs)
+            rate_of_change = subplot_config["goal_type"] in ["ramping_range", "minimization_ramping"]
             if subplot_config["specified_in"] == "goal_generator":
-                plot_with_previous(subplot, subplot_config["state"], np.array(self.io.datetimes), results, results_prev)
-            plot_additional_variables(subplot, np.array(self.io.datetimes), results, results_prev, subplot_config)
+                plot_with_previous(
+                    subplot,
+                    subplot_config["state"],
+                    np.array(self.io.datetimes),
+                    results,
+                    results_prev,
+                    time_deltas,
+                    rate_of_change,
+                )
+            plot_additional_variables(
+                subplot, np.array(self.io.datetimes), results, results_prev, subplot_config, time_deltas
+            )
             format_subplot(subplot, subplot_config)
-            if subplot_config["goal_type"] in ["range"]:
+            if subplot_config["goal_type"] in ["range", "ramping_range"]:
                 self.add_ranges(subplot, np.array(self.io.datetimes), subplot_config)
 
         # Save figure
@@ -142,7 +168,7 @@ class PlotGoalsMixin:
         os.makedirs("goal_figures", exist_ok=True)
         fig.tight_layout()
         new_output_folder = os.path.join(self._output_folder, "goal_figures")
-        os.makedirs(new_output_folder, exist_ok=True)
+        os.makedirs(os.path.join(self._output_folder, "goal_figures"), exist_ok=True)
         fig.savefig(os.path.join(new_output_folder, "after_priority_{}.png".format(result_dict["priority"])))
 
     def priority_completed(self, priority: int) -> None:

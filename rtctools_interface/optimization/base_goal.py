@@ -137,6 +137,9 @@ class BaseGoal(Goal):
         """Set function nominal"""
         self.function_nominal = function_nominal
         if not np.isfinite(self.function_nominal):
+            if self.goal_type == "ramping_range":
+                self.function_nominal = self.function_range[1] / 2
+                return
             if isinstance(self.function_range, (list, tuple)):
                 if np.all(np.isfinite(self.function_range)):
                     self.function_nominal = np.sum(self.function_range) / 2

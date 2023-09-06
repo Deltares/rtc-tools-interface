@@ -61,6 +61,7 @@ class Subplot:
 
         If subplot is of rate_of_change type, the difference series will be plotted."""
         if self.rate_of_change:
+            label = "Rate of Change of " + label
             series_to_plot = self.get_differences(timeseries_data)
         else:
             series_to_plot = timeseries_data
@@ -70,8 +71,6 @@ class Subplot:
         """Add line with the results for a particular state. If previous results
         are available, a line with the timeseries for those results is also plotted."""
         label = state_name
-        if self.rate_of_change:
-            label = "Rate of Change of " + label
 
         timeseries_data = self.results[state_name]
         self.plot_timeseries(label, timeseries_data)
@@ -89,9 +88,9 @@ class Subplot:
     def plot_additional_variables(self):
         """Plot the additional variables defined in the plot_table"""
         for var in self.config.get("variables_style_1", []):
-            self.axis.plot(self.results[var], label=var)
+            self.plot_timeseries(var, self.results[var])
         for var in self.config.get("variables_style_2", []):
-            self.axis.plot(self.results[var], linestyle="solid", linewidth="0.5", label=var)
+            self.plot_timeseries(var, self.results[var], linestyle="solid", linewidth="0.5")
         for var in self.config.get("variables_with_previous_result", []):
             self.plot_with_previous(var)
 
@@ -108,7 +107,7 @@ class Subplot:
 
         date_format = mdates.DateFormatter("%d%b%H")
         self.axis.xaxis.set_major_formatter(date_format)
-        if self.config["goal_type"] == "ramping_range":
+        if self.rate_of_change:
             self.axis.yaxis.set_major_formatter(mtick.PercentFormatter())
         self.axis.grid(which="both", axis="x")
 

@@ -13,6 +13,7 @@ The `goal generator` can be used to automatically add goals based on a csv file.
 - range (default order is 2)
 - minimization_path (default order is 1)
 - maximization_path (default order is 1)
+- range_rate_of_change (default order is 1)
 
 For the range goals, the target need to be specified. This can either be a value, a parameter or a timeseries.
 
@@ -21,12 +22,12 @@ The required columns of the `goal_table` are:
 - `id`: A unique string for each goal.
 - `active`: Either `0` or `1`. If `0` goal will not be used.
 - `state`: State (variable) on which the goal should act on.
-- `goal_type`: Choose from path goals: `range`,  `minimization_path` or `maximization_path`.
+- `goal_type`: Choose from path goals: `range`,  `minimization_path`, `maximization_path` or `range_rate_of_change`.
 - `priority`: Priority of the goal.
 
 And optional columns are:
-- `function_min`: For goals of type `range` specify the minimum possible value for the selected state.
-- `function_max`: For goals of type `range` specify the maximum possible value for the selected state.
+- `function_min`: For goals of type `range` specify the minimum possible value for the selected state. If not specified, will be calculated using the bounds of the `state` (if available).
+- `function_max`: For goals of type `range` specify the maximum possible value for the selected state. If not specified, will be calculated using the bounds of the `state` (if available).
 - `function_nominal`: Approximate order of the state.
 - `target_data_type`: Either `value`, `parameter` or `timeseries`.
 - `target_min`: Only for goals of type `range`: specify either a value or the name of the parameter/timeseries.
@@ -79,6 +80,12 @@ $$
 and $w$ is equal to the `weight` (default is 1), $r$ is equal to the `order` (default is 2), $t$ the timestep, $x$ the selected `state`, $m_{target}$ and $M_{target}$ the lower and upper targets (`target_min` and `target_max`), $m$ and $M$ the actual bounds of $x$ (`function_min` and `function_max`). The auxiliary variable $\epsilon$ is automatically created by rtc-tools. In loose terms, the range goal tries to archieve
 $$ m_{t,target} \leq x_t \leq M_{t,target} \quad \forall t$$
 by minimizing, if any, the sum of exceedances for the timesteps. For more details on the range goal, see [Read the Docs](https://rtc-tools.readthedocs.io/en/latest/optimization/goal_programming/goals.html) of rtc-tools.
+
+
+#### range_rate_of_change
+The range_rate_of_change goal can be used to set a target range on ramp rate. Like the range goal, one needs to set the `target_min` and `target_max` for that. **Importantly** for the range_rate_of_change goal, the supplied values are relative to the nominal of the function. So supplying a `target_max` of `10` corresponds to the aim of having a maximum increase per timestep of 10% * `nominal`, where the nominal automatically set to `maximum ramping`/2 or specified manually. To formulate the target of having a maximum increase and decrease by of 10% per timestep, one would set the `target_min` to `-10` and the `target_max` to `10`.
+
+The equations for the range_rate_of_change goal are almost the same as for the range goal, which can be found above. The only difference is that $x_t$ is replaced by $der(x_t)$.
 
 ### Example goal table
 See the table below for an example content of the `goal_table.csv`.

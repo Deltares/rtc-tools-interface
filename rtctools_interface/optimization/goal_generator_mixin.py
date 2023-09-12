@@ -27,6 +27,7 @@ class GoalGeneratorMixin:
 
     def _goal_data_to_goal(self, goal_data: pd.Series):
         """Convert a series with goal data to a BaseGoal."""
+        goal_data.rename({"id": "goal_id"}, inplace=True)
         return BaseGoal(optimization_problem=self, **goal_data.to_dict())
 
     def path_goals(self):

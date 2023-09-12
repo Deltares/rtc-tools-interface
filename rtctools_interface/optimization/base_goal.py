@@ -9,7 +9,7 @@ from rtctools.optimization.timeseries import Timeseries
 
 logger = logging.getLogger("rtctools")
 
-PATH_GOALS = ["minimization_path", "maximization_path", "range"]
+PATH_GOALS = ["minimization_path", "maximization_path", "range", "range_rate_of_change"]
 NON_PATH_GOALS = []
 GOAL_TYPES = PATH_GOALS + NON_PATH_GOALS
 
@@ -49,18 +49,20 @@ class BaseGoal(Goal):
         priority=1,
         weight=1.0,
         order=2,
+        goal_id=None,
     ):
+        self.goal_id = goal_id
         self.state = state
         self.goal_type = None
         self._set_goal_type(goal_type)
-        if goal_type == "range":
+        if goal_type in ["range", "range_rate_of_change"]:
             self._set_function_bounds(
                 optimization_problem=optimization_problem,
                 function_min=function_min,
                 function_max=function_max,
             )
         self._set_function_nominal(function_nominal)
-        if goal_type == "range":
+        if goal_type in ["range", "range_rate_of_change"]:
             self._set_target_bounds(
                 optimization_problem=optimization_problem,
                 target_data_type=target_data_type,
@@ -77,6 +79,8 @@ class BaseGoal(Goal):
             return -optimization_problem.state(self.state)
         if self.goal_type in ["minimization_path", "range"]:
             return optimization_problem.state(self.state)
+        if self.goal_type in ["range_rate_of_change"]:
+            return optimization_problem.der(self.state)
         raise ValueError("Unsupported goal type '{}', supported are {}".format(self.goal_type, GOAL_TYPES))
 
     def _set_order(self, order):
@@ -103,24 +107,45 @@ class BaseGoal(Goal):
         else:
             raise ValueError(f"goal_type should be one of {GOAL_TYPES}.")
 
+    def _get_state_range(self, optimization_problem, state_name):
+        if isinstance(optimization_problem.bounds()[state_name][0], float):
+            state_range_0 = optimization_problem.bounds()[state_name][0]
+        elif isinstance(optimization_problem.bounds()[state_name][0], Timeseries):
+            state_range_0 = optimization_problem.bounds()[state_name][0].values
+        else:
+            state_range_0 = np.nan
+        if isinstance(optimization_problem.bounds()[state_name][1], float):
+            state_range_1 = optimization_problem.bounds()[state_name][1]
+        elif isinstance(optimization_problem.bounds()[state_name][1], Timeseries):
+            state_range_1 = optimization_problem.bounds()[state_name][1].values
+        else:
+            state_range_1 = np.nan
+        return (state_range_0, state_range_1)
+
     def _set_function_bounds(
         self,
         optimization_problem: OptimizationProblem,
         function_min=np.nan,
         function_max=np.nan,
     ):
-        """Set function bounds and nominal."""
-        self.function_range = [function_min, function_max]
-        if not np.isfinite(function_min):
-            if isinstance(optimization_problem.bounds()[self.state][0], float):
-                self.function_range[0] = optimization_problem.bounds()[self.state][0]
-            elif isinstance(optimization_problem.bounds()[self.state][0], Timeseries):
-                self.function_range[0] = optimization_problem.bounds()[self.state][0].values
-        if not np.isfinite(function_max):
-            if isinstance(optimization_problem.bounds()[self.state][1], float):
-                self.function_range[1] = optimization_problem.bounds()[self.state][1]
-            elif isinstance(optimization_problem.bounds()[self.state][1], Timeseries):
-                self.function_range[1] = optimization_problem.bounds()[self.state][1].values
+        """Set function bounds either by user specified value or calculated"""
+        state_range = self._get_state_range(optimization_problem, self.state)
+        if (not np.isfinite(function_min) and not np.isfinite(state_range[0])) or (
+            not np.isfinite(function_max) and not np.isfinite(state_range[1])
+        ):
+            raise ValueError(
+                f"The upper/lower bound for state {self.state} for goal with id={self.goal_id} is not specified"
+                + " so the function range should be specified!"
+            )
+        if self.goal_type in ["range_rate_of_change"]:
+            maximum_scaled_difference = (state_range[1] - state_range[0]) / np.diff(optimization_problem.times()).min()
+            calculated_range = (-maximum_scaled_difference, maximum_scaled_difference)
+        else:
+            calculated_range = state_range
+
+        function_range_0 = function_min if np.isfinite(function_min) else calculated_range[0]
+        function_range_1 = function_max if np.isfinite(function_max) else calculated_range[1]
+        self.function_range = (function_range_0, function_range_1)
 
     def _set_function_nominal(self, function_nominal):
         """Set function nominal"""
@@ -128,7 +153,7 @@ class BaseGoal(Goal):
         if not np.isfinite(self.function_nominal):
             if isinstance(self.function_range, (list, tuple)):
                 if np.all(np.isfinite(self.function_range)):
-                    self.function_nominal = np.sum(self.function_range) / 2
+                    self.function_nominal = abs(self.function_range[0]) + abs(self.function_range[1]) / 2
                     return
             self.function_nominal = 1.0
             logger.warning("Function nominal not specified, nominal is set to 1.0")
@@ -140,15 +165,17 @@ class BaseGoal(Goal):
         target_min=np.nan,
         target_max=np.nan,
     ):
-        # Ignore too many ancestors, since the use of mixin classes is how rtc-tools is set up.
-        # pylint: disable=too-many-branches
         """Set the target bounds."""
-        if target_data_type not in TARGET_DATA_TYPES:
-            raise ValueError(f"target_data_type should be one of {TARGET_DATA_TYPES}.")
-        if target_data_type == "value":
-            self.target_min = float(target_min)
-            self.target_max = float(target_max)
-        elif target_data_type == "parameter":
+
+        def set_value_target():
+            if self.goal_type == "range_rate_of_change":
+                self.target_min = float(target_min) / 100 * self.function_nominal
+                self.target_max = float(target_max) / 100 * self.function_nominal
+            else:
+                self.target_min = float(target_min)
+                self.target_max = float(target_max)
+
+        def set_parameter_target():
             if isinstance(target_max, str):
                 self.target_max = optimization_problem.parameters(0)[target_max]
                 if self.target_max is None:
@@ -161,7 +188,8 @@ class BaseGoal(Goal):
                     self.target_min = optimization_problem.io.get_parameter(target_min)
             elif np.isnan(target_min):
                 self.target_min = np.nan
-        elif target_data_type == "timeseries":
+
+        def set_timeseries_target():
             if isinstance(target_max, str):
                 self.target_max = optimization_problem.get_timeseries(target_max)
             elif np.isnan(target_max):
@@ -170,3 +198,16 @@ class BaseGoal(Goal):
                 self.target_min = optimization_problem.get_timeseries(target_min)
             elif np.isnan(target_min):
                 self.target_min = np.nan
+
+        if target_data_type not in TARGET_DATA_TYPES:
+            raise ValueError(f"target_data_type should be one of {TARGET_DATA_TYPES}.")
+
+        if self.goal_type == "range_rate_of_change" and target_data_type != "value":
+            raise ValueError("For range_rate_of_change goal only the `value` target type is supported.")
+
+        if target_data_type == "value":
+            set_value_target()
+        elif target_data_type == "parameter":
+            set_parameter_target()
+        elif target_data_type == "timeseries":
+            set_timeseries_target()

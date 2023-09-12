@@ -1,5 +1,5 @@
 """Schema for the goal_table."""
-from rtctools_interface.optimization.base_goal import GOAL_TYPES
+from rtctools_interface.optimization.base_goal import GOAL_TYPES, TARGET_DATA_TYPES
 
 goal_table_column_spec = {
     "id": {"allowed_types": [int, str, float], "allowed_values": None, "required": True},
@@ -9,7 +9,7 @@ goal_table_column_spec = {
     "function_min": {"allowed_types": [int, float], "allowed_values": None, "required": False},
     "function_max": {"allowed_types": [int, float], "allowed_values": None, "required": False},
     "function_nominal": {"allowed_types": [int, float], "allowed_values": None, "required": False},
-    "target_data_type": {"allowed_types": [int, float, str], "allowed_values": None, "required": False},
+    "target_data_type": {"allowed_types": [str], "allowed_values": TARGET_DATA_TYPES, "required": False},
     "target_min": {"allowed_types": [int, float, str], "allowed_values": None, "required": False},
     "target_max": {"allowed_types": [int, float, str], "allowed_values": None, "required": False},
     "priority": {"allowed_types": [int, float], "allowed_values": None, "required": True},

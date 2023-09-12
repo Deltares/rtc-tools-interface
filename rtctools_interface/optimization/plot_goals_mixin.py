@@ -49,11 +49,11 @@ class Subplot:
         self.rate_of_change = self.config["goal_type"] in ["range_rate_of_change"]
 
     def get_differences(self, timeseries):
-        """Get rate of change timeseries for input timeseries."""
+        """Get rate of change timeseries for input timeseries, relative to the function nominal."""
         timeseries = list(timeseries)
         return [
             (st - st_prev) / dt / self.function_nominal * 100
-            for st, st_prev, dt in zip(timeseries + [np.nan], [np.nan] + timeseries[:-1], self.time_deltas)
+            for st, st_prev, dt in zip(timeseries, [np.nan] + timeseries[:-1], self.time_deltas)
         ]
 
     def plot_timeseries(self, label, timeseries_data, **plot_kwargs):

@@ -26,8 +26,8 @@ The required columns of the `goal_table` are:
 - `priority`: Priority of the goal.
 
 And optional columns are:
-- `function_min`: For goals of type `range` specify the minimum possible value for the selected state.
-- `function_max`: For goals of type `range` specify the maximum possible value for the selected state.
+- `function_min`: For goals of type `range` specify the minimum possible value for the selected state. If not specified, will be calculated using the bounds of the `state` (if available).
+- `function_max`: For goals of type `range` specify the maximum possible value for the selected state. If not specified, will be calculated using the bounds of the `state` (if available).
 - `function_nominal`: Approximate order of the state.
 - `target_data_type`: Either `value`, `parameter` or `timeseries`.
 - `target_min`: Only for goals of type `range`: specify either a value or the name of the parameter/timeseries.

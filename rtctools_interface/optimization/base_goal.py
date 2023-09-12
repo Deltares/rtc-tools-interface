@@ -130,6 +130,13 @@ class BaseGoal(Goal):
     ):
         """Set function bounds either by user specified value or calculated"""
         state_range = self._get_state_range(optimization_problem, self.state)
+        if (not np.isfinite(function_min) and not np.isfinite(state_range[0])) or (
+            not np.isfinite(function_max) and not np.isfinite(state_range[1])
+        ):
+            raise ValueError(
+                f"The upper/lower bound for state {self.state} for goal with id={self.goal_id} is not specified"
+                + " so the function range should be specified!"
+            )
         if self.goal_type in ["range_rate_of_change"]:
             maximum_scaled_difference = (state_range[1] - state_range[0]) / np.diff(optimization_problem.times()).min()
             calculated_range = (-maximum_scaled_difference, maximum_scaled_difference)

@@ -153,20 +153,17 @@ class BaseGoal(Goal):
         target_min=np.nan,
         target_max=np.nan,
     ):
-        # pylint: disable=too-many-branches
         """Set the target bounds."""
-        if target_data_type not in TARGET_DATA_TYPES:
-            raise ValueError(f"target_data_type should be one of {TARGET_DATA_TYPES}.")
-        if target_data_type == "value":
+
+        def set_value_target():
             if self.goal_type == "range_rate_of_change":
                 self.target_min = float(target_min) / 100 * self.function_nominal
                 self.target_max = float(target_max) / 100 * self.function_nominal
             else:
                 self.target_min = float(target_min)
                 self.target_max = float(target_max)
-        elif self.goal_type == "range_rate_of_change":
-            raise ValueError("For range_rate_of_change goal only the `value` target type is supported.")
-        elif target_data_type == "parameter":
+
+        def set_parameter_target():
             if isinstance(target_max, str):
                 self.target_max = optimization_problem.parameters(0)[target_max]
                 if self.target_max is None:
@@ -179,7 +176,8 @@ class BaseGoal(Goal):
                     self.target_min = optimization_problem.io.get_parameter(target_min)
             elif np.isnan(target_min):
                 self.target_min = np.nan
-        elif target_data_type == "timeseries":
+
+        def set_timeseries_target():
             if isinstance(target_max, str):
                 self.target_max = optimization_problem.get_timeseries(target_max)
             elif np.isnan(target_max):
@@ -188,3 +186,16 @@ class BaseGoal(Goal):
                 self.target_min = optimization_problem.get_timeseries(target_min)
             elif np.isnan(target_min):
                 self.target_min = np.nan
+
+        if target_data_type not in TARGET_DATA_TYPES:
+            raise ValueError(f"target_data_type should be one of {TARGET_DATA_TYPES}.")
+
+        if self.goal_type == "range_rate_of_change" and target_data_type != "value":
+            raise ValueError("For range_rate_of_change goal only the `value` target type is supported.")
+
+        if target_data_type == "value":
+            set_value_target()
+        elif target_data_type == "parameter":
+            set_parameter_target()
+        elif target_data_type == "timeseries":
+            set_timeseries_target()

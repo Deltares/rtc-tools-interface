@@ -113,18 +113,22 @@ class Subplot:
 
     def add_ranges(self, optimization_problem):
         """Add lines for the lower and upper target."""
-        t = optimization_problem.times()
-        if self.config["target_data_type"] == "parameter":
+
+        def get_parameter_ranges():
             try:
                 target_min = np.full_like(t, 1) * optimization_problem.parameters(0)[self.config["target_min"]]
                 target_max = np.full_like(t, 1) * optimization_problem.parameters(0)[self.config["target_max"]]
             except TypeError:
                 target_min = np.full_like(t, 1) * optimization_problem.io.get_parameter(self.config["target_min"])
                 target_max = np.full_like(t, 1) * optimization_problem.io.get_parameter(self.config["target_max"])
-        elif self.config["target_data_type"] == "value":
+            return target_min, target_max
+
+        def get_value_ranges():
             target_min = np.full_like(t, 1) * float(self.config["target_min"])
             target_max = np.full_like(t, 1) * float(self.config["target_max"])
-        elif self.config["target_data_type"] == "timeseries":
+            return target_min, target_max
+
+        def get_timeseries_ranges():
             if isinstance(self.config["target_min"], str):
                 target_min = optimization_problem.get_timeseries(self.config["target_min"]).values
             else:
@@ -133,6 +137,15 @@ class Subplot:
                 target_max = optimization_problem.get_timeseries(self.config["target_max"]).values
             else:
                 target_max = np.full_like(t, 1) * self.config["target_max"]
+            return target_min, target_max
+
+        t = optimization_problem.times()
+        if self.config["target_data_type"] == "parameter":
+            target_min, target_max = get_parameter_ranges()
+        elif self.config["target_data_type"] == "value":
+            target_min, target_max = get_value_ranges()
+        elif self.config["target_data_type"] == "timeseries":
+            target_min, target_max = get_timeseries_ranges()
         else:
             message = "Target type {} not known.".format(self.config["target_data_type"])
             logger.error(message)

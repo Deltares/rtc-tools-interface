@@ -107,33 +107,38 @@ class BaseGoal(Goal):
         else:
             raise ValueError(f"goal_type should be one of {GOAL_TYPES}.")
 
+    def _get_state_range(self, optimization_problem, state_name):
+        if isinstance(optimization_problem.bounds()[state_name][0], float):
+            state_range_0 = optimization_problem.bounds()[state_name][0]
+        elif isinstance(optimization_problem.bounds()[state_name][0], Timeseries):
+            state_range_0 = optimization_problem.bounds()[state_name][0].values
+        else:
+            state_range_0 = np.nan
+        if isinstance(optimization_problem.bounds()[state_name][1], float):
+            state_range_1 = optimization_problem.bounds()[state_name][1]
+        elif isinstance(optimization_problem.bounds()[state_name][1], Timeseries):
+            state_range_1 = optimization_problem.bounds()[state_name][1].values
+        else:
+            state_range_1 = np.nan
+        return (state_range_0, state_range_1)
+
     def _set_function_bounds(
         self,
         optimization_problem: OptimizationProblem,
         function_min=np.nan,
         function_max=np.nan,
     ):
-        """Set function bounds and nominal."""
-        self.function_range = [function_min, function_max]
-        if not np.isfinite(function_min):
-            if isinstance(optimization_problem.bounds()[self.state][0], float):
-                self.function_range[0] = optimization_problem.bounds()[self.state][0]
-            elif isinstance(optimization_problem.bounds()[self.state][0], Timeseries):
-                self.function_range[0] = optimization_problem.bounds()[self.state][0].values
-        if not np.isfinite(function_max):
-            if isinstance(optimization_problem.bounds()[self.state][1], float):
-                self.function_range[1] = optimization_problem.bounds()[self.state][1]
-            elif isinstance(optimization_problem.bounds()[self.state][1], Timeseries):
-                self.function_range[1] = optimization_problem.bounds()[self.state][1].values
-
+        """Set function bounds either by user specified value or calculated"""
+        state_range = self._get_state_range(optimization_problem, self.state)
         if self.goal_type in ["range_rate_of_change"]:
-            # In case of a range_rate_of_change goal, the function range can be determined automatically
-            # using the bounds of the state that is differenced.
-            maximum_scaled_difference = (self.function_range[1] - self.function_range[0]) / np.diff(
-                optimization_problem.times()
-            ).min()
-            self.function_range[0] = -maximum_scaled_difference
-            self.function_range[1] = maximum_scaled_difference
+            maximum_scaled_difference = (state_range[1] - state_range[0]) / np.diff(optimization_problem.times()).min()
+            calculated_range = (-maximum_scaled_difference, maximum_scaled_difference)
+        else:
+            calculated_range = state_range
+
+        function_range_0 = function_min if np.isfinite(function_min) else calculated_range[0]
+        function_range_1 = function_max if np.isfinite(function_max) else calculated_range[1]
+        self.function_range = (function_range_0, function_range_1)
 
     def _set_function_nominal(self, function_nominal):
         """Set function nominal"""

@@ -9,7 +9,7 @@ from rtctools.optimization.timeseries import Timeseries
 
 logger = logging.getLogger("rtctools")
 
-PATH_GOALS = ["minimization_path", "maximization_path", "range", "minimization_ramping", "ramping_range"]
+PATH_GOALS = ["minimization_path", "maximization_path", "range", "minimization_ramping", "range_rate_of_change"]
 NON_PATH_GOALS = []
 GOAL_TYPES = PATH_GOALS + NON_PATH_GOALS
 
@@ -55,14 +55,14 @@ class BaseGoal(Goal):
         self.state = state
         self.goal_type = None
         self._set_goal_type(goal_type)
-        if goal_type in ["range", "ramping_range"]:
+        if goal_type in ["range", "range_rate_of_change"]:
             self._set_function_bounds(
                 optimization_problem=optimization_problem,
                 function_min=function_min,
                 function_max=function_max,
             )
         self._set_function_nominal(function_nominal)
-        if goal_type in ["range", "ramping_range"]:
+        if goal_type in ["range", "range_rate_of_change"]:
             self._set_target_bounds(
                 optimization_problem=optimization_problem,
                 target_data_type=target_data_type,
@@ -79,7 +79,7 @@ class BaseGoal(Goal):
             return -optimization_problem.state(self.state)
         if self.goal_type in ["minimization_path", "range"]:
             return optimization_problem.state(self.state)
-        if self.goal_type in ["minimization_ramping", "ramping_range"]:
+        if self.goal_type in ["minimization_ramping", "range_rate_of_change"]:
             return optimization_problem.der(self.state)
         raise ValueError("Unsupported goal type '{}', supported are {}".format(self.goal_type, GOAL_TYPES))
 
@@ -126,8 +126,8 @@ class BaseGoal(Goal):
             elif isinstance(optimization_problem.bounds()[self.state][1], Timeseries):
                 self.function_range[1] = optimization_problem.bounds()[self.state][1].values
 
-        if self.goal_type in ["ramping_range"]:
-            # In case of a range_ramping goal, the function range can be determined automatically
+        if self.goal_type in ["range_rate_of_change"]:
+            # In case of a range_rate_of_change goal, the function range can be determined automatically
             # using the bounds of the state that is differenced.
             maximum_scaled_difference = (self.function_range[1] - self.function_range[0]) / np.diff(
                 optimization_problem.times()
@@ -139,7 +139,7 @@ class BaseGoal(Goal):
         """Set function nominal"""
         self.function_nominal = function_nominal
         if not np.isfinite(self.function_nominal):
-            if self.goal_type == "ramping_range":
+            if self.goal_type == "range_rate_of_change":
                 self.function_nominal = self.function_range[1] / 2
                 return
             if isinstance(self.function_range, (list, tuple)):
@@ -161,14 +161,14 @@ class BaseGoal(Goal):
         if target_data_type not in TARGET_DATA_TYPES:
             raise ValueError(f"target_data_type should be one of {TARGET_DATA_TYPES}.")
         if target_data_type == "value":
-            if self.goal_type == "ramping_range":
+            if self.goal_type == "range_rate_of_change":
                 self.target_min = float(target_min) / 100 * self.function_nominal
                 self.target_max = float(target_max) / 100 * self.function_nominal
             else:
                 self.target_min = float(target_min)
                 self.target_max = float(target_max)
-        elif self.goal_type == "ramping_range":
-            raise ValueError("For ramping_range goal only the `value` target type is supported.")
+        elif self.goal_type == "range_rate_of_change":
+            raise ValueError("For range_rate_of_change goal only the `value` target type is supported.")
         elif target_data_type == "parameter":
             if isinstance(target_max, str):
                 self.target_max = optimization_problem.parameters(0)[target_max]

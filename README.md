@@ -14,7 +14,7 @@ The `goal generator` can be used to automatically add goals based on a csv file.
 - minimization_path (default order is 1)
 - maximization_path (default order is 1)
 - minimization_ramping (default order is 2)
-- ramping_range (default order is 1)
+- range_rate_of_change (default order is 1)
 
 For the range goals, the target need to be specified. This can either be a value, a parameter or a timeseries.
 
@@ -23,7 +23,7 @@ The required columns of the `goal_table` are:
 - `id`: A unique string for each goal.
 - `active`: Either `0` or `1`. If `0` goal will not be used.
 - `state`: State (variable) on which the goal should act on.
-- `goal_type`: Choose from path goals: `range`,  `minimization_path`, `maximization_path`, `minimization_ramping` or `ramping_range`.
+- `goal_type`: Choose from path goals: `range`,  `minimization_path`, `maximization_path`, `minimization_ramping` or `range_rate_of_change`.
 - `priority`: Priority of the goal.
 
 And optional columns are:
@@ -87,8 +87,8 @@ For the minimization_ramping goal, rtc-tools adds the following equation to the 
 $$w\sum_{t} (x_t-x_{t-1})^r $$
 where $w$ is equal to the `weight` (default is 1), $r$ is equal to the `order` (default is 2), $t$ the timestep and $x$ the selected `state`. Note that for the derivative of the first timestep the initial value of $x$ is used. No constraints are added for this goal. 
 
-#### ramping_range
-The ramping_range is constructed as a range goal. The only difference is that $x_t$ is replaced by $der(x_t)$.
+#### range_rate_of_change
+The range_rate_of_change is constructed as a range goal. The only difference is that $x_t$ is replaced by $der(x_t)$.
 
 ### Example goal table
 See the table below for an example content of the `goal_table.csv`.

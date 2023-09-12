@@ -131,7 +131,7 @@ class BaseGoal(Goal):
             # using the bounds of the state that is differenced.
             maximum_scaled_difference = (self.function_range[1] - self.function_range[0]) / np.diff(
                 optimization_problem.times()
-            ).mean()
+            ).min()
             self.function_range[0] = -maximum_scaled_difference
             self.function_range[1] = maximum_scaled_difference
 

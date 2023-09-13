@@ -1,5 +1,5 @@
 """Schema for the goal_table."""
-from typing import Union
+from typing import List, Union
 from pydantic import BaseModel, field_validator, model_validator
 import numpy as np
 import pandas as pd
@@ -93,3 +93,9 @@ class GoalTableRow(BaseModel):
         except AssertionError as exc:
             raise ValueError("For a range goal, at least one of target_min and target_max should be set.") from exc
         return self
+
+
+class GoalTable(BaseModel):
+    """Model for the goal table"""
+
+    rows: List[GoalTableRow]

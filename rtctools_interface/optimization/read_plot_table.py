@@ -1,7 +1,7 @@
 """Module for reading goals from a csv file."""
 import pandas as pd
 
-from rtctools_interface.optimization.plot_table_schema import PlotTableRow
+from rtctools_interface.optimization.plot_table_schema import PlotTable
 from rtctools_interface.optimization.read_goals import read_and_check_goal_table
 from rtctools_interface.utils.parse_and_validate_table import parse_and_validate_table
 
@@ -30,7 +30,7 @@ def string_to_list(string):
 def read_and_check_plot_table(plot_table_file):
     """Read plot information from csv file and check values"""
     raw_plot_table = pd.read_csv(plot_table_file, sep=",")
-    parsed_plot_table = parse_and_validate_table(raw_plot_table, PlotTableRow, "plot_table")
+    parsed_plot_table = parse_and_validate_table(raw_plot_table, PlotTable, "plot_table")
     return parsed_plot_table
 
 

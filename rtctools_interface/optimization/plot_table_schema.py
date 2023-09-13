@@ -1,6 +1,6 @@
 """Schema for the plot_table."""
 
-from typing import Union
+from typing import List, Union
 from pydantic import BaseModel, field_validator
 import numpy as np
 
@@ -24,3 +24,9 @@ class PlotTableRow(BaseModel):
         if value not in allowed:
             raise ValueError(f"Specified_in should be one of {allowed}")
         return value
+
+
+class PlotTable(BaseModel):
+    """Model for the goal table"""
+
+    rows: List[PlotTableRow]

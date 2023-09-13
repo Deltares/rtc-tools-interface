@@ -2,9 +2,9 @@
 import pandas as pd
 
 from rtctools_interface.optimization.base_goal import PATH_GOALS, NON_PATH_GOALS
-from rtctools_interface.optimization.goal_table_schema import goal_table_column_spec
+from rtctools_interface.optimization.goal_table_schema import GoalTableRow
 
-from rtctools_interface.utils.check_pandas_table import check_pandas_table
+from rtctools_interface.utils.parse_and_validate_table import parse_and_validate_table
 
 GOAL_PARAMETERS = [
     "id",
@@ -24,9 +24,9 @@ GOAL_PARAMETERS = [
 
 def read_and_check_goal_table(file):
     """Read goals from csv file and check values"""
-    goals = pd.read_csv(file, sep=",")
-    check_pandas_table(goals, goal_table_column_spec, "goal_table")
-    return goals
+    raw_goal_table = pd.read_csv(file, sep=",")
+    parsed_goal_table = parse_and_validate_table(raw_goal_table, GoalTableRow, "goal_table")
+    return parsed_goal_table
 
 
 def read_goals(file, path_goal: bool):

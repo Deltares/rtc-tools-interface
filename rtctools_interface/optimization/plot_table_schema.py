@@ -1,10 +1,26 @@
 """Schema for the plot_table."""
-plot_table_column_spec = {
-    "id": {"allowed_types": [int, float, str], "allowed_values": None, "required": False},
-    "y_axis_title": {"allowed_types": [str], "allowed_values": None, "required": True},
-    "variables_style_1": {"allowed_types": [str], "allowed_values": None, "required": False},
-    "variables_style_2": {"allowed_types": [str], "allowed_values": None, "required": False},
-    "variables_with_previous_result": {"allowed_types": [str], "allowed_values": None, "required": False},
-    "custom_title": {"allowed_types": [str], "allowed_values": None, "required": False},
-    "specified_in": {"allowed_types": [str], "allowed_values": ["python", "goal_generator"], "required": True},
-}
+
+from typing import Union
+from pydantic import BaseModel, field_validator
+import numpy as np
+
+
+class PlotTableRow(BaseModel):
+    """Model for one row in the plot table."""
+
+    specified_in: str
+    y_axis_title: str
+    id: Union[int, str, float] = np.nan
+    variables_style_1: Union[str, float] = np.nan
+    variables_style_2: Union[str, float] = np.nan
+    variables_with_previous_result: Union[str, float] = np.nan
+    custom_title: Union[str, float] = np.nan
+
+    @field_validator("specified_in")
+    @classmethod
+    def validate_goal_type(cls, value):
+        """Check whether the specified_in value is allowed"""
+        allowed = ["python", "goal_generator"]
+        if value not in allowed:
+            raise ValueError(f"Specified_in should be one of {allowed}")
+        return value

@@ -24,6 +24,24 @@ class GoalTableRow(BaseModel):
     weight: float = np.nan
     order: float = np.nan
 
+    @field_validator("id")
+    @classmethod
+    def convert_to_int(cls, value):
+        """Convert value to integer if possible."""
+        try:
+            return int(value)
+        except (ValueError, TypeError):
+            return value
+
+    @field_validator("target_min", "target_max")
+    @classmethod
+    def convert_to_float(cls, value):
+        """Convert value to float if possible."""
+        try:
+            return float(value)
+        except (ValueError, TypeError):
+            return value
+
     @field_validator("goal_type")
     @classmethod
     def validate_goal_type(cls, value):

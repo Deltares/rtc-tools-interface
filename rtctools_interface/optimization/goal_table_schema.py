@@ -99,3 +99,10 @@ class GoalTable(BaseModel):
     """Model for the goal table"""
 
     rows: List[GoalTableRow]
+
+    @model_validator(mode="after")
+    def validate_unique_ids(self):
+        """Validate whether all id's are unique."""
+        all_ids = [row.id for row in self.rows]  # For now, we also consider inactive goals.
+        if len(all_ids) != len(set(all_ids)):
+            raise ValueError("Non-unique goal-id('s) in goal table! Please give each goal a unique id.")

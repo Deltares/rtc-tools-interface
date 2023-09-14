@@ -37,6 +37,8 @@ class PlotTableRow(BaseModel):
     @classmethod
     def convert_to_list(cls, value):
         """Convert the inputs to a list."""
+        if isinstance(value, list):
+            return value
         return string_to_list(value)
 
     @field_validator("id")

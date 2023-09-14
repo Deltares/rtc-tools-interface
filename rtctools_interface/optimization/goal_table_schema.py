@@ -1,5 +1,5 @@
 """Schema for the goal_table."""
-from typing import Union
+from typing import Literal, Union
 from pydantic import BaseModel, Field, field_validator, model_validator
 import numpy as np
 import pandas as pd
@@ -9,7 +9,7 @@ class BaseGoalModel(BaseModel):
     """BaseModel for a goal."""
 
     goal_id: Union[int, str] = Field(..., alias="id")
-    active: int
+    active: Literal[0, 1]
     state: str
     goal_type: str
     priority: int
@@ -34,14 +34,9 @@ class BaseGoalModel(BaseModel):
         except (ValueError, TypeError):
             return value
 
-    @field_validator("active")
-    @classmethod
-    def validate_active(cls, value):
-        """Check whether active is either 0 or 1"""
-        allowed_values = [0, 1]
-        if value not in allowed_values:
-            raise ValueError(f"Invalid value '{value}' in column 'active'. Allowed values are {allowed_values}.")
-        return value
+
+class MinMaximizationGoalModel(BaseGoalModel):
+    """Model for a minimization and maximization goal."""
 
 
 class RangeGoalModel(BaseGoalModel):
@@ -90,10 +85,6 @@ class RangeGoalModel(BaseGoalModel):
 
 class RangeRateOfChangeGoalModel(RangeGoalModel):
     """Model for a rate of change range goal."""
-
-
-class MinMaximizationGoalModel(BaseGoalModel):
-    """Model for a minimization and maximization goal."""
 
 
 PATH_GOALS = {

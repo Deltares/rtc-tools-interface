@@ -1,8 +1,8 @@
 """Module for reading goals from a csv file."""
 import pandas as pd
 
-from rtctools_interface.optimization.plot_table_schema import PlotTable
-from rtctools_interface.optimization.read_goals import read_and_check_goal_table
+from rtctools_interface.optimization.plot_table_schema import GOAL_TYPE_COMBINED_MODEL, PlotTable
+from rtctools_interface.optimization.read_goals import get_goals_from_csv
 from rtctools_interface.utils.parse_and_validate_table import parse_and_validate_table
 
 PLOT_PARAMETERS = [
@@ -16,17 +16,6 @@ PLOT_PARAMETERS = [
 ]
 
 
-def string_to_list(string):
-    """
-    Convert a string to a list of strings
-    """
-    if string == "" or not isinstance(string, str):
-        return []
-    string_without_whitespace = string.replace(" ", "")
-    list_of_strings = string_without_whitespace.split(",")
-    return list_of_strings
-
-
 def read_and_check_plot_table(plot_table_file):
     """Read plot information from csv file and check values"""
     raw_plot_table = pd.read_csv(plot_table_file, sep=",")
@@ -37,14 +26,17 @@ def read_and_check_plot_table(plot_table_file):
 def read_plot_table(plot_table_file, goal_table_file):
     """Read plot table for PlotGoals and merge with goals table"""
     plot_table = read_and_check_plot_table(plot_table_file)
-    variable_types = [
-        col
-        for col in plot_table.columns
-        if col in ["variables_style_1", "variables_style_2", "variables_with_previous_result"]
-    ]
-    plot_table[variable_types] = plot_table[variable_types].applymap(string_to_list)
-    goals = read_and_check_goal_table(goal_table_file)
-    joined_table = plot_table.merge(goals, on="id", how="left")
-    joined_table["active"].replace(pd.NA, 1, inplace=True)
-    is_active = (joined_table["active"] == 1) | (joined_table["specified_in"] == "python")
-    return joined_table.loc[is_active, :]
+
+    goals = get_goals_from_csv(goal_table_file)
+    goals_by_id = {goal.goal_id: goal for _goal_type, goals in goals.items() for goal in goals}
+    joined_config = []
+    for subplot_config in plot_table:
+        if subplot_config.id in goals_by_id.keys():
+            goal_config = goals_by_id[subplot_config.id]
+            if subplot_config.specified_in == "python":
+                joined_config.append(subplot_config)
+            else:
+                joined_config.append(
+                    GOAL_TYPE_COMBINED_MODEL[goal_config.goal_type](**(subplot_config.__dict__ | goal_config.__dict__))
+                )
+    return joined_config

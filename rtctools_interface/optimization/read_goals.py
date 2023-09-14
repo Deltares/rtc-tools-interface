@@ -1,10 +1,8 @@
 """Module for reading goals from a csv file."""
+from typing import Any, List
 import pandas as pd
 
-from rtctools_interface.optimization.base_goal import PATH_GOALS, NON_PATH_GOALS
-from rtctools_interface.optimization.goal_table_schema import GoalTable
-
-from rtctools_interface.utils.parse_and_validate_table import parse_and_validate_table
+from rtctools_interface.optimization.goal_table_schema import GOAL_TYPES, NON_PATH_GOALS, PATH_GOALS
 
 GOAL_PARAMETERS = [
     "id",
@@ -22,22 +20,28 @@ GOAL_PARAMETERS = [
 ]
 
 
-def read_and_check_goal_table(file):
+def get_goals_from_csv(file) -> dict[str, List[Any]]:
     """Read goals from csv file and check values"""
     raw_goal_table = pd.read_csv(file, sep=",")
-    parsed_goal_table = parse_and_validate_table(raw_goal_table, GoalTable, "goal_table")
-    return parsed_goal_table
+    if "goal_type" not in raw_goal_table:
+        raise ValueError("Goal type column not in goal table.")
+    if "active" not in raw_goal_table:
+        raise ValueError("Active column not in goal table.")
+    parsed_goals = {goal_type: [] for goal_type in GOAL_TYPES.keys()}
+    for _, row in raw_goal_table.iterrows():
+        if row["goal_type"] not in GOAL_TYPES.keys():
+            raise ValueError(f"Goal of type {row['goal_type']} is not allowed. Allowed are {GOAL_TYPES.keys()}")
+        if int(row["active"]) == 1:
+            parsed_goals[row["goal_type"]].append(GOAL_TYPES[row["goal_type"]](**row))
+        elif int(row["active"]) != 0:
+            raise ValueError("Value in active column should be either 0 or 1.")
+    return parsed_goals
 
 
 def read_goals(file, path_goal: bool):
     """Read goals from a csv file
-    Returns either only the path_goals or only the non_path goals
+    Returns either only the path_goals or only the non_path goals. In either case only the active goals.
     """
-    goals = read_and_check_goal_table(file)
-    is_active = goals["active"] == 1
-    if path_goal:
-        requested_goal_type = goals["goal_type"].isin(PATH_GOALS)
-    else:
-        requested_goal_type = goals["goal_type"].isin(NON_PATH_GOALS)
-    filter_goals = is_active * requested_goal_type
-    return goals.loc[filter_goals, GOAL_PARAMETERS]
+    parsed_goals = get_goals_from_csv(file)
+    requested_goal_types = PATH_GOALS.keys() if path_goal else NON_PATH_GOALS.keys()
+    return [goal for goal_type, goals in parsed_goals.items() if goal_type in requested_goal_types for goal in goals]

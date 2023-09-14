@@ -4,21 +4,6 @@ import pandas as pd
 
 from rtctools_interface.optimization.goal_table_schema import GOAL_TYPES, NON_PATH_GOALS, PATH_GOALS
 
-GOAL_PARAMETERS = [
-    "id",
-    "state",
-    "goal_type",
-    "function_min",
-    "function_max",
-    "function_nominal",
-    "target_data_type",
-    "target_min",
-    "target_max",
-    "priority",
-    "weight",
-    "order",
-]
-
 
 def get_goals_from_csv(file) -> dict[str, List[Any]]:
     """Read goals from csv file and check values"""

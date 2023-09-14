@@ -96,25 +96,6 @@ class MinMaximizationGoalModel(BaseGoalModel):
     """Model for a minimization and maximization goal."""
 
 
-# class AllGoals(BaseModel):
-#     """Model for the goal table"""
-
-#     range_goals: List[RangeGoalModel]
-#     min_max_goals: List[MinMaximizationGoalModel]
-#     range_rate_of_change_goals: List[RangeRateOfChangeGoalModel]
-
-#     @model_validator(mode="after")
-#     def validate_unique_ids(self):
-#         """Validate whether all id's are unique."""
-#         all_ids = [row.id for row in self.rows]  # For now, we also consider inactive goals.
-#         if len(all_ids) != len(set(all_ids)):
-#             raise ValueError("Non-unique goal-id('s) in goal table! Please give each goal a unique id.")
-
-
-# class AllGoals(BaseModel):
-#     goals = List[Union[RangeGoalModel, MinMaximizationGoalModel, RangeRateOfChangeGoalModel]]
-
-
 PATH_GOALS = {
     "minimization_path": MinMaximizationGoalModel,
     "maximization_path": MinMaximizationGoalModel,

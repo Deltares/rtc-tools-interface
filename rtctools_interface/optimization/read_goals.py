@@ -1,11 +1,20 @@
 """Module for reading goals from a csv file."""
-from typing import Any, List
+from typing import List, Union
 import pandas as pd
 
-from rtctools_interface.optimization.goal_table_schema import GOAL_TYPES, NON_PATH_GOALS, PATH_GOALS
+from rtctools_interface.optimization.goal_table_schema import (
+    GOAL_TYPES,
+    NON_PATH_GOALS,
+    PATH_GOALS,
+    MinMaximizationGoalModel,
+    RangeGoalModel,
+    RangeRateOfChangeGoalModel,
+)
 
 
-def get_goals_from_csv(file) -> dict[str, List[Any]]:
+def get_goals_from_csv(
+    file,
+) -> dict[str, List[Union[RangeGoalModel, RangeRateOfChangeGoalModel, MinMaximizationGoalModel]]]:
     """Read goals from csv file and check values"""
     raw_goal_table = pd.read_csv(file, sep=",")
     if "goal_type" not in raw_goal_table:
@@ -23,7 +32,9 @@ def get_goals_from_csv(file) -> dict[str, List[Any]]:
     return parsed_goals
 
 
-def read_goals(file, path_goal: bool):
+def read_goals(
+    file, path_goal: bool
+) -> List[Union[RangeGoalModel, RangeRateOfChangeGoalModel, MinMaximizationGoalModel]]:
     """Read goals from a csv file
     Returns either only the path_goals or only the non_path goals. In either case only the active goals.
     """

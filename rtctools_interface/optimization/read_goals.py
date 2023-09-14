@@ -29,6 +29,10 @@ def get_goals_from_csv(
             parsed_goals[row["goal_type"]].append(GOAL_TYPES[row["goal_type"]](**row))
         elif int(row["active"]) != 0:
             raise ValueError("Value in active column should be either 0 or 1.")
+    # TODO: Make a pydantic model for the set of all goals and do the following validation there.
+    ids = [parsed_goal.goal_id for goal_by_type in parsed_goals.values() for parsed_goal in goal_by_type]
+    if len(ids) != len(set(ids)):
+        raise ValueError("ID's in goal generator table should be unique!")
     return parsed_goals
 
 

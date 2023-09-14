@@ -37,10 +37,11 @@ class Subplot:
     Contains the axis object and all configuration settings and data
     that belongs to the subplot."""
 
-    def __init__(self, optimization_problem, axis, subplot_config, results, results_prev):
+    def __init__(self, optimization_problem, axis, subplot_config, goal, results, results_prev):
         self.axis = axis
         self.config = subplot_config
-        self.function_nominal = self.config.function_nominal if self.config.specified_in == "python" else 1
+        self.goal = goal
+        self.function_nominal = self.goal.function_nominal if self.goal else 1
         self.results = results
         self.results_prev = results_prev
         self.datetimes = optimization_problem.io.datetimes
@@ -182,7 +183,7 @@ class PlotGoalsMixin:
         """Find the goal belonging to a subplot"""
         all_goals = self.goals() + self.path_goals()
         for goal in all_goals:
-            if goal.goal_id == subplot_config["id"]:
+            if goal.goal_id == subplot_config.id:
                 return goal
         return None
 
@@ -226,7 +227,8 @@ class PlotGoalsMixin:
         for subplot_config in self.plot_config:
             i_plot += 1
             axis = get_subplot(i_plot, n_rows, axs)
-            subplot = Subplot(self, axis, subplot_config, results, results_prev)
+            goal = self.get_goal(subplot_config)
+            subplot = Subplot(self, axis, subplot_config, goal, results, results_prev)
             if subplot.config.specified_in == "goal_generator":
                 subplot.plot_with_previous(subplot.config.state)
             subplot.plot_additional_variables()

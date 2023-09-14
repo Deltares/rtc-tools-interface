@@ -1,4 +1,3 @@
-import pandas as pd
 import logging
 from pydantic import ValidationError
 

@@ -9,7 +9,6 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as mtick
 
 import numpy as np
-import pandas as pd
 
 from rtctools_interface.optimization.read_plot_table import read_plot_table
 
@@ -169,20 +168,13 @@ class PlotGoalsMixin:
             plot_table_file = self.plot_table_file
         except AttributeError:
             plot_table_file = os.path.join(self._input_folder, "plot_table.csv")
-        self.plot_table = read_plot_table(plot_table_file, self.goal_table_file)
+        self.plot_config = read_plot_table(plot_table_file, self.goal_table_file)
 
         # Store list of variable-names that may not be present in the results.
-        variables_style_1 = [
-            var for row in self.plot_table if not pd.isna(row.variables_style_1) for var in row.variables_style_1
-        ]
-        variables_style_2 = [
-            var for row in self.plot_table if not pd.isna(row.variables_style_1) for var in row.variables_style_2
-        ]
+        variables_style_1 = [var for subplot_config in self.plot_config for var in subplot_config.variables_style_1]
+        variables_style_2 = [var for subplot_config in self.plot_config for var in subplot_config.variables_style_2]
         variables_with_previous_result = [
-            var
-            for row in self.plot_table
-            if not pd.isna(row.variables_style_1)
-            for var in row.variables_with_previous_result
+            var for subplot_config in self.plot_config for var in subplot_config.variables_with_previous_result
         ]
         self.custom_variables = variables_style_1 + variables_style_2 + variables_with_previous_result
 
@@ -215,9 +207,8 @@ class PlotGoalsMixin:
         # pylint: disable=too-many-locals
         """Creates a figure with a subplot for each row in the plot_table."""
         results = result_dict["extract_result"]
-        plot_config = self.plot_table
 
-        if len(plot_config) == 0:
+        if len(self.plot_config) == 0:
             logger.info(
                 "PlotGoalsMixin did not find anything to plot."
                 + " Are there any goals that are active and described in the plot_table?"
@@ -225,14 +216,14 @@ class PlotGoalsMixin:
             return
 
         # Initalize figure
-        n_cols = math.ceil(len(plot_config) / self.plot_max_rows)
-        n_rows = math.ceil(len(plot_config) / n_cols)
+        n_cols = math.ceil(len(self.plot_config) / self.plot_max_rows)
+        n_rows = math.ceil(len(self.plot_config) / n_cols)
         fig, axs = plt.subplots(nrows=n_rows, ncols=n_cols, figsize=(n_cols * 9, n_rows * 3), dpi=80, squeeze=False)
         fig.suptitle("Results after optimizing until priority {}".format(result_dict["priority"]), fontsize=14)
         i_plot = -1
 
         # Add subplot for each row in the plot_table
-        for subplot_config in plot_config:
+        for subplot_config in self.plot_config:
             i_plot += 1
             axis = get_subplot(i_plot, n_rows, axs)
             subplot = Subplot(self, axis, subplot_config, results, results_prev)

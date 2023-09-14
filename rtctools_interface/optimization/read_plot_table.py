@@ -29,14 +29,14 @@ def read_plot_table(plot_table_file, goal_table_file):
 
     goals = get_goals_from_csv(goal_table_file)
     goals_by_id = {goal.goal_id: goal for _goal_type, goals in goals.items() for goal in goals}
-    joined_config = []
+    joined_plot_config = []
     for subplot_config in plot_table:
         if subplot_config.id in goals_by_id.keys():
             goal_config = goals_by_id[subplot_config.id]
             if subplot_config.specified_in == "python":
-                joined_config.append(subplot_config)
+                joined_plot_config.append(subplot_config)
             else:
-                joined_config.append(
+                joined_plot_config.append(
                     GOAL_TYPE_COMBINED_MODEL[goal_config.goal_type](**(subplot_config.__dict__ | goal_config.__dict__))
                 )
-    return joined_config
+    return joined_plot_config

@@ -1,7 +1,8 @@
 """Schema for the plot_table."""
 
 from typing import List, Literal, Union
-from pydantic import BaseModel, field_validator
+import pandas as pd
+from pydantic import BaseModel, field_validator, model_validator
 import numpy as np
 
 from rtctools_interface.optimization.goal_table_schema import (
@@ -49,6 +50,13 @@ class PlotTableRow(BaseModel):
             return int(value)
         except (ValueError, TypeError):
             return value
+
+    @model_validator(mode="after")
+    def check_required_id(self):
+        """Check if ID is present if specified in goal_generator."""
+        if self.specified_in == "goal_generator" and pd.isna(self.id):
+            raise ValueError("ID is required when goal is specified in the goal generator.")
+        return self
 
 
 class PlotTable(BaseModel):

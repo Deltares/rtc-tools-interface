@@ -46,7 +46,9 @@ class Subplot:
         self.results_prev = results_prev
         self.datetimes = optimization_problem.io.datetimes
         self.time_deltas = get_timedeltas(optimization_problem)
-        self.rate_of_change = self.config.goal_type in ["range_rate_of_change"]
+        self.rate_of_change = (
+            self.config.goal_type in ["range_rate_of_change"] if self.config.specified_in == "goal_generator" else 0
+        )
 
     def get_differences(self, timeseries):
         """Get rate of change timeseries for input timeseries, relative to the function nominal."""
@@ -233,7 +235,10 @@ class PlotGoalsMixin:
                 subplot.plot_with_previous(subplot.config.state)
             subplot.plot_additional_variables()
             subplot.format_subplot()
-            if subplot.config.goal_type in ["range", "range_rate_of_change"]:
+            if subplot.config.specified_in == "goal_generator" and subplot.config.goal_type in [
+                "range",
+                "range_rate_of_change",
+            ]:
                 subplot.add_ranges(self)
 
         # Save figure

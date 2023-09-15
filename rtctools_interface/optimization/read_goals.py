@@ -1,43 +1,59 @@
 """Module for reading goals from a csv file."""
+from typing import List, Literal, Union
 import pandas as pd
 
-from rtctools_interface.optimization.base_goal import PATH_GOALS, NON_PATH_GOALS
-from rtctools_interface.optimization.goal_table_schema import goal_table_column_spec
-
-from rtctools_interface.utils.check_pandas_table import check_pandas_table
-
-GOAL_PARAMETERS = [
-    "id",
-    "state",
-    "goal_type",
-    "function_min",
-    "function_max",
-    "function_nominal",
-    "target_data_type",
-    "target_min",
-    "target_max",
-    "priority",
-    "weight",
-    "order",
-]
+from rtctools_interface.optimization.goal_table_schema import (
+    GOAL_TYPES,
+    NON_PATH_GOALS,
+    PATH_GOALS,
+    MinimizationGoalModel,
+    MaximizationGoalModel,
+    RangeGoalModel,
+    RangeRateOfChangeGoalModel,
+)
 
 
-def read_and_check_goal_table(file):
-    """Read goals from csv file and check values"""
-    goals = pd.read_csv(file, sep=",")
-    check_pandas_table(goals, goal_table_column_spec, "goal_table")
-    return goals
+def goal_table_checks(goal_table):
+    """Validate input goal table."""
+    if "goal_type" not in goal_table:
+        raise ValueError("Goal type column not in goal table.")
+    if "active" not in goal_table:
+        raise ValueError("Active column not in goal table.")
+    for _, row in goal_table.iterrows():
+        if row["goal_type"] not in GOAL_TYPES.keys():
+            raise ValueError(f"Goal of type {row['goal_type']} is not allowed. Allowed are {GOAL_TYPES.keys()}")
+        if int(row["active"]) not in [0, 1]:
+            raise ValueError("Value in active column should be either 0 or 1.")
 
 
-def read_goals(file, path_goal: bool):
+def read_goals_from_csv(
+    file,
+) -> dict[
+    Literal["minimization_path", "maximization_path", "range", "range_rate_of_change"],
+    List[Union[RangeGoalModel, RangeRateOfChangeGoalModel, MinimizationGoalModel, MaximizationGoalModel]],
+]:
+    """Read goals from csv file and validate values."""
+    raw_goal_table = pd.read_csv(file, sep=",")
+    goal_table_checks(raw_goal_table)
+
+    parsed_goals = {goal_type: [] for goal_type in GOAL_TYPES.keys()}
+    for _, row in raw_goal_table.iterrows():
+        if int(row["active"]) == 1:
+            parsed_goals[row["goal_type"]].append(GOAL_TYPES[row["goal_type"]](**row))
+
+    # TODO: Make a pydantic model for the set of all goals and do the following validation there.
+    ids = [parsed_goal.goal_id for goal_by_type in parsed_goals.values() for parsed_goal in goal_by_type]
+    if len(ids) != len(set(ids)):
+        raise ValueError("ID's in goal generator table should be unique!")
+    return parsed_goals
+
+
+def read_goals(
+    file, path_goal: bool
+) -> List[Union[RangeGoalModel, RangeRateOfChangeGoalModel, MinimizationGoalModel, MaximizationGoalModel]]:
     """Read goals from a csv file
-    Returns either only the path_goals or only the non_path goals
+    Returns either only the path_goals or only the non_path goals. In either case only the active goals.
     """
-    goals = read_and_check_goal_table(file)
-    is_active = goals["active"] == 1
-    if path_goal:
-        requested_goal_type = goals["goal_type"].isin(PATH_GOALS)
-    else:
-        requested_goal_type = goals["goal_type"].isin(NON_PATH_GOALS)
-    filter_goals = is_active * requested_goal_type
-    return goals.loc[filter_goals, GOAL_PARAMETERS]
+    parsed_goals = read_goals_from_csv(file)
+    requested_goal_types = PATH_GOALS.keys() if path_goal else NON_PATH_GOALS.keys()
+    return [goal for goal_type, goals in parsed_goals.items() if goal_type in requested_goal_types for goal in goals]

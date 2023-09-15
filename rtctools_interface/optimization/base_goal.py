@@ -7,17 +7,10 @@ from rtctools.optimization.goal_programming_mixin import Goal
 from rtctools.optimization.optimization_problem import OptimizationProblem
 from rtctools.optimization.timeseries import Timeseries
 
+from rtctools_interface.optimization.goal_table_schema import GOAL_TYPES, TARGET_DATA_TYPES
+
+
 logger = logging.getLogger("rtctools")
-
-PATH_GOALS = ["minimization_path", "maximization_path", "range", "range_rate_of_change"]
-NON_PATH_GOALS = []
-GOAL_TYPES = PATH_GOALS + NON_PATH_GOALS
-
-TARGET_DATA_TYPES = [
-    "value",
-    "parameter",
-    "timeseries",
-]
 
 
 class BaseGoal(Goal):
@@ -50,6 +43,7 @@ class BaseGoal(Goal):
         weight=1.0,
         order=2,
         goal_id=None,
+        **_kwargs,
     ):
         self.goal_id = goal_id
         self.state = state
@@ -81,7 +75,7 @@ class BaseGoal(Goal):
             return optimization_problem.state(self.state)
         if self.goal_type in ["range_rate_of_change"]:
             return optimization_problem.der(self.state)
-        raise ValueError("Unsupported goal type '{}', supported are {}".format(self.goal_type, GOAL_TYPES))
+        raise ValueError("Unsupported goal type '{}', supported are {}".format(self.goal_type, GOAL_TYPES.keys()))
 
     def _set_order(self, order):
         """Set the order of the goal."""
@@ -105,7 +99,7 @@ class BaseGoal(Goal):
         if goal_type in GOAL_TYPES:
             self.goal_type = goal_type
         else:
-            raise ValueError(f"goal_type should be one of {GOAL_TYPES}.")
+            raise ValueError(f"goal_type should be one of {GOAL_TYPES.keys()}.")
 
     def _get_state_range(self, optimization_problem, state_name):
         if isinstance(optimization_problem.bounds()[state_name][0], float):

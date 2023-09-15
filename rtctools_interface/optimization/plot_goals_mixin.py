@@ -3,14 +3,23 @@ import logging
 import math
 import os
 import copy
+from typing import Union
 
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mtick
 
 import numpy as np
+from rtctools_interface.optimization.base_goal import BaseGoal
+from rtctools_interface.optimization.plot_and_goal_schema import (
+    MinimizationGoalCombinedModel,
+    MaximizationGoalCombinedModel,
+    RangeGoalCombinedModel,
+    RangeRateOfChangeGoalCombinedModel,
+)
+from rtctools_interface.optimization.plot_table_schema import PlotTableRow
 
-from rtctools_interface.optimization.read_plot_table import read_plot_table
+from rtctools_interface.optimization.read_plot_table import get_joined_plot_config
 
 logger = logging.getLogger("rtctools")
 
@@ -37,16 +46,24 @@ class Subplot:
     Contains the axis object and all configuration settings and data
     that belongs to the subplot."""
 
-    def __init__(self, optimization_problem, axis, goal, subplot_config, results, results_prev):
+    def __init__(self, optimization_problem, axis, subplot_config, goal, results, results_prev):
         self.axis = axis
-        self.goal = goal
-        self.config = subplot_config
+        self.config: Union[
+            MinimizationGoalCombinedModel,
+            MaximizationGoalCombinedModel,
+            RangeGoalCombinedModel,
+            RangeRateOfChangeGoalCombinedModel,
+            PlotTableRow,
+        ] = subplot_config
+        self.goal: BaseGoal = goal
         self.function_nominal = self.goal.function_nominal if self.goal else 1
         self.results = results
         self.results_prev = results_prev
         self.datetimes = optimization_problem.io.datetimes
         self.time_deltas = get_timedeltas(optimization_problem)
-        self.rate_of_change = self.config["goal_type"] in ["range_rate_of_change"]
+        self.rate_of_change = (
+            self.config.goal_type in ["range_rate_of_change"] if self.config.specified_in == "goal_generator" else 0
+        )
 
     def get_differences(self, timeseries):
         """Get rate of change timeseries for input timeseries, relative to the function nominal."""
@@ -87,23 +104,21 @@ class Subplot:
 
     def plot_additional_variables(self):
         """Plot the additional variables defined in the plot_table"""
-        for var in self.config.get("variables_style_1", []):
+        for var in self.config.variables_style_1:
             self.plot_timeseries(var, self.results[var])
-        for var in self.config.get("variables_style_2", []):
+        for var in self.config.variables_style_2:
             self.plot_timeseries(var, self.results[var], linestyle="solid", linewidth="0.5")
-        for var in self.config.get("variables_with_previous_result", []):
+        for var in self.config.variables_with_previous_result:
             self.plot_with_previous(var)
 
     def format_subplot(self):
         """Format the current axis and set legend and title."""
-        self.axis.set_ylabel(self.config["y_axis_title"])
+        self.axis.set_ylabel(self.config.y_axis_title)
         self.axis.legend()
-        if "custom_title" in self.config and isinstance(self.config["custom_title"], str):
-            self.axis.set_title(self.config["custom_title"])
-        elif self.config["specified_in"] == "goal_generator":
-            self.axis.set_title(
-                "Goal for {} (active from priority {})".format(self.config["state"], self.config["priority"])
-            )
+        if "custom_title" in self.config and isinstance(self.config.custom_title, str):
+            self.axis.set_title(self.config.custom_title)
+        elif self.config.specified_in == "goal_generator":
+            self.axis.set_title("Goal for {} (active from priority {})".format(self.config.state, self.config.priority))
 
         date_format = mdates.DateFormatter("%d%b%H")
         self.axis.xaxis.set_major_formatter(date_format)
@@ -116,38 +131,38 @@ class Subplot:
 
         def get_parameter_ranges():
             try:
-                target_min = np.full_like(t, 1) * optimization_problem.parameters(0)[self.config["target_min"]]
-                target_max = np.full_like(t, 1) * optimization_problem.parameters(0)[self.config["target_max"]]
+                target_min = np.full_like(t, 1) * optimization_problem.parameters(0)[self.config.target_min]
+                target_max = np.full_like(t, 1) * optimization_problem.parameters(0)[self.config.target_max]
             except TypeError:
-                target_min = np.full_like(t, 1) * optimization_problem.io.get_parameter(self.config["target_min"])
-                target_max = np.full_like(t, 1) * optimization_problem.io.get_parameter(self.config["target_max"])
+                target_min = np.full_like(t, 1) * optimization_problem.io.get_parameter(self.config.target_min)
+                target_max = np.full_like(t, 1) * optimization_problem.io.get_parameter(self.config.target_max)
             return target_min, target_max
 
         def get_value_ranges():
-            target_min = np.full_like(t, 1) * float(self.config["target_min"])
-            target_max = np.full_like(t, 1) * float(self.config["target_max"])
+            target_min = np.full_like(t, 1) * float(self.config.target_min)
+            target_max = np.full_like(t, 1) * float(self.config.target_max)
             return target_min, target_max
 
         def get_timeseries_ranges():
-            if isinstance(self.config["target_min"], str):
-                target_min = optimization_problem.get_timeseries(self.config["target_min"]).values
+            if isinstance(self.config.target_min, str):
+                target_min = optimization_problem.get_timeseries(self.config.target_min).values
             else:
-                target_min = np.full_like(t, 1) * self.config["target_min"]
-            if isinstance(self.config["target_max"], str):
-                target_max = optimization_problem.get_timeseries(self.config["target_max"]).values
+                target_min = np.full_like(t, 1) * self.config.target_min
+            if isinstance(self.config.target_max, str):
+                target_max = optimization_problem.get_timeseries(self.config.target_max).values
             else:
-                target_max = np.full_like(t, 1) * self.config["target_max"]
+                target_max = np.full_like(t, 1) * self.config.target_max
             return target_min, target_max
 
         t = optimization_problem.times()
-        if self.config["target_data_type"] == "parameter":
+        if self.config.target_data_type == "parameter":
             target_min, target_max = get_parameter_ranges()
-        elif self.config["target_data_type"] == "value":
+        elif self.config.target_data_type == "value":
             target_min, target_max = get_value_ranges()
-        elif self.config["target_data_type"] == "timeseries":
+        elif self.config.target_data_type == "timeseries":
             target_min, target_max = get_timeseries_ranges()
         else:
-            message = "Target type {} not known.".format(self.config["target_data_type"])
+            message = "Target type {} not known.".format(self.config.target_data_type)
             logger.error(message)
             raise ValueError(message)
 
@@ -171,21 +186,21 @@ class PlotGoalsMixin:
             plot_table_file = self.plot_table_file
         except AttributeError:
             plot_table_file = os.path.join(self._input_folder, "plot_table.csv")
-        self.plot_table = read_plot_table(plot_table_file, self.goal_table_file)
+        self.plot_config = get_joined_plot_config(plot_table_file, self.goal_table_file)
 
         # Store list of variable-names that may not be present in the results.
-        variables_style_1 = [var for var_list in self.plot_table.get("variables_style_1", []) for var in var_list]
-        variables_style_2 = [var for var_list in self.plot_table.get("variables_style_2", []) for var in var_list]
+        variables_style_1 = [var for subplot_config in self.plot_config for var in subplot_config.variables_style_1]
+        variables_style_2 = [var for subplot_config in self.plot_config for var in subplot_config.variables_style_2]
         variables_with_previous_result = [
-            var for var_list in self.plot_table.get("variables_with_previous_result", []) for var in var_list
+            var for subplot_config in self.plot_config for var in subplot_config.variables_with_previous_result
         ]
         self.custom_variables = variables_style_1 + variables_style_2 + variables_with_previous_result
 
-    def get_goal(self, subplot_config):
+    def get_goal(self, subplot_config) -> Union[BaseGoal, None]:
         """Find the goal belonging to a subplot"""
         all_goals = self.goals() + self.path_goals()
         for goal in all_goals:
-            if goal.goal_id == subplot_config["id"]:
+            if goal.goal_id == subplot_config.id:
                 return goal
         return None
 
@@ -210,9 +225,8 @@ class PlotGoalsMixin:
         # pylint: disable=too-many-locals
         """Creates a figure with a subplot for each row in the plot_table."""
         results = result_dict["extract_result"]
-        plot_config = self.plot_table.to_dict("records")
 
-        if len(plot_config) == 0:
+        if len(self.plot_config) == 0:
             logger.info(
                 "PlotGoalsMixin did not find anything to plot."
                 + " Are there any goals that are active and described in the plot_table?"
@@ -220,23 +234,26 @@ class PlotGoalsMixin:
             return
 
         # Initalize figure
-        n_cols = math.ceil(len(plot_config) / self.plot_max_rows)
-        n_rows = math.ceil(len(plot_config) / n_cols)
+        n_cols = math.ceil(len(self.plot_config) / self.plot_max_rows)
+        n_rows = math.ceil(len(self.plot_config) / n_cols)
         fig, axs = plt.subplots(nrows=n_rows, ncols=n_cols, figsize=(n_cols * 9, n_rows * 3), dpi=80, squeeze=False)
         fig.suptitle("Results after optimizing until priority {}".format(result_dict["priority"]), fontsize=14)
         i_plot = -1
 
         # Add subplot for each row in the plot_table
-        for subplot_config in plot_config:
+        for subplot_config in self.plot_config:
             i_plot += 1
             axis = get_subplot(i_plot, n_rows, axs)
             goal = self.get_goal(subplot_config)
-            subplot = Subplot(self, axis, goal, subplot_config, results, results_prev)
-            if subplot.config["specified_in"] == "goal_generator":
-                subplot.plot_with_previous(subplot.config["state"])
+            subplot = Subplot(self, axis, subplot_config, goal, results, results_prev)
+            if subplot.config.specified_in == "goal_generator":
+                subplot.plot_with_previous(subplot.config.state)
             subplot.plot_additional_variables()
             subplot.format_subplot()
-            if subplot.config["goal_type"] in ["range", "range_rate_of_change"]:
+            if subplot.config.specified_in == "goal_generator" and subplot.config.goal_type in [
+                "range",
+                "range_rate_of_change",
+            ]:
                 subplot.add_ranges(self)
 
         # Save figure

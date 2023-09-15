@@ -1,4 +1,5 @@
 """Module for plotting."""
+from io import StringIO
 import logging
 import math
 import os
@@ -201,6 +202,8 @@ class PlotGoalsMixin:
         ]
         self.custom_variables = variables_style_1 + variables_style_2 + variables_with_previous_result
 
+        self.plot_data = {}
+
     def get_goal(self, subplot_config) -> Union[BaseGoal, None]:
         """Find the goal belonging to a subplot"""
         all_goals = self.goals() + self.path_goals()
@@ -269,6 +272,11 @@ class PlotGoalsMixin:
         new_output_folder = os.path.join(self._output_folder, "goal_figures")
         os.makedirs(os.path.join(self._output_folder, "goal_figures"), exist_ok=True)
         fig.savefig(os.path.join(new_output_folder, "after_priority_{}.png".format(result_dict["priority"])))
+
+        # also save as StringIO()
+        svg_data = StringIO()
+        fig.savefig(svg_data, format="svg")
+        self.plot_data[result_dict["priority"]] = svg_data
 
     def priority_completed(self, priority: int) -> None:
         """Store results required for plotting"""

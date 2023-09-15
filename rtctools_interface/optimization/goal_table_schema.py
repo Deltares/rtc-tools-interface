@@ -35,8 +35,11 @@ class BaseGoalModel(BaseModel):
             return value
 
 
-class MinMaximizationGoalModel(BaseGoalModel):
+class MaximizationGoalModel(BaseGoalModel):
     """Model for a minimization and maximization goal."""
+
+
+MinimizationGoalModel = MaximizationGoalModel
 
 
 class RangeGoalModel(BaseGoalModel):
@@ -88,8 +91,8 @@ class RangeRateOfChangeGoalModel(RangeGoalModel):
 
 
 PATH_GOALS = {
-    "minimization_path": MinMaximizationGoalModel,
-    "maximization_path": MinMaximizationGoalModel,
+    "minimization_path": MinimizationGoalModel,
+    "maximization_path": MaximizationGoalModel,
     "range": RangeGoalModel,
     "range_rate_of_change": RangeRateOfChangeGoalModel,
 }

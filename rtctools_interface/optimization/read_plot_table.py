@@ -3,7 +3,8 @@ from typing import Union
 import pandas as pd
 from rtctools_interface.optimization.plot_and_goal_schema import (
     GOAL_TYPE_COMBINED_MODEL,
-    MinMaximizationGoalCombinedModel,
+    MinimizationGoalCombinedModel,
+    MaximizationGoalCombinedModel,
     RangeGoalCombinedModel,
     RangeRateOfChangeGoalCombinedModel,
 )
@@ -23,7 +24,13 @@ def read_and_check_plot_table(plot_table_file):
 def read_plot_table(
     plot_table_file, goal_table_file
 ) -> list[
-    Union[MinMaximizationGoalCombinedModel, RangeGoalCombinedModel, RangeRateOfChangeGoalCombinedModel, PlotTableRow]
+    Union[
+        MinimizationGoalCombinedModel,
+        MaximizationGoalCombinedModel,
+        RangeGoalCombinedModel,
+        RangeRateOfChangeGoalCombinedModel,
+        PlotTableRow,
+    ]
 ]:
     """Read plot table for PlotGoals and merge with goals table"""
     plot_table = read_and_check_plot_table(plot_table_file)

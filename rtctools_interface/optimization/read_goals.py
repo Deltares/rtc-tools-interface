@@ -6,7 +6,8 @@ from rtctools_interface.optimization.goal_table_schema import (
     GOAL_TYPES,
     NON_PATH_GOALS,
     PATH_GOALS,
-    MinMaximizationGoalModel,
+    MinimizationGoalModel,
+    MaximizationGoalModel,
     RangeGoalModel,
     RangeRateOfChangeGoalModel,
 )
@@ -29,7 +30,7 @@ def read_goals_from_csv(
     file,
 ) -> dict[
     Literal["minimization_path", "maximization_path", "range", "range_rate_of_change"],
-    List[Union[RangeGoalModel, RangeRateOfChangeGoalModel, MinMaximizationGoalModel]],
+    List[Union[RangeGoalModel, RangeRateOfChangeGoalModel, MinimizationGoalModel, MaximizationGoalModel]],
 ]:
     """Read goals from csv file and validate values."""
     raw_goal_table = pd.read_csv(file, sep=",")
@@ -49,10 +50,18 @@ def read_goals_from_csv(
 
 def read_goals(
     file, path_goal: bool
-) -> List[Union[RangeGoalModel, RangeRateOfChangeGoalModel, MinMaximizationGoalModel]]:
+) -> List[Union[RangeGoalModel, RangeRateOfChangeGoalModel, MinimizationGoalModel, MaximizationGoalModel]]:
     """Read goals from a csv file
     Returns either only the path_goals or only the non_path goals. In either case only the active goals.
     """
     parsed_goals = read_goals_from_csv(file)
     requested_goal_types = PATH_GOALS.keys() if path_goal else NON_PATH_GOALS.keys()
     return [goal for goal_type, goals in parsed_goals.items() if goal_type in requested_goal_types for goal in goals]
+
+
+# def get_path_goals(file):
+#     return read_goals(file, path_goal=True)
+
+
+# def get_nonpath_goals(file):
+#     return read_goals(file, path_goal=False)

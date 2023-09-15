@@ -1,6 +1,7 @@
 """The models in this module define the combined model for a goal and its plot information."""
 from rtctools_interface.optimization.goal_table_schema import (
-    MinMaximizationGoalModel,
+    MaximizationGoalModel,
+    MinimizationGoalModel,
     RangeGoalModel,
     RangeRateOfChangeGoalModel,
 )
@@ -11,7 +12,11 @@ class RangeGoalCombinedModel(PlotTableRow, RangeGoalModel):
     """Model for information in plot table and goal table."""
 
 
-class MinMaximizationGoalCombinedModel(PlotTableRow, MinMaximizationGoalModel):
+class MinimizationGoalCombinedModel(PlotTableRow, MinimizationGoalModel):
+    """Model for information in plot table and goal table."""
+
+
+class MaximizationGoalCombinedModel(PlotTableRow, MaximizationGoalModel):
     """Model for information in plot table and goal table."""
 
 
@@ -20,8 +25,8 @@ class RangeRateOfChangeGoalCombinedModel(PlotTableRow, RangeRateOfChangeGoalMode
 
 
 GOAL_TYPE_COMBINED_MODEL = {
-    "minimization_path": MinMaximizationGoalCombinedModel,
-    "maximization_path": MinMaximizationGoalCombinedModel,
+    "minimization_path": MaximizationGoalCombinedModel,
+    "maximization_path": MinimizationGoalCombinedModel,
     "range": RangeGoalCombinedModel,
     "range_rate_of_change": RangeRateOfChangeGoalCombinedModel,
 }

@@ -12,7 +12,8 @@ import matplotlib.ticker as mtick
 import numpy as np
 from rtctools_interface.optimization.base_goal import BaseGoal
 from rtctools_interface.optimization.plot_and_goal_schema import (
-    MinMaximizationGoalCombinedModel,
+    MinimizationGoalCombinedModel,
+    MaximizationGoalCombinedModel,
     RangeGoalCombinedModel,
     RangeRateOfChangeGoalCombinedModel,
 )
@@ -48,7 +49,11 @@ class Subplot:
     def __init__(self, optimization_problem, axis, subplot_config, goal, results, results_prev):
         self.axis = axis
         self.config: Union[
-            MinMaximizationGoalCombinedModel, RangeGoalCombinedModel, RangeRateOfChangeGoalCombinedModel, PlotTableRow
+            MinimizationGoalCombinedModel,
+            MaximizationGoalCombinedModel,
+            RangeGoalCombinedModel,
+            RangeRateOfChangeGoalCombinedModel,
+            PlotTableRow,
         ] = subplot_config
         self.goal: BaseGoal = goal
         self.function_nominal = self.goal.function_nominal if self.goal else 1

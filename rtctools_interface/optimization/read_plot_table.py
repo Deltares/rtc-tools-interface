@@ -1,15 +1,14 @@
 """Module for reading goals from a csv file."""
 from typing import Union
 import pandas as pd
-
-from rtctools_interface.optimization.plot_table_schema import (
+from rtctools_interface.optimization.plot_and_goal_schema import (
     GOAL_TYPE_COMBINED_MODEL,
     MinMaximizationGoalCombinedModel,
-    PlotTable,
-    PlotTableRow,
     RangeGoalCombinedModel,
     RangeRateOfChangeGoalCombinedModel,
 )
+
+from rtctools_interface.optimization.plot_table_schema import PlotTable, PlotTableRow
 from rtctools_interface.optimization.read_goals import get_goals_from_csv
 from rtctools_interface.utils.parse_and_validate_table import parse_and_validate_table
 

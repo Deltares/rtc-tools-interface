@@ -95,7 +95,6 @@ PATH_GOALS = {
 }
 NON_PATH_GOALS = {}
 GOAL_TYPES = PATH_GOALS | NON_PATH_GOALS
-
 TARGET_DATA_TYPES = [
     "value",
     "parameter",

@@ -5,12 +5,6 @@ import pandas as pd
 from pydantic import BaseModel, field_validator, model_validator
 import numpy as np
 
-from rtctools_interface.optimization.goal_table_schema import (
-    MinMaximizationGoalModel,
-    RangeGoalModel,
-    RangeRateOfChangeGoalModel,
-)
-
 
 def string_to_list(string):
     """
@@ -63,23 +57,3 @@ class PlotTable(BaseModel):
     """Model for the goal table"""
 
     rows: List[PlotTableRow]
-
-
-class RangeGoalCombinedModel(PlotTableRow, RangeGoalModel):
-    """Model for information in plot table and goal table."""
-
-
-class MinMaximizationGoalCombinedModel(PlotTableRow, MinMaximizationGoalModel):
-    """Model for information in plot table and goal table."""
-
-
-class RangeRateOfChangeGoalCombinedModel(PlotTableRow, RangeRateOfChangeGoalModel):
-    """Model for information in plot table and goal table."""
-
-
-GOAL_TYPE_COMBINED_MODEL = {
-    "minimization_path": MinMaximizationGoalCombinedModel,
-    "maximization_path": MinMaximizationGoalCombinedModel,
-    "range": RangeGoalCombinedModel,
-    "range_rate_of_change": RangeRateOfChangeGoalCombinedModel,
-}

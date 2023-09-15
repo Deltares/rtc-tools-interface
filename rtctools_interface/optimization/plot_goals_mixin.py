@@ -3,12 +3,20 @@ import logging
 import math
 import os
 import copy
+from typing import Union
 
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mtick
 
 import numpy as np
+from rtctools_interface.optimization.base_goal import BaseGoal
+from rtctools_interface.optimization.plot_and_goal_schema import (
+    MinMaximizationGoalCombinedModel,
+    RangeGoalCombinedModel,
+    RangeRateOfChangeGoalCombinedModel,
+)
+from rtctools_interface.optimization.plot_table_schema import PlotTableRow
 
 from rtctools_interface.optimization.read_plot_table import read_plot_table
 
@@ -39,8 +47,10 @@ class Subplot:
 
     def __init__(self, optimization_problem, axis, subplot_config, goal, results, results_prev):
         self.axis = axis
-        self.config = subplot_config
-        self.goal = goal
+        self.config: Union[
+            MinMaximizationGoalCombinedModel, RangeGoalCombinedModel, RangeRateOfChangeGoalCombinedModel, PlotTableRow
+        ] = subplot_config
+        self.goal: BaseGoal = goal
         self.function_nominal = self.goal.function_nominal if self.goal else 1
         self.results = results
         self.results_prev = results_prev
@@ -181,7 +191,7 @@ class PlotGoalsMixin:
         ]
         self.custom_variables = variables_style_1 + variables_style_2 + variables_with_previous_result
 
-    def get_goal(self, subplot_config):
+    def get_goal(self, subplot_config) -> Union[BaseGoal, None]:
         """Find the goal belonging to a subplot"""
         all_goals = self.goals() + self.path_goals()
         for goal in all_goals:

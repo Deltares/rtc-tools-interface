@@ -12,16 +12,6 @@ from rtctools_interface.optimization.plot_table_schema import PlotTable, PlotTab
 from rtctools_interface.optimization.read_goals import get_goals_from_csv
 from rtctools_interface.utils.parse_and_validate_table import parse_and_validate_table
 
-PLOT_PARAMETERS = [
-    "id",
-    "y_axis_title",
-    "variables_style_1",
-    "variables_style_2",
-    "variables_with_previous_result",
-    "custom_title",
-    "specified_in",
-]
-
 
 def read_and_check_plot_table(plot_table_file):
     """Read plot information from csv file and check values"""

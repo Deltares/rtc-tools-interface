@@ -11,4 +11,4 @@ def parse_and_validate_table(table, tabel_model_class, table_name):
         parsed_table = tabel_model_class(rows=table.to_dict(orient="records"))
     except (ValueError, ValidationError) as exc:
         raise ValueError(f"While validating {table_name}: {exc}") from exc
-    return [row for row in parsed_table.rows]
+    return parsed_table.rows

@@ -9,7 +9,7 @@ from rtctools_interface.optimization.plot_and_goal_schema import (
 )
 
 from rtctools_interface.optimization.plot_table_schema import PlotTable, PlotTableRow
-from rtctools_interface.optimization.read_goals import get_goals_from_csv
+from rtctools_interface.optimization.read_goals import read_goals_from_csv
 from rtctools_interface.utils.parse_and_validate_table import parse_and_validate_table
 
 
@@ -28,7 +28,7 @@ def read_plot_table(
     """Read plot table for PlotGoals and merge with goals table"""
     plot_table = read_and_check_plot_table(plot_table_file)
 
-    goals = get_goals_from_csv(goal_table_file)
+    goals = read_goals_from_csv(goal_table_file)
     goals_by_id = {goal.goal_id: goal for _goal_type, goals in goals.items() for goal in goals}
     joined_plot_config = []
     for subplot_config in plot_table:

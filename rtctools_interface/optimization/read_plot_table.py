@@ -1,5 +1,5 @@
 """Module for reading goals from a csv file."""
-from typing import Union
+from typing import List, Union
 import pandas as pd
 from rtctools_interface.optimization.plot_and_goal_schema import (
     GOAL_TYPE_COMBINED_MODEL,
@@ -9,19 +9,20 @@ from rtctools_interface.optimization.plot_and_goal_schema import (
     RangeRateOfChangeGoalCombinedModel,
 )
 
-from rtctools_interface.optimization.plot_table_schema import PlotTable, PlotTableRow
+from rtctools_interface.optimization.plot_table_schema import PlotTableRow
 from rtctools_interface.optimization.read_goals import read_goals_from_csv
-from rtctools_interface.utils.parse_and_validate_table import parse_and_validate_table
 
 
-def read_and_check_plot_table(plot_table_file):
+def read_plot_config_from_csv(plot_table_file) -> List[PlotTableRow]:
     """Read plot information from csv file and check values"""
     raw_plot_table = pd.read_csv(plot_table_file, sep=",")
-    parsed_plot_table = parse_and_validate_table(raw_plot_table, PlotTable, "plot_table")
-    return parsed_plot_table
+    parsed_rows: List[PlotTableRow] = []
+    for _, row in raw_plot_table.iterrows():
+        parsed_rows.append(PlotTableRow(**row))
+    return parsed_rows
 
 
-def read_plot_table(
+def get_joined_plot_config(
     plot_table_file, goal_table_file
 ) -> list[
     Union[
@@ -33,7 +34,7 @@ def read_plot_table(
     ]
 ]:
     """Read plot table for PlotGoals and merge with goals table"""
-    plot_table = read_and_check_plot_table(plot_table_file)
+    plot_table = read_plot_config_from_csv(plot_table_file)
 
     goals = read_goals_from_csv(goal_table_file)
     goals_by_id = {goal.goal_id: goal for _goal_type, goals in goals.items() for goal in goals}

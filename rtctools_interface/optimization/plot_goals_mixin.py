@@ -19,7 +19,7 @@ from rtctools_interface.optimization.plot_and_goal_schema import (
 )
 from rtctools_interface.optimization.plot_table_schema import PlotTableRow
 
-from rtctools_interface.optimization.read_plot_table import read_plot_table
+from rtctools_interface.optimization.read_plot_table import get_joined_plot_config
 
 logger = logging.getLogger("rtctools")
 
@@ -186,7 +186,7 @@ class PlotGoalsMixin:
             plot_table_file = self.plot_table_file
         except AttributeError:
             plot_table_file = os.path.join(self._input_folder, "plot_table.csv")
-        self.plot_config = read_plot_table(plot_table_file, self.goal_table_file)
+        self.plot_config = get_joined_plot_config(plot_table_file, self.goal_table_file)
 
         # Store list of variable-names that may not be present in the results.
         variables_style_1 = [var for subplot_config in self.plot_config for var in subplot_config.variables_style_1]

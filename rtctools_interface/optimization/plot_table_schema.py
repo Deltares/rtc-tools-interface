@@ -1,6 +1,6 @@
 """Schema for the plot_table."""
 
-from typing import List, Literal, Union
+from typing import Literal, Union
 import pandas as pd
 from pydantic import BaseModel, field_validator, model_validator
 import numpy as np
@@ -51,9 +51,3 @@ class PlotTableRow(BaseModel):
         if self.specified_in == "goal_generator" and pd.isna(self.id):
             raise ValueError("ID is required when goal is specified in the goal generator.")
         return self
-
-
-class PlotTable(BaseModel):
-    """Model for the goal table"""
-
-    rows: List[PlotTableRow]

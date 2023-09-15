@@ -57,11 +57,3 @@ def read_goals(
     parsed_goals = read_goals_from_csv(file)
     requested_goal_types = PATH_GOALS.keys() if path_goal else NON_PATH_GOALS.keys()
     return [goal for goal_type, goals in parsed_goals.items() if goal_type in requested_goal_types for goal in goals]
-
-
-# def get_path_goals(file):
-#     return read_goals(file, path_goal=True)
-
-
-# def get_nonpath_goals(file):
-#     return read_goals(file, path_goal=False)

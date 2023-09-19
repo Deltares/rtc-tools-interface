@@ -59,10 +59,10 @@ def get_joined_plot_config(
 
     # goals = read_goals_from_csv(goal_table_file)
     path_goals = read_goals(
-        file=goal_table_file, path_goal=True, read_from="csv_table", goals_to_generate=goals_to_generate
+        file=goal_table_file, path_goal=True, read_from=read_from, goals_to_generate=goals_to_generate
     )
     non_path_goals = read_goals(
-        file=goal_table_file, path_goal=False, read_from="csv_table", goals_to_generate=goals_to_generate
+        file=goal_table_file, path_goal=False, read_from=read_from, goals_to_generate=goals_to_generate
     )
     goals = path_goals + non_path_goals
     goals_by_id = {goal.goal_id: goal for goal in goals}

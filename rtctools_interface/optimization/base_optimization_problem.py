@@ -27,7 +27,7 @@ class BaseOptimizationProblem(
 
     def __init__(
         self,
-        goal_table_file,
+        goal_table_file=None,
         **kwargs,
     ):
         self.goal_table_file = goal_table_file

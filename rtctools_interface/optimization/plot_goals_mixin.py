@@ -186,7 +186,12 @@ class PlotGoalsMixin:
             plot_table_file = self.plot_table_file
         except AttributeError:
             plot_table_file = os.path.join(self._input_folder, "plot_table.csv")
-        self.plot_config = get_joined_plot_config(plot_table_file, self.goal_table_file)
+        plot_config_list = kwargs.get("plot_config_list", [])
+        read_from = kwargs.get("read_goals_from", "csv_table")
+        goals_to_generate = kwargs.get("goals_to_generate", [])
+        self.plot_config = get_joined_plot_config(
+            plot_table_file, self.goal_table_file, plot_config_list, read_from, goals_to_generate
+        )
 
         # Store list of variable-names that may not be present in the results.
         variables_style_1 = [var for subplot_config in self.plot_config for var in subplot_config.variables_style_1]

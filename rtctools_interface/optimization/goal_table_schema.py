@@ -25,7 +25,7 @@ class BaseGoalModel(BaseModel):
             raise ValueError(f"Invalid goal_type '{value}'. Allowed values are {GOAL_TYPES.keys()}.")
         return value
 
-    @field_validator("goal_id")
+    @field_validator("goal_id", "active")
     @classmethod
     def convert_to_int(cls, value):
         """Convert value to integer if possible."""

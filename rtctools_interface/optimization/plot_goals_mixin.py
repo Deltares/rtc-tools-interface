@@ -174,6 +174,14 @@ class Subplot:
             self.axis.plot(self.datetimes, target_max, "r--", label="Target max")
 
 
+def save_fig_as_png(fig, output_folder, priority):
+    """Save matplotlib figure to output folder."""
+    os.makedirs("goal_figures", exist_ok=True)
+    new_output_folder = os.path.join(output_folder, "goal_figures")
+    os.makedirs(os.path.join(output_folder, "goal_figures"), exist_ok=True)
+    fig.savefig(os.path.join(new_output_folder, "after_priority_{}.png".format(priority)))
+
+
 class PlotGoalsMixin:
     """
     Class for plotting results.
@@ -190,6 +198,9 @@ class PlotGoalsMixin:
         plot_config_list = kwargs.get("plot_config_list", [])
         read_from = kwargs.get("read_goals_from", "csv_table")
         goals_to_generate = kwargs.get("goals_to_generate", [])
+        self.save_plot_to = kwargs.get("save_plot_to", "image")
+        if self.save_plot_to == "stringio":
+            self.plot_data = {}
         self.plot_config = get_joined_plot_config(
             plot_table_file, self.goal_table_file, plot_config_list, read_from, goals_to_generate
         )
@@ -201,8 +212,6 @@ class PlotGoalsMixin:
             var for subplot_config in self.plot_config for var in subplot_config.variables_with_previous_result
         ]
         self.custom_variables = variables_style_1 + variables_style_2 + variables_with_previous_result
-
-        self.plot_data = {}
 
     def get_goal(self, subplot_config) -> Union[BaseGoal, None]:
         """Find the goal belonging to a subplot"""
@@ -228,6 +237,12 @@ class PlotGoalsMixin:
             "priority": priority,
         }
         self.plot_goals_results(result_dict)
+
+    def save_fig_as_stringio(self, fig, priority):
+        """Save figure as stringio in self."""
+        svg_data = StringIO()
+        fig.savefig(svg_data, format="svg")
+        self.plot_data[priority] = svg_data
 
     def plot_goals_results(self, result_dict, results_prev=None):
         # pylint: disable=too-many-locals
@@ -264,19 +279,19 @@ class PlotGoalsMixin:
             ]:
                 subplot.add_ranges(self)
 
-        # Save figure
         for i in range(0, n_cols):
             axs[n_rows - 1, i].set_xlabel("Time")
-        os.makedirs("goal_figures", exist_ok=True)
         fig.tight_layout()
-        new_output_folder = os.path.join(self._output_folder, "goal_figures")
-        os.makedirs(os.path.join(self._output_folder, "goal_figures"), exist_ok=True)
-        fig.savefig(os.path.join(new_output_folder, "after_priority_{}.png".format(result_dict["priority"])))
+        self.save_figure(fig, result_dict["priority"])
 
-        # also save as StringIO()
-        svg_data = StringIO()
-        fig.savefig(svg_data, format="svg")
-        self.plot_data[result_dict["priority"]] = svg_data
+    def save_figure(self, fig, priority):
+        """Save figure."""
+        if self.save_plot_to == "image":
+            save_fig_as_png(fig, self._output_folder, priority)
+        elif self.save_plot_to == "stringio":
+            self.save_fig_as_stringio(fig, priority)
+        else:
+            raise ValueError("Unsupported method of saving the plot results.")
 
     def priority_completed(self, priority: int) -> None:
         """Store results required for plotting"""

@@ -103,9 +103,13 @@ from rtctools_interface.optimization.plot_goals_mixin import PlotGoalsMixin
 ```
 Then, add the `PlotGoalsMixin` to your optimization problem class. Note that, for now, `PlotGoalsMixin` only works in combination with the `GoalGeneratorMixin`. Include the `PlotGoalsMixin` before the `GoalGeneratorMixin`!
 
-Set the class variable `plot_max_rows` to an integer number for the maximum number of rows (default is 4). The number of columns will be derived from that.
-By default, the Mixin will look for the configuration table `input\plot_table.csv`.
+### Configuration variables
+The following class variables can be set to change the behaviour of the PlotGoalsMixin:
+- `plot_max_rows`: an integer number for the maximum number of rows (default is 4). The number of columns will be derived from that.
+- `plot_results_each_priority`: boolean indicating whether the plots for each priority should be generated and saved. Default is True.
+- `plot_table_file`: path to plot table csv file. Default is `input\plot_table.csv`.
 
+### Specifying the plot table
 There are two types of plots that can be made with the PlotGoalsMixin
 1. Plots based on goals in the goal_generator table
 2. Plots of arbitrary states, for example ones being optimized in a goal defined in Python.

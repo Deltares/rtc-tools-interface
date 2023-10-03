@@ -196,6 +196,7 @@ class PlotGoalsMixin:
     """
 
     plot_max_rows = 4
+    plot_results_each_priority = True
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -310,7 +311,8 @@ class PlotGoalsMixin:
     def post(self):
         """Tasks after optimizing. Creates a plot for for each priority."""
         super().post()
-        for intermediate_result_prev, intermediate_result in zip(
-            [None] + self.intermediate_results[:-1], self.intermediate_results
-        ):
-            self.plot_goal_results_from_dict(intermediate_result, intermediate_result_prev)
+        if self.plot_results_each_priority:
+            for intermediate_result_prev, intermediate_result in zip(
+                [None] + self.intermediate_results[:-1], self.intermediate_results
+            ):
+                self.plot_goal_results_from_dict(intermediate_result, intermediate_result_prev)

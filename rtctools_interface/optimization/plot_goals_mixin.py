@@ -182,6 +182,14 @@ def save_fig_as_png(fig, output_folder, priority):
     fig.savefig(os.path.join(new_output_folder, "after_priority_{}.png".format(priority)))
 
 
+def get_goal(subplot_config, all_goals) -> Union[BaseGoal, None]:
+    """Find the goal belonging to a subplot"""
+    for goal in all_goals:
+        if goal.goal_id == subplot_config.id:
+            return goal
+    return None
+
+
 class PlotGoalsMixin:
     """
     Class for plotting results.
@@ -212,14 +220,6 @@ class PlotGoalsMixin:
             var for subplot_config in self.plot_config for var in subplot_config.variables_with_previous_result
         ]
         self.custom_variables = variables_style_1 + variables_style_2 + variables_with_previous_result
-
-    def get_goal(self, subplot_config) -> Union[BaseGoal, None]:
-        """Find the goal belonging to a subplot"""
-        all_goals = self.goals() + self.path_goals()
-        for goal in all_goals:
-            if goal.goal_id == subplot_config.id:
-                return goal
-        return None
 
     def pre(self):
         """Tasks before optimizing."""
@@ -263,11 +263,12 @@ class PlotGoalsMixin:
         fig.suptitle("Results after optimizing until priority {}".format(result_dict["priority"]), fontsize=14)
         i_plot = -1
 
+        all_goals = self.goals() + self.path_goals()
         # Add subplot for each row in the plot_table
         for subplot_config in self.plot_config:
             i_plot += 1
             axis = get_subplot(i_plot, n_rows, axs)
-            goal = self.get_goal(subplot_config)
+            goal = get_goal(subplot_config, all_goals)
             subplot = Subplot(self, axis, subplot_config, goal, results, results_prev)
             if subplot.config.specified_in == "goal_generator":
                 subplot.plot_with_previous(subplot.config.state)

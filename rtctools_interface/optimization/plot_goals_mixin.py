@@ -196,6 +196,7 @@ class PlotGoalsMixin:
     """
 
     plot_max_rows = 4
+    plot_results_each_priority = True
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

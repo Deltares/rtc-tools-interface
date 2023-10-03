@@ -13,7 +13,6 @@ class BaseOptimizationProblemPlotting(PlotGoalsMixin, BaseOptimizationProblem):
     # Ignore too many ancestors, since the use of mixin classes is how rtc-tools is set up.
     # pylint: disable=too-many-ancestors
     """Optimization problem with plotting functionalities."""
-    plot_results_each_priority = True
     def __init__(
         self,
         plot_table_file,

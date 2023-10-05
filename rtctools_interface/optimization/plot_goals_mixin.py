@@ -1,19 +1,11 @@
-"""Module for plotting."""
-import datetime
-import pathlib
-from io import StringIO
+"""Mixin to store all required data for plotting. Can also call the plot function."""
 import logging
-import math
 import os
 import copy
-from typing import Union
-
-import matplotlib.dates as mdates
-import matplotlib.pyplot as plt
-import matplotlib.ticker as mtick
+from typing import Union, List, Dict
 
 import numpy as np
-from rtctools_interface.optimization.base_goal import BaseGoal
+
 from rtctools_interface.optimization.plot_and_goal_schema import (
     MinimizationGoalCombinedModel,
     MaximizationGoalCombinedModel,
@@ -21,255 +13,17 @@ from rtctools_interface.optimization.plot_and_goal_schema import (
     RangeRateOfChangeGoalCombinedModel,
 )
 from rtctools_interface.optimization.plot_table_schema import PlotTableRow
+from rtctools_interface.optimization.plot_tools import create_plot_each_priority
 
 from rtctools_interface.optimization.read_plot_table import get_joined_plot_config
+from rtctools_interface.optimization.type_definitions import (
+    PlotDataAndConfig,
+    PlotOptions,
+    PrioIndependentData,
+    TargetDict,
+)
 
 logger = logging.getLogger("rtctools")
-
-from typing import TypedDict, List, Dict, Literal
-
-
-class TargetDict(TypedDict):
-    target_min: np.array
-    target_max: np.array
-
-
-class PrioIndependentData(TypedDict):
-    io_datetimes: List[datetime.datetime]
-    times: np.array
-    target_series: Dict[str, TargetDict]
-    all_goals: List[BaseGoal]
-
-
-class PlotOptions(TypedDict):
-    plot_config: List[
-        Union[
-            MinimizationGoalCombinedModel,
-            MaximizationGoalCombinedModel,
-            RangeGoalCombinedModel,
-            RangeRateOfChangeGoalCombinedModel,
-            PlotTableRow,
-        ]
-    ]
-    plot_max_rows: int
-    output_folder: pathlib.Path
-    save_plot_to: Literal["image", "stringio"]
-
-
-class PlotDataAndConfig(TypedDict):
-    intermediate_results: List[Dict]
-    plot_options: PlotOptions
-    prio_independent_data: PrioIndependentData
-
-
-def get_subplot(i_plot, n_rows, axs):
-    """Determine the row and column index and returns the corresponding subplot object."""
-    i_c = math.ceil((i_plot + 1) / n_rows) - 1
-    i_r = i_plot - i_c * n_rows
-    subplot = axs[i_r, i_c]
-    return subplot
-
-
-def get_timedeltas(times):
-    """Get delta_t for each timestep."""
-    return [np.nan] + [times[i] - times[i - 1] for i in range(1, len(times))]
-
-
-class Subplot:
-    """Wrapper class for a subplot in the figure".
-
-    Contains the axis object and all configuration settings and data
-    that belongs to the subplot."""
-
-    def __init__(
-        self,
-        axis,
-        subplot_config,
-        goal,
-        results,
-        results_prev,
-        prio_independent_data: PrioIndependentData,
-    ):
-        self.axis = axis
-        self.config: Union[
-            MinimizationGoalCombinedModel,
-            MaximizationGoalCombinedModel,
-            RangeGoalCombinedModel,
-            RangeRateOfChangeGoalCombinedModel,
-            PlotTableRow,
-        ] = subplot_config
-        self.goal: BaseGoal = goal
-        self.function_nominal = self.goal.function_nominal if self.goal else 1
-        self.results = results
-        self.results_prev = results_prev
-        self.datetimes = prio_independent_data["io_datetimes"]
-        self.time_deltas = get_timedeltas(prio_independent_data["times"])
-        self.rate_of_change = (
-            self.config.goal_type in ["range_rate_of_change"] if self.config.specified_in == "goal_generator" else 0
-        )
-
-        if self.config.goal_type in ["range", "range_rate_of_change"]:
-            self.target_min, self.target_max = prio_independent_data["target_series"][self.config.goal_id].values()
-        else:
-            self.target_min, self.target_max = None, None
-
-    def get_differences(self, timeseries):
-        """Get rate of change timeseries for input timeseries, relative to the function nominal."""
-        timeseries = list(timeseries)
-        return [
-            (st - st_prev) / dt / self.function_nominal * 100
-            for st, st_prev, dt in zip(timeseries, [np.nan] + timeseries[:-1], self.time_deltas)
-        ]
-
-    def plot_timeseries(self, label, timeseries_data, **plot_kwargs):
-        """Actually plot a timeseries.
-
-        If subplot is of rate_of_change type, the difference series will be plotted."""
-        if self.rate_of_change:
-            label = "Rate of Change of " + label
-            series_to_plot = self.get_differences(timeseries_data)
-        else:
-            series_to_plot = timeseries_data
-        self.axis.plot(self.datetimes, series_to_plot, label=label, **plot_kwargs)
-
-    def plot_with_previous(self, state_name):
-        """Add line with the results for a particular state. If previous results
-        are available, a line with the timeseries for those results is also plotted."""
-        label = state_name
-
-        timeseries_data = self.results[state_name]
-        self.plot_timeseries(label, timeseries_data)
-
-        if self.results_prev:
-            timeseries_data = self.results_prev["extract_result"][state_name]
-            label += " (at previous priority optimization)"
-            self.plot_timeseries(
-                label,
-                timeseries_data,
-                color="gray",
-                linestyle="dotted",
-            )
-
-    def plot_additional_variables(self):
-        """Plot the additional variables defined in the plot_table"""
-        for var in self.config.variables_style_1:
-            self.plot_timeseries(var, self.results[var])
-        for var in self.config.variables_style_2:
-            self.plot_timeseries(var, self.results[var], linestyle="solid", linewidth="0.5")
-        for var in self.config.variables_with_previous_result:
-            self.plot_with_previous(var)
-
-    def format_subplot(self):
-        """Format the current axis and set legend and title."""
-        self.axis.set_ylabel(self.config.y_axis_title)
-        self.axis.legend()
-        if "custom_title" in self.config and isinstance(self.config.custom_title, str):
-            self.axis.set_title(self.config.custom_title)
-        elif self.config.specified_in == "goal_generator":
-            self.axis.set_title("Goal for {} (active from priority {})".format(self.config.state, self.config.priority))
-
-        date_format = mdates.DateFormatter("%d%b%H")
-        self.axis.xaxis.set_major_formatter(date_format)
-        if self.rate_of_change:
-            self.axis.yaxis.set_major_formatter(mtick.PercentFormatter())
-        self.axis.grid(which="both", axis="x")
-
-    def add_ranges(self):
-        """Add lines for the lower and upper target."""
-        if np.array_equal(self.target_min, self.target_max, equal_nan=True):
-            self.axis.plot(self.datetimes, self.target_min, "r--", label="Target")
-        else:
-            self.axis.plot(self.datetimes, self.target_min, "r--", label="Target min")
-            self.axis.plot(self.datetimes, self.target_max, "r--", label="Target max")
-
-
-def save_fig_as_png(fig, output_folder, priority) -> None:
-    """Save matplotlib figure to output folder."""
-    os.makedirs("goal_figures", exist_ok=True)
-    new_output_folder = os.path.join(output_folder, "goal_figures")
-    os.makedirs(os.path.join(output_folder, "goal_figures"), exist_ok=True)
-    fig.savefig(os.path.join(new_output_folder, "after_priority_{}.png".format(priority)))
-
-
-def get_goal(subplot_config, all_goals) -> Union[BaseGoal, None]:
-    """Find the goal belonging to a subplot"""
-    for goal in all_goals:
-        if goal.goal_id == subplot_config.id:
-            return goal
-    return None
-
-
-def save_fig_as_stringio(fig, priority):
-    """Save figure as stringio in self."""
-    svg_data = StringIO()
-    fig.savefig(svg_data, format="svg")
-    return fig
-
-
-def save_figure(fig, save_plot_to, output_folder, priority):
-    """Save figure."""
-    if save_plot_to == "image":
-        save_fig_as_png(fig, output_folder, priority)
-    elif save_plot_to == "stringio":
-        save_fig_as_stringio(fig, priority)
-    else:
-        raise ValueError("Unsupported method of saving the plot results.")
-
-
-def create_priority_plot(result_dict, results_prev, plot_data_and_config: PlotDataAndConfig):
-    # pylint: disable=too-many-locals
-    """Creates a figure with a subplot for each row in the plot_table."""
-    results = result_dict["extract_result"]
-    plot_config = plot_data_and_config["plot_options"]["plot_config"]
-    plot_max_rows = plot_data_and_config["plot_options"]["plot_max_rows"]
-    if len(plot_config) == 0:
-        logger.info(
-            "PlotGoalsMixin did not find anything to plot."
-            + " Are there any goals that are active and described in the plot_table?"
-        )
-        return
-
-    # Initalize figure
-    n_cols = math.ceil(len(plot_config) / plot_max_rows)
-    n_rows = math.ceil(len(plot_config) / n_cols)
-    fig, axs = plt.subplots(nrows=n_rows, ncols=n_cols, figsize=(n_cols * 9, n_rows * 3), dpi=80, squeeze=False)
-    fig.suptitle("Results after optimizing until priority {}".format(result_dict["priority"]), fontsize=14)
-    i_plot = -1
-
-    all_goals = plot_data_and_config["prio_independent_data"]["all_goals"]
-    # Add subplot for each row in the plot_table
-    for subplot_config in plot_config:
-        i_plot += 1
-        axis = get_subplot(i_plot, n_rows, axs)
-        goal = get_goal(subplot_config, all_goals)
-        subplot = Subplot(
-            axis, subplot_config, goal, results, results_prev, plot_data_and_config["prio_independent_data"]
-        )
-        if subplot.config.specified_in == "goal_generator":
-            subplot.plot_with_previous(subplot.config.state)
-        subplot.plot_additional_variables()
-        subplot.format_subplot()
-        if subplot.config.specified_in == "goal_generator" and subplot.config.goal_type in [
-            "range",
-            "range_rate_of_change",
-        ]:
-            subplot.add_ranges()
-
-    for i in range(0, n_cols):
-        axs[n_rows - 1, i].set_xlabel("Time")
-    fig.tight_layout()
-    save_figure(
-        fig,
-        plot_data_and_config["plot_options"]["save_plot_to"],
-        plot_data_and_config["plot_options"]["output_folder"],
-        result_dict["priority"],
-    )
-
-
-def create_plot_each_priority(plot_data_and_config: PlotDataAndConfig):
-    intermediate_results = plot_data_and_config["intermediate_results"]
-    for intermediate_result_prev, intermediate_result in zip([None] + intermediate_results[:-1], intermediate_results):
-        create_priority_plot(intermediate_result, intermediate_result_prev, plot_data_and_config)
 
 
 class PlotGoalsMixin:
@@ -309,17 +63,8 @@ class PlotGoalsMixin:
         super().pre()
         self.intermediate_results = []
 
-    def save_figure(self, fig, priority):
-        """Save figure."""
-        if self.save_plot_to == "image":
-            save_fig_as_png(fig, self._output_folder, priority)
-        elif self.save_plot_to == "stringio":
-            self.save_fig_as_stringio(fig, priority)
-        else:
-            raise ValueError("Unsupported method of saving the plot results.")
-
     def priority_completed(self, priority: int) -> None:
-        """Store results required for plotting"""
+        """Store priority-dependent results required for plotting."""
         extracted_results = copy.deepcopy(self.extract_results())
         results_custom_variables = {
             custom_variable: self.get_timeseries(custom_variable)
@@ -343,6 +88,7 @@ class PlotGoalsMixin:
             ]
         ],
     ) -> Dict[str, TargetDict]:
+        """For the goals with targets, collect the actual timeseries with these targets."""
         t = self.times()
 
         def get_parameter_ranges(goal):

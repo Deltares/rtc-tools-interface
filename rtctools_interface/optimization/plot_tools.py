@@ -71,7 +71,8 @@ class Subplot:
         )
 
         if self.config.goal_type in ["range", "range_rate_of_change"]:
-            self.target_min, self.target_max = prio_independent_data["target_series"][self.config.goal_id].values()
+            targets = prio_independent_data["target_series"][self.config.goal_id]
+            self.target_min, self.target_max = targets["target_min"], targets["target_max"]
         else:
             self.target_min, self.target_max = None, None
 

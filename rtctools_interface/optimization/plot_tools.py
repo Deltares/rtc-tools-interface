@@ -70,7 +70,7 @@ class Subplot:
             self.config.goal_type in ["range_rate_of_change"] if self.config.specified_in == "goal_generator" else 0
         )
 
-        if self.config.goal_type in ["range", "range_rate_of_change"]:
+        if self.config.specified_in == "goal_generator" and self.config.goal_type in ["range", "range_rate_of_change"]:
             targets = prio_independent_data["target_series"][self.config.goal_id]
             self.target_min, self.target_max = targets["target_min"], targets["target_max"]
         else:
@@ -126,7 +126,7 @@ class Subplot:
         """Format the current axis and set legend and title."""
         self.axis.set_ylabel(self.config.y_axis_title)
         self.axis.legend()
-        if "custom_title" in self.config and isinstance(self.config.custom_title, str):
+        if "custom_title" in self.config.__dict__ and isinstance(self.config.custom_title, str):
             self.axis.set_title(self.config.custom_title)
         elif self.config.specified_in == "goal_generator":
             self.axis.set_title("Goal for {} (active from priority {})".format(self.config.state, self.config.priority))

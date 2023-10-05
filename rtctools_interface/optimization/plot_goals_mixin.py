@@ -118,7 +118,7 @@ class PlotGoalsMixin:
 
         target_series: Dict[str, TargetDict] = {}
         for goal in all_goals:
-            if goal.goal_type in ["range", "range_rate_of_change"]:
+            if not goal.specified_in == "python" and goal.goal_type in ["range", "range_rate_of_change"]:
                 if goal.target_data_type == "parameter":
                     target_min, target_max = get_parameter_ranges(goal)
                 elif goal.target_data_type == "value":

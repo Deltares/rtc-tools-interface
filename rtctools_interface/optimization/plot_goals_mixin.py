@@ -1,4 +1,6 @@
 """Module for plotting."""
+import datetime
+import pathlib
 from io import StringIO
 import logging
 import math
@@ -24,6 +26,41 @@ from rtctools_interface.optimization.read_plot_table import get_joined_plot_conf
 
 logger = logging.getLogger("rtctools")
 
+from typing import TypedDict, List, Dict, Literal
+
+
+class TargetDict(TypedDict):
+    target_min: np.array
+    target_max: np.array
+
+
+class PrioIndependentData(TypedDict):
+    io_datetimes: List[datetime.datetime]
+    times: np.array
+    target_series: Dict[str, TargetDict]
+    all_goals: List[BaseGoal]
+
+
+class PlotOptions(TypedDict):
+    plot_config: List[
+        Union[
+            MinimizationGoalCombinedModel,
+            MaximizationGoalCombinedModel,
+            RangeGoalCombinedModel,
+            RangeRateOfChangeGoalCombinedModel,
+            PlotTableRow,
+        ]
+    ]
+    plot_max_rows: int
+    output_folder: pathlib.Path
+    save_plot_to: Literal["image", "stringio"]
+
+
+class PlotDataAndConfig(TypedDict):
+    intermediate_results: List[Dict]
+    plot_options: PlotOptions
+    prio_independent_data: PrioIndependentData
+
 
 def get_subplot(i_plot, n_rows, axs):
     """Determine the row and column index and returns the corresponding subplot object."""
@@ -33,12 +70,9 @@ def get_subplot(i_plot, n_rows, axs):
     return subplot
 
 
-def get_timedeltas(optimization_problem):
+def get_timedeltas(times):
     """Get delta_t for each timestep."""
-    return [np.nan] + [
-        optimization_problem.times()[i] - optimization_problem.times()[i - 1]
-        for i in range(1, len(optimization_problem.times()))
-    ]
+    return [np.nan] + [times[i] - times[i - 1] for i in range(1, len(times))]
 
 
 class Subplot:
@@ -47,7 +81,15 @@ class Subplot:
     Contains the axis object and all configuration settings and data
     that belongs to the subplot."""
 
-    def __init__(self, optimization_problem, axis, subplot_config, goal, results, results_prev):
+    def __init__(
+        self,
+        axis,
+        subplot_config,
+        goal,
+        results,
+        results_prev,
+        prio_independent_data: PrioIndependentData,
+    ):
         self.axis = axis
         self.config: Union[
             MinimizationGoalCombinedModel,
@@ -60,11 +102,16 @@ class Subplot:
         self.function_nominal = self.goal.function_nominal if self.goal else 1
         self.results = results
         self.results_prev = results_prev
-        self.datetimes = optimization_problem.io.datetimes
-        self.time_deltas = get_timedeltas(optimization_problem)
+        self.datetimes = prio_independent_data["io_datetimes"]
+        self.time_deltas = get_timedeltas(prio_independent_data["times"])
         self.rate_of_change = (
             self.config.goal_type in ["range_rate_of_change"] if self.config.specified_in == "goal_generator" else 0
         )
+
+        if self.config.goal_type in ["range", "range_rate_of_change"]:
+            self.target_min, self.target_max = prio_independent_data["target_series"][self.config.goal_id].values()
+        else:
+            self.target_min, self.target_max = None, None
 
     def get_differences(self, timeseries):
         """Get rate of change timeseries for input timeseries, relative to the function nominal."""
@@ -127,54 +174,16 @@ class Subplot:
             self.axis.yaxis.set_major_formatter(mtick.PercentFormatter())
         self.axis.grid(which="both", axis="x")
 
-    def add_ranges(self, optimization_problem):
+    def add_ranges(self):
         """Add lines for the lower and upper target."""
-
-        def get_parameter_ranges():
-            try:
-                target_min = np.full_like(t, 1) * optimization_problem.parameters(0)[self.config.target_min]
-                target_max = np.full_like(t, 1) * optimization_problem.parameters(0)[self.config.target_max]
-            except TypeError:
-                target_min = np.full_like(t, 1) * optimization_problem.io.get_parameter(self.config.target_min)
-                target_max = np.full_like(t, 1) * optimization_problem.io.get_parameter(self.config.target_max)
-            return target_min, target_max
-
-        def get_value_ranges():
-            target_min = np.full_like(t, 1) * float(self.config.target_min)
-            target_max = np.full_like(t, 1) * float(self.config.target_max)
-            return target_min, target_max
-
-        def get_timeseries_ranges():
-            if isinstance(self.config.target_min, str):
-                target_min = optimization_problem.get_timeseries(self.config.target_min).values
-            else:
-                target_min = np.full_like(t, 1) * self.config.target_min
-            if isinstance(self.config.target_max, str):
-                target_max = optimization_problem.get_timeseries(self.config.target_max).values
-            else:
-                target_max = np.full_like(t, 1) * self.config.target_max
-            return target_min, target_max
-
-        t = optimization_problem.times()
-        if self.config.target_data_type == "parameter":
-            target_min, target_max = get_parameter_ranges()
-        elif self.config.target_data_type == "value":
-            target_min, target_max = get_value_ranges()
-        elif self.config.target_data_type == "timeseries":
-            target_min, target_max = get_timeseries_ranges()
+        if np.array_equal(self.target_min, self.target_max, equal_nan=True):
+            self.axis.plot(self.datetimes, self.target_min, "r--", label="Target")
         else:
-            message = "Target type {} not known.".format(self.config.target_data_type)
-            logger.error(message)
-            raise ValueError(message)
-
-        if np.array_equal(target_min, target_max, equal_nan=True):
-            self.axis.plot(self.datetimes, target_min, "r--", label="Target")
-        else:
-            self.axis.plot(self.datetimes, target_min, "r--", label="Target min")
-            self.axis.plot(self.datetimes, target_max, "r--", label="Target max")
+            self.axis.plot(self.datetimes, self.target_min, "r--", label="Target min")
+            self.axis.plot(self.datetimes, self.target_max, "r--", label="Target max")
 
 
-def save_fig_as_png(fig, output_folder, priority):
+def save_fig_as_png(fig, output_folder, priority) -> None:
     """Save matplotlib figure to output folder."""
     os.makedirs("goal_figures", exist_ok=True)
     new_output_folder = os.path.join(output_folder, "goal_figures")
@@ -188,6 +197,79 @@ def get_goal(subplot_config, all_goals) -> Union[BaseGoal, None]:
         if goal.goal_id == subplot_config.id:
             return goal
     return None
+
+
+def save_fig_as_stringio(fig, priority):
+    """Save figure as stringio in self."""
+    svg_data = StringIO()
+    fig.savefig(svg_data, format="svg")
+    return fig
+
+
+def save_figure(fig, save_plot_to, output_folder, priority):
+    """Save figure."""
+    if save_plot_to == "image":
+        save_fig_as_png(fig, output_folder, priority)
+    elif save_plot_to == "stringio":
+        save_fig_as_stringio(fig, priority)
+    else:
+        raise ValueError("Unsupported method of saving the plot results.")
+
+
+def create_priority_plot(result_dict, results_prev, plot_data_and_config: PlotDataAndConfig):
+    # pylint: disable=too-many-locals
+    """Creates a figure with a subplot for each row in the plot_table."""
+    results = result_dict["extract_result"]
+    plot_config = plot_data_and_config["plot_options"]["plot_config"]
+    plot_max_rows = plot_data_and_config["plot_options"]["plot_max_rows"]
+    if len(plot_config) == 0:
+        logger.info(
+            "PlotGoalsMixin did not find anything to plot."
+            + " Are there any goals that are active and described in the plot_table?"
+        )
+        return
+
+    # Initalize figure
+    n_cols = math.ceil(len(plot_config) / plot_max_rows)
+    n_rows = math.ceil(len(plot_config) / n_cols)
+    fig, axs = plt.subplots(nrows=n_rows, ncols=n_cols, figsize=(n_cols * 9, n_rows * 3), dpi=80, squeeze=False)
+    fig.suptitle("Results after optimizing until priority {}".format(result_dict["priority"]), fontsize=14)
+    i_plot = -1
+
+    all_goals = plot_data_and_config["prio_independent_data"]["all_goals"]
+    # Add subplot for each row in the plot_table
+    for subplot_config in plot_config:
+        i_plot += 1
+        axis = get_subplot(i_plot, n_rows, axs)
+        goal = get_goal(subplot_config, all_goals)
+        subplot = Subplot(
+            axis, subplot_config, goal, results, results_prev, plot_data_and_config["prio_independent_data"]
+        )
+        if subplot.config.specified_in == "goal_generator":
+            subplot.plot_with_previous(subplot.config.state)
+        subplot.plot_additional_variables()
+        subplot.format_subplot()
+        if subplot.config.specified_in == "goal_generator" and subplot.config.goal_type in [
+            "range",
+            "range_rate_of_change",
+        ]:
+            subplot.add_ranges()
+
+    for i in range(0, n_cols):
+        axs[n_rows - 1, i].set_xlabel("Time")
+    fig.tight_layout()
+    save_figure(
+        fig,
+        plot_data_and_config["plot_options"]["save_plot_to"],
+        plot_data_and_config["plot_options"]["output_folder"],
+        result_dict["priority"],
+    )
+
+
+def create_plot_each_priority(plot_data_and_config: PlotDataAndConfig):
+    intermediate_results = plot_data_and_config["intermediate_results"]
+    for intermediate_result_prev, intermediate_result in zip([None] + intermediate_results[:-1], intermediate_results):
+        create_priority_plot(intermediate_result, intermediate_result_prev, plot_data_and_config)
 
 
 class PlotGoalsMixin:
@@ -227,65 +309,6 @@ class PlotGoalsMixin:
         super().pre()
         self.intermediate_results = []
 
-    def plot_goal_results_from_dict(self, result_dict, results_dict_prev=None):
-        """Plot results, given a dict."""
-        self.plot_goals_results(result_dict, results_dict_prev)
-
-    def plot_goal_results_from_self(self, priority=None):
-        """Plot results."""
-        result_dict = {
-            "extract_result": self.extract_results(),
-            "priority": priority,
-        }
-        self.plot_goals_results(result_dict)
-
-    def save_fig_as_stringio(self, fig, priority):
-        """Save figure as stringio in self."""
-        svg_data = StringIO()
-        fig.savefig(svg_data, format="svg")
-        self.plot_data[priority] = svg_data
-
-    def plot_goals_results(self, result_dict, results_prev=None):
-        # pylint: disable=too-many-locals
-        """Creates a figure with a subplot for each row in the plot_table."""
-        results = result_dict["extract_result"]
-
-        if len(self.plot_config) == 0:
-            logger.info(
-                "PlotGoalsMixin did not find anything to plot."
-                + " Are there any goals that are active and described in the plot_table?"
-            )
-            return
-
-        # Initalize figure
-        n_cols = math.ceil(len(self.plot_config) / self.plot_max_rows)
-        n_rows = math.ceil(len(self.plot_config) / n_cols)
-        fig, axs = plt.subplots(nrows=n_rows, ncols=n_cols, figsize=(n_cols * 9, n_rows * 3), dpi=80, squeeze=False)
-        fig.suptitle("Results after optimizing until priority {}".format(result_dict["priority"]), fontsize=14)
-        i_plot = -1
-
-        all_goals = self.goals() + self.path_goals()
-        # Add subplot for each row in the plot_table
-        for subplot_config in self.plot_config:
-            i_plot += 1
-            axis = get_subplot(i_plot, n_rows, axs)
-            goal = get_goal(subplot_config, all_goals)
-            subplot = Subplot(self, axis, subplot_config, goal, results, results_prev)
-            if subplot.config.specified_in == "goal_generator":
-                subplot.plot_with_previous(subplot.config.state)
-            subplot.plot_additional_variables()
-            subplot.format_subplot()
-            if subplot.config.specified_in == "goal_generator" and subplot.config.goal_type in [
-                "range",
-                "range_rate_of_change",
-            ]:
-                subplot.add_ranges(self)
-
-        for i in range(0, n_cols):
-            axs[n_rows - 1, i].set_xlabel("Time")
-        fig.tight_layout()
-        self.save_figure(fig, result_dict["priority"])
-
     def save_figure(self, fig, priority):
         """Save figure."""
         if self.save_plot_to == "image":
@@ -308,11 +331,83 @@ class PlotGoalsMixin:
         self.intermediate_results.append(to_store)
         super().priority_completed(priority)
 
+    def collect_range_target_values(
+        self,
+        all_goals: List[
+            Union[
+                MinimizationGoalCombinedModel,
+                MaximizationGoalCombinedModel,
+                RangeGoalCombinedModel,
+                RangeRateOfChangeGoalCombinedModel,
+                PlotTableRow,
+            ]
+        ],
+    ) -> Dict[str, TargetDict]:
+        t = self.times()
+
+        def get_parameter_ranges(goal):
+            try:
+                target_min = np.full_like(t, 1) * self.parameters(0)[goal.target_min]
+                target_max = np.full_like(t, 1) * self.parameters(0)[goal.target_max]
+            except TypeError:
+                target_min = np.full_like(t, 1) * self.io.get_parameter(goal.target_min)
+                target_max = np.full_like(t, 1) * self.io.get_parameter(goal.target_max)
+            return target_min, target_max
+
+        def get_value_ranges(goal):
+            target_min = np.full_like(t, 1) * float(goal.target_min)
+            target_max = np.full_like(t, 1) * float(goal.target_max)
+            return target_min, target_max
+
+        def get_timeseries_ranges(goal):
+            if isinstance(goal.target_min, str):
+                target_min = self.get_timeseries(goal.target_min).values
+            else:
+                target_min = np.full_like(t, 1) * goal.target_min
+            if isinstance(goal.target_max, str):
+                target_max = self.get_timeseries(goal.target_max).values
+            else:
+                target_max = np.full_like(t, 1) * goal.target_max
+            return target_min, target_max
+
+        target_series: Dict[str, TargetDict] = {}
+        for goal in all_goals:
+            if goal.goal_type in ["range", "range_rate_of_change"]:
+                if goal.target_data_type == "parameter":
+                    target_min, target_max = get_parameter_ranges(goal)
+                elif goal.target_data_type == "value":
+                    target_min, target_max = get_value_ranges(goal)
+                elif goal.target_data_type == "timeseries":
+                    target_min, target_max = get_timeseries_ranges(goal)
+                else:
+                    message = "Target type {} not known.".format(goal.target_data_type)
+                    logger.error(message)
+                    raise ValueError(message)
+                target_series[goal.goal_id] = {"target_min": target_min, "target_max": target_max}
+        return target_series
+
     def post(self):
         """Tasks after optimizing. Creates a plot for for each priority."""
         super().post()
+        prio_independent_data: PrioIndependentData = {
+            "io_datetimes": self.io.datetimes,
+            "times": self.times(),
+            "target_series": self.collect_range_target_values(self.plot_config),
+            "all_goals": self.goals() + self.path_goals(),
+        }
+
+        plot_options: PlotOptions = {
+            "plot_config": self.plot_config,
+            "plot_max_rows": self.plot_max_rows,
+            "output_folder": self._output_folder,
+            "save_plot_to": self.save_plot_to,
+        }
+
+        plot_data_and_config: PlotDataAndConfig = {
+            "intermediate_results": self.intermediate_results,
+            "plot_options": plot_options,
+            "prio_independent_data": prio_independent_data,
+        }
+
         if self.plot_results_each_priority:
-            for intermediate_result_prev, intermediate_result in zip(
-                [None] + self.intermediate_results[:-1], self.intermediate_results
-            ):
-                self.plot_goal_results_from_dict(intermediate_result, intermediate_result_prev)
+            create_plot_each_priority(plot_data_and_config)

@@ -25,10 +25,15 @@ from rtctools_interface.optimization.type_definitions import PlotDataAndConfig, 
 logger = logging.getLogger("rtctools")
 
 
-def get_subplot(i_plot, n_rows, axs):
-    """Determine the row and column index and returns the corresponding subplot object."""
+def get_row_col_number(i_plot, n_rows):
     i_c = math.ceil((i_plot + 1) / n_rows) - 1
     i_r = i_plot - i_c * n_rows
+    return i_c, i_r
+
+
+def get_subplot_axis(i_plot, n_rows, axs):
+    """Determine the row and column index and returns the corresponding subplot object."""
+    i_c, i_r = get_row_col_number(i_plot, n_rows)
     subplot = axs[i_r, i_c]
     return subplot
 
@@ -146,6 +151,18 @@ class Subplot:
             self.axis.plot(self.datetimes, self.target_min, "r--", label="Target min")
             self.axis.plot(self.datetimes, self.target_max, "r--", label="Target max")
 
+    def plot(self):
+        """Plot the data in the subplot and format."""
+        if self.config.specified_in == "goal_generator":
+            self.plot_with_previous(self.config.state)
+        self.plot_additional_variables()
+        self.format_subplot()
+        if self.config.specified_in == "goal_generator" and self.config.goal_type in [
+            "range",
+            "range_rate_of_change",
+        ]:
+            self.add_ranges()
+
 
 def save_fig_as_png(fig, output_folder, priority) -> matplotlib.figure.Figure:
     """Save matplotlib figure to output folder."""
@@ -206,20 +223,12 @@ def create_priority_plot(
     # Add subplot for each row in the plot_table
     for subplot_config in plot_config:
         i_plot += 1
-        axis = get_subplot(i_plot, n_rows, axs)
+        axis = get_subplot_axis(i_plot, n_rows, axs)
         goal = get_goal(subplot_config, all_goals)
         subplot = Subplot(
             axis, subplot_config, goal, results, results_prev, plot_data_and_config["prio_independent_data"]
         )
-        if subplot.config.specified_in == "goal_generator":
-            subplot.plot_with_previous(subplot.config.state)
-        subplot.plot_additional_variables()
-        subplot.format_subplot()
-        if subplot.config.specified_in == "goal_generator" and subplot.config.goal_type in [
-            "range",
-            "range_rate_of_change",
-        ]:
-            subplot.add_ranges()
+        subplot.plot()
 
     for i in range(0, n_cols):
         axs[n_rows - 1, i].set_xlabel("Time")

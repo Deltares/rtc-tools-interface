@@ -1,4 +1,5 @@
 """Functions to create plots."""
+from abc import abstractmethod, ABC
 from io import StringIO
 import logging
 import math
@@ -9,6 +10,8 @@ import matplotlib
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mtick
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 
 import numpy as np
 from rtctools_interface.optimization.base_goal import BaseGoal
@@ -26,6 +29,7 @@ logger = logging.getLogger("rtctools")
 
 
 def get_row_col_number(i_plot, n_rows):
+    """Get row and col number given a plot number."""
     i_c = math.ceil((i_plot + 1) / n_rows) - 1
     i_r = i_plot - i_c * n_rows
     return i_c, i_r
@@ -43,22 +47,17 @@ def get_timedeltas(times):
     return [np.nan] + [times[i] - times[i - 1] for i in range(1, len(times))]
 
 
-class Subplot:
-    """Wrapper class for a subplot in the figure".
-
-    Contains the axis object and all configuration settings and data
-    that belongs to the subplot."""
+class SubplotBase(ABC):
+    """Base class for creating subplots."""
 
     def __init__(
         self,
-        axis,
         subplot_config,
         goal,
         results,
         results_prev,
         prio_independent_data: PrioIndependentData,
     ):
-        self.axis = axis
         self.config: Union[
             MinimizationGoalCombinedModel,
             MaximizationGoalCombinedModel,
@@ -82,6 +81,11 @@ class Subplot:
         else:
             self.target_min, self.target_max = None, None
 
+        if "custom_title" in self.config.__dict__ and isinstance(self.config.custom_title, str):
+            self.subplot_title = self.config.custom_title
+        elif self.config.specified_in == "goal_generator":
+            self.subplot_title = "Goal for {} (active from priority {})".format(self.config.state, self.config.priority)
+
     def get_differences(self, timeseries):
         """Get rate of change timeseries for input timeseries, relative to the function nominal."""
         timeseries = list(timeseries)
@@ -89,17 +93,6 @@ class Subplot:
             (st - st_prev) / dt / self.function_nominal * 100
             for st, st_prev, dt in zip(timeseries, [np.nan] + timeseries[:-1], self.time_deltas)
         ]
-
-    def plot_timeseries(self, label, timeseries_data, **plot_kwargs):
-        """Actually plot a timeseries.
-
-        If subplot is of rate_of_change type, the difference series will be plotted."""
-        if self.rate_of_change:
-            label = "Rate of Change of " + label
-            series_to_plot = self.get_differences(timeseries_data)
-        else:
-            series_to_plot = timeseries_data
-        self.axis.plot(self.datetimes, series_to_plot, label=label, **plot_kwargs)
 
     def plot_with_previous(self, state_name):
         """Add line with the results for a particular state. If previous results
@@ -128,29 +121,6 @@ class Subplot:
         for var in self.config.variables_with_previous_result:
             self.plot_with_previous(var)
 
-    def format_subplot(self):
-        """Format the current axis and set legend and title."""
-        self.axis.set_ylabel(self.config.y_axis_title)
-        self.axis.legend()
-        if "custom_title" in self.config.__dict__ and isinstance(self.config.custom_title, str):
-            self.axis.set_title(self.config.custom_title)
-        elif self.config.specified_in == "goal_generator":
-            self.axis.set_title("Goal for {} (active from priority {})".format(self.config.state, self.config.priority))
-
-        date_format = mdates.DateFormatter("%d%b%H")
-        self.axis.xaxis.set_major_formatter(date_format)
-        if self.rate_of_change:
-            self.axis.yaxis.set_major_formatter(mtick.PercentFormatter())
-        self.axis.grid(which="both", axis="x")
-
-    def add_ranges(self):
-        """Add lines for the lower and upper target."""
-        if np.array_equal(self.target_min, self.target_max, equal_nan=True):
-            self.axis.plot(self.datetimes, self.target_min, "r--", label="Target")
-        else:
-            self.axis.plot(self.datetimes, self.target_min, "r--", label="Target min")
-            self.axis.plot(self.datetimes, self.target_max, "r--", label="Target max")
-
     def plot(self):
         """Plot the data in the subplot and format."""
         if self.config.specified_in == "goal_generator":
@@ -163,14 +133,177 @@ class Subplot:
         ]:
             self.add_ranges()
 
+    def add_ranges(self):
+        """Add lines for the lower and upper target."""
+        if np.array_equal(self.target_min, self.target_max, equal_nan=True):
+            self.plot_dashed_line(self.datetimes, self.target_min, "Target", "r")
+        else:
+            self.plot_dashed_line(self.datetimes, self.target_min, "Target min", "r")
+            self.plot_dashed_line(self.datetimes, self.target_max, "Target max", "r")
+
+    def plot_timeseries(self, label, timeseries_data, color=None, linewidth=None, linestyle=None):
+        """Plot a timeseries with the given style.
+        If subplot is of rate_of_change type, the difference series will be plotted."""
+        if self.rate_of_change:
+            label = "Rate of Change of " + label
+            series_to_plot = self.get_differences(timeseries_data)
+        else:
+            series_to_plot = timeseries_data
+
+        self.plot_line(self.datetimes, series_to_plot, label, color, linewidth, linestyle)
+
+    @abstractmethod
+    def plot_line(self, xarray, yarray, label, color=None, linewidth=None, linestyle=None):
+        """Given the input and output array, add a line plot to the subplot."""
+
+    @abstractmethod
+    def plot_dashed_line(self, xarray, yarray, label, color):
+        """Given the input and output array, add dashed line plot to the subplot."""
+
+    @abstractmethod
+    def format_subplot(self):
+        """Format the current subplot."""
+
+
+class SubplotMatplotlib(SubplotBase):
+    """Class for creating subplots using matplotlib. Expects an axis object
+    which refers to that subplot."""
+
+    def __init__(
+        self,
+        axis,
+        subplot_config,
+        goal,
+        results,
+        results_prev,
+        prio_independent_data: PrioIndependentData,
+    ):
+        super().__init__(subplot_config, goal, results, results_prev, prio_independent_data)
+        self.axis = axis
+
+    def plot_dashed_line(self, xarray, yarray, label, color="red"):
+        """Given the input and output array, add dashed line plot to the subplot."""
+        self.axis.plot(xarray, yarray, "--", label=label, color=color)
+
+    def plot_line(self, xarray, yarray, label, color=None, linewidth=None, linestyle=None):
+        self.axis.plot(xarray, yarray, label=label, color=color, linewidth=linewidth, linestyle=linestyle)
+
+    def format_subplot(self):
+        """Format the current axis and set legend and title."""
+        # Format y-axis
+        self.axis.set_ylabel(self.config.y_axis_title)
+        self.axis.legend()
+        # Set title
+        self.axis.set_title(self.subplot_title)
+        # Format x-axis
+        data_format_str = "%d%b%H"
+        date_format = mdates.DateFormatter(data_format_str)
+        self.axis.xaxis.set_major_formatter(date_format)
+        self.axis.set_xlabel("Time")
+        # Format y-axis for rate-of-change-goals
+        if self.rate_of_change:
+            self.axis.yaxis.set_major_formatter(mtick.PercentFormatter())
+        # Add grid lines
+        self.axis.grid(which="both", axis="x")
+
+
+class SubplotPlotly(SubplotBase):
+    # As this class is still work in progress...
+    """Class for creating subplots using plotly. Expects to be part of
+    a figure object with subplots."""
+
+    def __init__(
+        self,
+        subplot_config,
+        goal,
+        results,
+        results_prev,
+        prio_independent_data: PrioIndependentData,
+        figure=None,
+        row_num=0,
+        col_num=0,
+        i_plot=None,
+    ):
+        super().__init__(subplot_config, goal, results, results_prev, prio_independent_data)
+        self.row_num = row_num
+        self.col_num = col_num
+        self.use_plotly = True
+        self.figure = figure
+        self.i_plot = i_plot
+
+    def map_color_code(self, color):
+        """Map a color code to a plotly supported color code."""
+        color_mapping = {"r": "red"}
+        return color_mapping.get(color, color)
+
+    def plot_dashed_line(self, xarray, yarray, label, color="red"):
+        """Given the input and output array, add dashed line plot to the subplot."""
+        self.figure.add_trace(
+            go.Scatter(
+                legendgroup=self.i_plot,
+                x=xarray,
+                y=yarray,
+                name=label,
+                mode="lines",
+                line={"color": self.map_color_code(color), "dash": "dot"},
+            ),
+            row=self.row_num,
+            col=self.col_num,
+        )
+
+    def plot_line(self, xarray, yarray, label, color=None, linewidth=None, linestyle=None):
+        linewidth = float(linewidth) * 1.3 if linewidth else None
+        linestyle = "dot" if linestyle == "dotted" else None
+        self.figure.add_trace(
+            go.Scatter(
+                mode="lines",
+                legendgroup=self.i_plot,
+                legendgrouptitle_text=self.subplot_title,
+                x=xarray,
+                y=yarray,
+                name=label,
+                line={"width": linewidth, "dash": linestyle, "color": color},
+            ),
+            row=self.row_num,
+            col=self.col_num,
+        )
+
+    def format_subplot(self):
+        """Format the current axis and set legend and title."""
+        # Format y-axis
+        self.figure.update_yaxes(title_text=self.config.y_axis_title, row=self.row_num, col=self.col_num)
+        # Set title
+        self.figure.layout.annotations[self.i_plot]["text"] = self.subplot_title
+        # Format x-axis
+        data_format_str = "%d%b%H"
+        self.figure.update_xaxes(tickformat=data_format_str, row=self.row_num, col=self.col_num)
+        # Format y-axis for rate-of-change-goals
+        if self.rate_of_change:
+            self.figure.update_yaxes(tickformat=".1", row=self.row_num, col=self.col_num)
+        # Add grid lines
+        self.figure.update_xaxes(showgrid=True, row=self.row_num, col=self.col_num, gridwidth=1, gridcolor="gray")
+        self.figure.update_xaxes(showticklabels=True, row=self.row_num, col=self.col_num)
+
+
+def get_file_write_path(output_folder, file_name="figure"):
+    """Get path to to file."""
+    new_output_folder = os.path.join(output_folder, "goal_figures")
+    os.makedirs(new_output_folder, exist_ok=True)
+    return os.path.join(new_output_folder, file_name)
+
 
 def save_fig_as_png(fig, output_folder, priority) -> matplotlib.figure.Figure:
     """Save matplotlib figure to output folder."""
-    os.makedirs("goal_figures", exist_ok=True)
-    new_output_folder = os.path.join(output_folder, "goal_figures")
-    os.makedirs(os.path.join(output_folder, "goal_figures"), exist_ok=True)
-    fig.savefig(os.path.join(new_output_folder, "after_priority_{}.png".format(priority)))
+    figure_path = get_file_write_path(output_folder, "after_priority_{}".format(priority))
+    fig.savefig(figure_path + ".png")
     return fig
+
+
+def save_fig_as_html(fig, output_folder, priority) -> dict:
+    """Save plotly figure as html"""
+    figure_path = get_file_write_path(output_folder, "after_priority_{}".format(priority))
+    fig.write_html(figure_path + ".html")
+    return fig.to_json()
 
 
 def get_goal(subplot_config, all_goals) -> Union[BaseGoal, None]:
@@ -197,7 +330,7 @@ def save_figure(fig, save_plot_to, output_folder, priority) -> Union[StringIO, m
     raise ValueError("Unsupported method of saving the plot results.")
 
 
-def create_priority_plot(
+def create_matplotlib_figure(
     result_dict, results_prev, plot_data_and_config: PlotDataAndConfig
 ) -> Union[StringIO, matplotlib.figure.Figure]:
     # pylint: disable=too-many-locals
@@ -206,17 +339,15 @@ def create_priority_plot(
     plot_config = plot_data_and_config["plot_options"]["plot_config"]
     plot_max_rows = plot_data_and_config["plot_options"]["plot_max_rows"]
     if len(plot_config) == 0:
-        logger.info(
-            "PlotGoalsMixin did not find anything to plot."
-            + " Are there any goals that are active and described in the plot_table?"
-        )
+        logger.info("Nothing to plot." + " Are there any goals that are active and described in the plot_table?")
         return None
 
     # Initalize figure
     n_cols = math.ceil(len(plot_config) / plot_max_rows)
     n_rows = math.ceil(len(plot_config) / n_cols)
     fig, axs = plt.subplots(nrows=n_rows, ncols=n_cols, figsize=(n_cols * 9, n_rows * 3), dpi=80, squeeze=False)
-    fig.suptitle("Results after optimizing until priority {}".format(result_dict["priority"]), fontsize=14)
+    main_title = "Results after optimizing until priority {}".format(result_dict["priority"])
+    fig.suptitle(main_title, fontsize=14)
     i_plot = -1
 
     all_goals = plot_data_and_config["prio_independent_data"]["all_goals"]
@@ -225,13 +356,16 @@ def create_priority_plot(
         i_plot += 1
         axis = get_subplot_axis(i_plot, n_rows, axs)
         goal = get_goal(subplot_config, all_goals)
-        subplot = Subplot(
-            axis, subplot_config, goal, results, results_prev, plot_data_and_config["prio_independent_data"]
+        subplot = SubplotMatplotlib(
+            axis,
+            subplot_config,
+            goal,
+            results,
+            results_prev,
+            plot_data_and_config["prio_independent_data"],
         )
         subplot.plot()
 
-    for i in range(0, n_cols):
-        axs[n_rows - 1, i].set_xlabel("Time")
     fig.tight_layout()
     return save_figure(
         fig,
@@ -241,15 +375,67 @@ def create_priority_plot(
     )
 
 
+def create_plotly_figure(result_dict, results_prev, plot_data_and_config: PlotDataAndConfig) -> dict:
+    # pylint: disable=too-many-locals
+    """Creates a figure with a subplot for each row in the plot_table."""
+    results = result_dict["extract_result"]
+    plot_config = plot_data_and_config["plot_options"]["plot_config"]
+    plot_max_rows = plot_data_and_config["plot_options"]["plot_max_rows"]
+    if len(plot_config) == 0:
+        logger.info("Nothing to plot." + " Are there any goals that are active and described in the plot_table?")
+        return None
+
+    # Initalize figure
+    n_cols = math.ceil(len(plot_config) / plot_max_rows)
+    n_rows = math.ceil(len(plot_config) / n_cols)
+    main_title = "Results after optimizing until priority {}".format(result_dict["priority"])
+    i_plot = -1
+
+    plotly_figure = make_subplots(rows=n_rows, cols=n_cols, subplot_titles=len(plot_config) * [" "], shared_xaxes=True)
+
+    all_goals = plot_data_and_config["prio_independent_data"]["all_goals"]
+    # Add subplot for each row in the plot_table
+    for subplot_config in plot_config:
+        i_plot += 1
+        i_c, i_r = get_row_col_number(i_plot, n_rows)
+        goal = get_goal(subplot_config, all_goals)
+        subplot = SubplotPlotly(
+            subplot_config,
+            goal,
+            results,
+            results_prev,
+            plot_data_and_config["prio_independent_data"],
+            plotly_figure,
+            i_r + 1,
+            i_c + 1,
+            i_plot,
+        )
+        subplot.plot()
+
+    plotly_figure.update_layout(title_text=main_title)
+    return save_fig_as_html(
+        plotly_figure,
+        plot_data_and_config["plot_options"]["output_folder"],
+        result_dict["priority"],
+    )
+
+
 def create_plot_each_priority(
-    plot_data_and_config: PlotDataAndConfig,
+    plot_data_and_config: PlotDataAndConfig, plotting_library="plotly"
 ) -> Dict[str, Union[StringIO, matplotlib.figure.Figure]]:
     """Create all plots for one optimization run, for each priority one seperate plot."""
     intermediate_results = plot_data_and_config["intermediate_results"]
     plot_results = {}
     for intermediate_result_prev, intermediate_result in zip([None] + intermediate_results[:-1], intermediate_results):
         priority = intermediate_result["priority"]
-        plot_results[priority] = create_priority_plot(
-            intermediate_result, intermediate_result_prev, plot_data_and_config
-        )
+        if plotting_library == "plotly":
+            plot_results[priority] = create_plotly_figure(
+                intermediate_result, intermediate_result_prev, plot_data_and_config
+            )
+        elif plotting_library == "matplotlib":
+            plot_results[priority] = create_matplotlib_figure(
+                intermediate_result, intermediate_result_prev, plot_data_and_config
+            )
+        else:
+            raise ValueError("Invalid plotting library.")
     return plot_results

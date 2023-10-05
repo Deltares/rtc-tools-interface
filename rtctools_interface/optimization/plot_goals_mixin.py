@@ -44,6 +44,7 @@ class PlotGoalsMixin:
         read_from = kwargs.get("read_goals_from", "csv_table")
         goals_to_generate = kwargs.get("goals_to_generate", [])
         self.save_plot_to = kwargs.get("save_plot_to", "image")
+        self.plotting_library = kwargs.get("plotting_library", "matplotlib")
         self.plot_config = get_joined_plot_config(
             plot_table_file, self.goal_table_file, plot_config_list, read_from, goals_to_generate
         )
@@ -154,4 +155,4 @@ class PlotGoalsMixin:
         }
 
         if self.plot_results_each_priority:
-            self.plot_data = create_plot_each_priority(plot_data_and_config)
+            self.plot_data = create_plot_each_priority(plot_data_and_config, self.plotting_library)

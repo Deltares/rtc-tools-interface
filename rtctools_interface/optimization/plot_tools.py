@@ -3,7 +3,8 @@ from io import StringIO
 import logging
 import math
 import os
-from typing import Union
+from typing import Dict, Union
+import matplotlib
 
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
@@ -146,12 +147,13 @@ class Subplot:
             self.axis.plot(self.datetimes, self.target_max, "r--", label="Target max")
 
 
-def save_fig_as_png(fig, output_folder, priority) -> None:
+def save_fig_as_png(fig, output_folder, priority) -> matplotlib.figure.Figure:
     """Save matplotlib figure to output folder."""
     os.makedirs("goal_figures", exist_ok=True)
     new_output_folder = os.path.join(output_folder, "goal_figures")
     os.makedirs(os.path.join(output_folder, "goal_figures"), exist_ok=True)
     fig.savefig(os.path.join(new_output_folder, "after_priority_{}.png".format(priority)))
+    return fig
 
 
 def get_goal(subplot_config, all_goals) -> Union[BaseGoal, None]:
@@ -166,20 +168,21 @@ def save_fig_as_stringio(fig):
     """Save figure as stringio in self."""
     svg_data = StringIO()
     fig.savefig(svg_data, format="svg")
-    return fig
+    return svg_data
 
 
-def save_figure(fig, save_plot_to, output_folder, priority):
+def save_figure(fig, save_plot_to, output_folder, priority) -> Union[StringIO, matplotlib.figure.Figure]:
     """Save figure."""
     if save_plot_to == "image":
-        save_fig_as_png(fig, output_folder, priority)
-    elif save_plot_to == "stringio":
-        save_fig_as_stringio(fig)
-    else:
-        raise ValueError("Unsupported method of saving the plot results.")
+        return save_fig_as_png(fig, output_folder, priority)
+    if save_plot_to == "stringio":
+        return save_fig_as_stringio(fig)
+    raise ValueError("Unsupported method of saving the plot results.")
 
 
-def create_priority_plot(result_dict, results_prev, plot_data_and_config: PlotDataAndConfig):
+def create_priority_plot(
+    result_dict, results_prev, plot_data_and_config: PlotDataAndConfig
+) -> Union[StringIO, matplotlib.figure.Figure]:
     # pylint: disable=too-many-locals
     """Creates a figure with a subplot for each row in the plot_table."""
     results = result_dict["extract_result"]
@@ -190,7 +193,7 @@ def create_priority_plot(result_dict, results_prev, plot_data_and_config: PlotDa
             "PlotGoalsMixin did not find anything to plot."
             + " Are there any goals that are active and described in the plot_table?"
         )
-        return
+        return None
 
     # Initalize figure
     n_cols = math.ceil(len(plot_config) / plot_max_rows)
@@ -221,7 +224,7 @@ def create_priority_plot(result_dict, results_prev, plot_data_and_config: PlotDa
     for i in range(0, n_cols):
         axs[n_rows - 1, i].set_xlabel("Time")
     fig.tight_layout()
-    save_figure(
+    return save_figure(
         fig,
         plot_data_and_config["plot_options"]["save_plot_to"],
         plot_data_and_config["plot_options"]["output_folder"],
@@ -229,8 +232,15 @@ def create_priority_plot(result_dict, results_prev, plot_data_and_config: PlotDa
     )
 
 
-def create_plot_each_priority(plot_data_and_config: PlotDataAndConfig):
+def create_plot_each_priority(
+    plot_data_and_config: PlotDataAndConfig,
+) -> Dict[str, Union[StringIO, matplotlib.figure.Figure]]:
     """Create all plots for one optimization run, for each priority one seperate plot."""
     intermediate_results = plot_data_and_config["intermediate_results"]
+    plot_results = {}
     for intermediate_result_prev, intermediate_result in zip([None] + intermediate_results[:-1], intermediate_results):
-        create_priority_plot(intermediate_result, intermediate_result_prev, plot_data_and_config)
+        priority = intermediate_result["priority"]
+        plot_results[priority] = create_priority_plot(
+            intermediate_result, intermediate_result_prev, plot_data_and_config
+        )
+    return plot_results

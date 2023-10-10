@@ -413,6 +413,15 @@ def create_plotly_figure(result_dict, results_prev, plot_data_and_config: PlotDa
         subplot.plot()
 
     plotly_figure.update_layout(title_text=main_title)
+
+    # Scale text
+    scale_factor = 0.8
+    plotly_figure.update_layout(
+        font={"size": scale_factor * 12},
+        title_font={"size": scale_factor * 16},
+    )
+    plotly_figure.update_annotations(font_size=scale_factor * 14)
+
     return save_fig_as_html(
         plotly_figure,
         plot_data_and_config["plot_options"]["output_folder"],
@@ -421,7 +430,7 @@ def create_plotly_figure(result_dict, results_prev, plot_data_and_config: PlotDa
 
 
 def create_plot_each_priority(
-    plot_data_and_config: PlotDataAndConfig, plotting_library="plotly"
+    plot_data_and_config: PlotDataAndConfig, plotting_library: str = "plotly"
 ) -> Dict[str, Union[StringIO, matplotlib.figure.Figure]]:
     """Create all plots for one optimization run, for each priority one seperate plot."""
     intermediate_results = plot_data_and_config["intermediate_results"]

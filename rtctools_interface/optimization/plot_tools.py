@@ -292,16 +292,27 @@ def get_file_write_path(output_folder, file_name="figure"):
     return os.path.join(new_output_folder, file_name)
 
 
-def save_fig_as_png(fig, output_folder, priority) -> matplotlib.figure.Figure:
+def get_file_name(priority: int, final_result: bool):
+    """Get the file name for the figure to be written."""
+    if final_result:
+        file_name = "final_results"
+    else:
+        file_name = "after_priority_{}".format(priority)
+    return file_name
+
+
+def save_fig_as_png(fig, output_folder, priority, final_result) -> matplotlib.figure.Figure:
     """Save matplotlib figure to output folder."""
-    figure_path = get_file_write_path(output_folder, "after_priority_{}".format(priority))
+    file_name = get_file_name(priority, final_result)
+    figure_path = get_file_write_path(output_folder, file_name)
     fig.savefig(figure_path + ".png")
     return fig
 
 
-def save_fig_as_html(fig, output_folder, priority) -> dict:
+def save_fig_as_html(fig, output_folder, priority, final_result) -> dict:
     """Save plotly figure as html"""
-    figure_path = get_file_write_path(output_folder, "after_priority_{}".format(priority))
+    file_name = get_file_name(priority, final_result)
+    figure_path = get_file_write_path(output_folder, file_name)
     fig.write_html(figure_path + ".html")
     return fig.to_json()
 
@@ -321,17 +332,17 @@ def save_fig_as_stringio(fig):
     return svg_data
 
 
-def save_figure(fig, save_plot_to, output_folder, priority) -> Union[StringIO, matplotlib.figure.Figure]:
+def save_figure(fig, save_plot_to, output_folder, priority, final_result) -> Union[StringIO, matplotlib.figure.Figure]:
     """Save figure."""
     if save_plot_to == "image":
-        return save_fig_as_png(fig, output_folder, priority)
+        return save_fig_as_png(fig, output_folder, priority, final_result)
     if save_plot_to == "stringio":
         return save_fig_as_stringio(fig)
     raise ValueError("Unsupported method of saving the plot results.")
 
 
 def create_matplotlib_figure(
-    result_dict, results_prev, plot_data_and_config: PlotDataAndConfig
+    result_dict, results_prev, plot_data_and_config: PlotDataAndConfig, final_result=False
 ) -> Union[StringIO, matplotlib.figure.Figure]:
     # pylint: disable=too-many-locals
     """Creates a figure with a subplot for each row in the plot_table."""
@@ -346,7 +357,10 @@ def create_matplotlib_figure(
     n_cols = math.ceil(len(plot_config) / plot_max_rows)
     n_rows = math.ceil(len(plot_config) / n_cols)
     fig, axs = plt.subplots(nrows=n_rows, ncols=n_cols, figsize=(n_cols * 9, n_rows * 3), dpi=80, squeeze=False)
-    main_title = "Results after optimizing until priority {}".format(result_dict["priority"])
+    if final_result:
+        main_title = "Results after optimizing for all priorities"
+    else:
+        main_title = "Results after optimizing until priority {}".format(result_dict["priority"])
     fig.suptitle(main_title, fontsize=14)
     i_plot = -1
 
@@ -372,10 +386,13 @@ def create_matplotlib_figure(
         plot_data_and_config["plot_options"]["save_plot_to"],
         plot_data_and_config["plot_options"]["output_folder"],
         result_dict["priority"],
+        final_result,
     )
 
 
-def create_plotly_figure(result_dict, results_prev, plot_data_and_config: PlotDataAndConfig) -> dict:
+def create_plotly_figure(
+    result_dict, results_prev, plot_data_and_config: PlotDataAndConfig, final_result=False
+) -> dict:
     # pylint: disable=too-many-locals
     """Creates a figure with a subplot for each row in the plot_table."""
     results = result_dict["extract_result"]
@@ -388,7 +405,10 @@ def create_plotly_figure(result_dict, results_prev, plot_data_and_config: PlotDa
     # Initalize figure
     n_cols = math.ceil(len(plot_config) / plot_max_rows)
     n_rows = math.ceil(len(plot_config) / n_cols)
-    main_title = "Results after optimizing until priority {}".format(result_dict["priority"])
+    if final_result:
+        main_title = "Result after optimizing for all priorities"
+    else:
+        main_title = "Results after optimizing until priority {}".format(result_dict["priority"])
     i_plot = -1
 
     plotly_figure = make_subplots(rows=n_rows, cols=n_cols, subplot_titles=len(plot_config) * [" "], shared_xaxes=True)
@@ -423,9 +443,7 @@ def create_plotly_figure(result_dict, results_prev, plot_data_and_config: PlotDa
     plotly_figure.update_annotations(font_size=scale_factor * 14)
 
     return save_fig_as_html(
-        plotly_figure,
-        plot_data_and_config["plot_options"]["output_folder"],
-        result_dict["priority"],
+        plotly_figure, plot_data_and_config["plot_options"]["output_folder"], result_dict["priority"], final_result
     )
 
 
@@ -447,4 +465,24 @@ def create_plot_each_priority(
             )
         else:
             raise ValueError("Invalid plotting library.")
+    return plot_results
+
+
+def create_plot_final_results(
+    plot_data_and_config: PlotDataAndConfig, plotting_library: str = "plotly"
+) -> Dict[str, Union[StringIO, matplotlib.figure.Figure]]:
+    """Create a plot for the final results."""
+    plot_results = {}
+    intermediate_result = sorted(plot_data_and_config["intermediate_results"], key=lambda x: x["priority"])[-1]
+    result_name = "final_results"
+    if plotting_library == "plotly":
+        plot_results[result_name] = create_plotly_figure(
+            intermediate_result, None, plot_data_and_config, final_result=True
+        )
+    elif plotting_library == "matplotlib":
+        plot_results[result_name] = create_matplotlib_figure(
+            intermediate_result, None, plot_data_and_config, final_result=True
+        )
+    else:
+        raise ValueError("Invalid plotting library.")
     return plot_results

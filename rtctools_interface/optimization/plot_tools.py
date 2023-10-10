@@ -314,7 +314,7 @@ def save_fig_as_html(fig, output_folder, priority, final_result) -> dict:
     file_name = get_file_name(priority, final_result)
     figure_path = get_file_write_path(output_folder, file_name)
     fig.write_html(figure_path + ".html")
-    return fig.to_json()
+    return fig
 
 
 def get_goal(subplot_config, all_goals) -> Union[BaseGoal, None]:

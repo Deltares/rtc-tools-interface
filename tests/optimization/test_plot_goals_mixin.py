@@ -13,6 +13,7 @@ class BaseOptimizationProblemPlotting(PlotGoalsMixin, BaseOptimizationProblem):
     # Ignore too many ancestors, since the use of mixin classes is how rtc-tools is set up.
     # pylint: disable=too-many-ancestors
     """Optimization problem with plotting functionalities."""
+
     def __init__(
         self,
         plot_table_file,
@@ -25,7 +26,8 @@ class BaseOptimizationProblemPlotting(PlotGoalsMixin, BaseOptimizationProblem):
 
 class TestPlotGoalsMixin(unittest.TestCase):
     """Test for goal-plotting functionalities."""
-    def run_test(self, test):
+
+    def run_test(self, test, plotting_library):
         """Solve an optimization problem."""
         test_data = get_test_data(test)
         problem = BaseOptimizationProblemPlotting(
@@ -35,14 +37,24 @@ class TestPlotGoalsMixin(unittest.TestCase):
             model_name=test_data["model_name"],
             input_folder=test_data["model_input_folder"],
             output_folder=test_data["output_folder"],
+            plotting_library=plotting_library,
         )
         problem.optimize()
 
-    def test_plot_goals_mixin(self):
+    def test_plot_goals_mixin_matplotlib(self):
         """Solve several optimization problems."""
         for test in [
             "basic",
             "target_bounds_as_parameters",
             "target_bounds_as_timeseries",
         ]:
-            self.run_test(test)
+            self.run_test(test, plotting_library="matplotlib")
+
+    def test_plot_goals_mixin_plotly(self):
+        """Solve several optimization problems."""
+        for test in [
+            "basic",
+            "target_bounds_as_parameters",
+            "target_bounds_as_timeseries",
+        ]:
+            self.run_test(test, plotting_library="plotly")

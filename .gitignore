@@ -24,3 +24,8 @@ dist
 .idea
 .ipynb_checkpoints
 .vscode
+
+# Figures & results
+*.png
+*.html
+*.pickle

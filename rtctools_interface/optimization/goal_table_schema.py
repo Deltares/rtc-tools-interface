@@ -34,6 +34,13 @@ class BaseGoalModel(BaseModel):
         except (ValueError, TypeError):
             return value
 
+    def get(self, attribute_name, default=None):
+        """Similar functionality as dict-get method."""
+        try:
+            return getattr(self, attribute_name)
+        except AttributeError:
+            return default
+
 
 class MaximizationGoalModel(BaseGoalModel):
     """Model for a minimization and maximization goal."""

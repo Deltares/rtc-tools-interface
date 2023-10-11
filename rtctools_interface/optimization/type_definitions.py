@@ -48,9 +48,16 @@ class PlotOptions(TypedDict):
     save_plot_to: Literal["image", "stringio"]
 
 
+class IntermediateResult(TypedDict):
+    """Dict containing the results (timeseries) for one priority optimization."""
+
+    priority: int
+    extract_result: Dict[str, np.array]
+
+
 class PlotDataAndConfig(TypedDict):
     """All data and options required to create all plots for one optimization run."""
 
-    intermediate_results: List[Dict]
+    intermediate_results: List[IntermediateResult]
     plot_options: PlotOptions
     prio_independent_data: PrioIndependentData

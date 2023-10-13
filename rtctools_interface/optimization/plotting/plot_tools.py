@@ -72,9 +72,9 @@ def save_fig_as_html(fig, output_folder, priority, final_result) -> dict:
 
 
 def get_goal(subplot_config, all_goals) -> Union[BaseGoal, None]:
-    """Find the goal belonging to a subplot"""
+    """Find the goal belonging to a subplot. Only checks for goals as specified in the goal table."""
     for goal in all_goals:
-        if goal.goal_id == subplot_config.id:
+        if isinstance(goal, BaseGoal) and goal.goal_id == subplot_config.id:
             return goal
     return None
 

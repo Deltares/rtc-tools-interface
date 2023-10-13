@@ -73,7 +73,7 @@ class PlotGoalsMixin:
         self.save_plot_to = kwargs.get("save_plot_to", "image")
         self.plotting_library = kwargs.get("plotting_library", "matplotlib")
         self.plot_config = get_joined_plot_config(
-            plot_table_file, self.goal_table_file, plot_config_list, read_from, goals_to_generate
+            plot_table_file, getattr(self, "goal_table_file", None), plot_config_list, read_from, goals_to_generate
         )
 
         # Store list of variable-names that may not be present in the results.

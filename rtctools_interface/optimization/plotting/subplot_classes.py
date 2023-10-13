@@ -94,6 +94,8 @@ class SubplotBase(ABC):
             self.subplot_title = self.config.custom_title
         elif self.config.specified_in == "goal_generator":
             self.subplot_title = "Goal for {} (active from priority {})".format(self.config.state, self.config.priority)
+        else:
+            self.subplot_title = ""
 
     def get_differences(self, timeseries):
         """Get rate of change timeseries for input timeseries, relative to the function nominal."""

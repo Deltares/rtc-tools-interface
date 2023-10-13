@@ -175,7 +175,7 @@ class PlotGoalsMixin:
             "save_plot_to": self.save_plot_to,
         }
 
-        plot_data_and_config: PlotDataAndConfig = {
+        current_run: PlotDataAndConfig = {
             "intermediate_results": self.intermediate_results,
             "plot_options": plot_options,
             "prio_independent_data": prio_independent_data,
@@ -193,17 +193,17 @@ class PlotGoalsMixin:
         self.plot_data = {}
         if self.plot_results_each_priority:
             self.plot_data = self.plot_data | create_plot_each_priority(
-                plot_data_and_config, plotting_library=self.plotting_library
+                current_run, plotting_library=self.plotting_library
             )
 
         if self.plot_final_results:
             self.plot_data = self.plot_data | create_plot_final_results(
-                plot_data_and_config, plot_data_and_config_prev, plotting_library=self.plotting_library
+                current_run, plot_data_and_config_prev, plotting_library=self.plotting_library
             )
 
         # Cache results, such that in a next run they can be used for comparison
         os.makedirs(cache_folder, exist_ok=True)
         file_name = int(time.time())
         with open(cache_folder / f"{file_name}.pickle", "wb") as handle:
-            pickle.dump(plot_data_and_config, handle, protocol=pickle.HIGHEST_PROTOCOL)
+            pickle.dump(current_run, handle, protocol=pickle.HIGHEST_PROTOCOL)
         clean_cache_folder(cache_folder, 5)

@@ -1,10 +1,14 @@
 """Tests for goal-plotting functionalities."""
+from pathlib import Path
 import unittest
+import pickle
 
 from rtctools_interface.optimization.base_optimization_problem import (
     BaseOptimizationProblem,
 )
 from rtctools_interface.optimization.plot_goals_mixin import PlotGoalsMixin
+from rtctools_interface.optimization.plotting.plot_tools import create_plot_final_results
+from rtctools_interface.optimization.type_definitions import PlotDataAndConfig
 
 from .get_test import get_test_data
 
@@ -58,3 +62,14 @@ class TestPlotGoalsMixin(unittest.TestCase):
             "target_bounds_as_timeseries",
         ]:
             self.run_test(test, plotting_library="plotly")
+
+    def test_plot_comparison(self):
+        """Test the comparison function."""
+        plot_results_folder = Path(__file__).parent / ".." / "data" / "plot_results"
+
+        with open(plot_results_folder / "run_1.pickle", "rb") as handle:
+            run_1: PlotDataAndConfig = pickle.load(handle)
+        with open(plot_results_folder / "run_2.pickle", "rb") as handle:
+            run_2: PlotDataAndConfig = pickle.load(handle)
+
+        create_plot_final_results(run_1, run_2, Path(__file__).parent)

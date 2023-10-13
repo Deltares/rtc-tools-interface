@@ -51,3 +51,10 @@ class PlotTableRow(BaseModel):
         if self.specified_in == "goal_generator" and pd.isna(self.id):
             raise ValueError("ID is required when goal is specified in the goal generator.")
         return self
+
+    def get(self, attribute_name, default=None):
+        """Similar functionality as dict-get method."""
+        try:
+            return getattr(self, attribute_name)
+        except AttributeError:
+            return default

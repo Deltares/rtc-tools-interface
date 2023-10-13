@@ -13,7 +13,7 @@ from rtctools_interface.optimization.plot_and_goal_schema import (
     RangeRateOfChangeGoalCombinedModel,
 )
 from rtctools_interface.optimization.plot_table_schema import PlotTableRow
-from rtctools_interface.optimization.plot_tools import create_plot_each_priority
+from rtctools_interface.optimization.plot_tools import create_plot_each_priority, create_plot_final_results
 
 from rtctools_interface.optimization.read_plot_table import get_joined_plot_config
 from rtctools_interface.optimization.type_definitions import (
@@ -33,6 +33,7 @@ class PlotGoalsMixin:
 
     plot_max_rows = 4
     plot_results_each_priority = True
+    plot_final_results = True
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -154,5 +155,9 @@ class PlotGoalsMixin:
             "prio_independent_data": prio_independent_data,
         }
 
+        self.plot_data = {}
         if self.plot_results_each_priority:
-            self.plot_data = create_plot_each_priority(plot_data_and_config, self.plotting_library)
+            self.plot_data = self.plot_data | create_plot_each_priority(plot_data_and_config, self.plotting_library)
+
+        if self.plot_final_results:
+            self.plot_data = self.plot_data | create_plot_final_results(plot_data_and_config, self.plotting_library)

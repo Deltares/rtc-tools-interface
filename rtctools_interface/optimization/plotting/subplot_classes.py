@@ -113,7 +113,7 @@ class SubplotBase(ABC):
         if self.results_compare:
             timeseries_data = self.results_compare["extract_result"][state_name]
             label += COMPARISON_RUN_SUFFIX
-            self.plot_timeseries(label, timeseries_data, linestyle="dotted", color=color)
+            self.plot_timeseries(label, timeseries_data, linestyle="dotted", color=color, linewidth=linewidth)
 
     def plot_with_previous(self, label, state_name, linestyle=None, linewidth=None):
         """Add line with the results for a particular state. If the results for the previous

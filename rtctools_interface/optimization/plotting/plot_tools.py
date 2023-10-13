@@ -207,7 +207,8 @@ def set_plotly_layout(plotly_figure, final_result, result_dict, results_compare)
         font={"size": scale_factor * 12},
         title_font={"size": scale_factor * 16},
     )
-    plotly_figure.update_traces(hovertemplate="X: %{x}<br>Y: %{y}<br>")
+    plotly_figure.update_traces(hovertemplate="%{y}")
+    plotly_figure.update_layout(hovermode="x")
     plotly_figure.update_annotations(font_size=scale_factor * 14)
     if results_compare:
         add_buttons_to_plotly(plotly_figure)

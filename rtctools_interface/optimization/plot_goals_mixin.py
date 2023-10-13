@@ -71,7 +71,7 @@ class PlotGoalsMixin:
         read_from = kwargs.get("read_goals_from", "csv_table")
         goals_to_generate = kwargs.get("goals_to_generate", [])
         self.save_plot_to = kwargs.get("save_plot_to", "image")
-        self.plotting_library = kwargs.get("plotting_library", "matplotlib")
+        self.plotting_library = kwargs.get("plotting_library", "plotly")
         self.plot_config = get_joined_plot_config(
             plot_table_file, getattr(self, "goal_table_file", None), plot_config_list, read_from, goals_to_generate
         )

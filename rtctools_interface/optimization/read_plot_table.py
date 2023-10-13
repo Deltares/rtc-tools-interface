@@ -1,5 +1,6 @@
 """Module for reading goals from a csv file."""
 import logging
+from pathlib import Path
 from typing import List, Union
 import pandas as pd
 from rtctools_interface.optimization.plot_and_goal_schema import (
@@ -16,13 +17,24 @@ from rtctools_interface.optimization.read_goals import read_goals
 logger = logging.getLogger("rtctools")
 
 
-def read_plot_config_from_csv(plot_table_file) -> List[PlotTableRow]:
+def read_plot_config_from_csv(plot_table_file: Union[Path, str]) -> List[PlotTableRow]:
     """Read plot information from csv file and check values"""
-    raw_plot_table = pd.read_csv(plot_table_file, sep=",")
-    parsed_rows: List[PlotTableRow] = []
-    for _, row in raw_plot_table.iterrows():
-        parsed_rows.append(PlotTableRow(**row))
-    return parsed_rows
+    plot_table_file = Path(plot_table_file)
+    if plot_table_file.is_file():
+        try:
+            raw_plot_table = pd.read_csv(plot_table_file, sep=",")
+        except pd.errors.EmptyDataError:  # Empty plot table
+            raw_plot_table = pd.DataFrame()
+        parsed_rows: List[PlotTableRow] = []
+        for _, row in raw_plot_table.iterrows():
+            parsed_rows.append(PlotTableRow(**row))
+        return parsed_rows
+    message = (
+        f"No plot table was found at the default location ({plot_table_file.resolve()})."
+        + " Please create one before using the PlotGoalsMixin."
+        + f" It should have the following columns: '{list(PlotTableRow.model_fields.keys())}'"
+    )
+    raise FileNotFoundError(message)
 
 
 def read_plot_config_from_list(plot_config_list: List[PlotTableRow]) -> List[PlotTableRow]:

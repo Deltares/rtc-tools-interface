@@ -267,7 +267,6 @@ class SubplotPlotly(SubplotBase):
                 x=xarray,
                 y=yarray,
                 name=label,
-                mode="lines",
                 line={"color": self.map_color_code(color), "dash": "dot"},
             ),
             row=self.row_num,
@@ -279,7 +278,6 @@ class SubplotPlotly(SubplotBase):
         linestyle = "dot" if linestyle == "dotted" else linestyle
         self.figure.add_trace(
             go.Scatter(
-                mode="lines",
                 legendgroup=self.i_plot,
                 legendgrouptitle_text=self.subplot_title,
                 x=xarray,

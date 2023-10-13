@@ -16,7 +16,7 @@ from rtctools_interface.optimization.plot_and_goal_schema import (
     RangeRateOfChangeGoalCombinedModel,
 )
 from rtctools_interface.optimization.plot_table_schema import PlotTableRow
-from rtctools_interface.optimization.plot_tools import create_plot_each_priority, create_plot_final_results
+from rtctools_interface.optimization.plotting.plot_tools import create_plot_each_priority, create_plot_final_results
 
 from rtctools_interface.optimization.read_plot_table import get_joined_plot_config
 from rtctools_interface.optimization.type_definitions import (

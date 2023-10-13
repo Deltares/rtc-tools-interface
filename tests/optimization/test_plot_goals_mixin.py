@@ -7,7 +7,7 @@ from rtctools_interface.optimization.base_optimization_problem import (
     BaseOptimizationProblem,
 )
 from rtctools_interface.optimization.plot_goals_mixin import PlotGoalsMixin
-from rtctools_interface.optimization.plot_tools import create_plot_final_results
+from rtctools_interface.optimization.plotting.plot_tools import create_plot_final_results
 from rtctools_interface.optimization.type_definitions import PlotDataAndConfig
 
 from .get_test import get_test_data

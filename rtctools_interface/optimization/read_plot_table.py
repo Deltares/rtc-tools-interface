@@ -1,4 +1,5 @@
 """Module for reading goals from a csv file."""
+import logging
 from typing import List, Union
 import pandas as pd
 from rtctools_interface.optimization.plot_and_goal_schema import (
@@ -11,6 +12,8 @@ from rtctools_interface.optimization.plot_and_goal_schema import (
 
 from rtctools_interface.optimization.plot_table_schema import PlotTableRow
 from rtctools_interface.optimization.read_goals import read_goals
+
+logger = logging.getLogger("rtctools")
 
 
 def read_plot_config_from_csv(plot_table_file) -> List[PlotTableRow]:
@@ -57,23 +60,31 @@ def get_joined_plot_config(
         plot_table_file=plot_table_file, plot_config_list=plot_config_list, read_from=read_from
     )
 
-    # goals = read_goals_from_csv(goal_table_file)
-    path_goals = read_goals(
-        file=goal_table_file, path_goal=True, read_from=read_from, goals_to_generate=goals_to_generate
-    )
-    non_path_goals = read_goals(
-        file=goal_table_file, path_goal=False, read_from=read_from, goals_to_generate=goals_to_generate
-    )
-    goals = path_goals + non_path_goals
-    goals_by_id = {goal.goal_id: goal for goal in goals}
+    if goal_table_file:
+        path_goals = read_goals(
+            file=goal_table_file, path_goal=True, read_from=read_from, goals_to_generate=goals_to_generate
+        )
+        non_path_goals = read_goals(
+            file=goal_table_file, path_goal=False, read_from=read_from, goals_to_generate=goals_to_generate
+        )
+        goals = path_goals + non_path_goals
+        goals_by_id = {goal.goal_id: goal for goal in goals}
+    else:
+        goals_by_id = {}
     joined_plot_config = []
     for subplot_config in plot_table:
+        if subplot_config.specified_in == "python":
+            joined_plot_config.append(subplot_config)
+            continue
         if subplot_config.id in goals_by_id.keys():
             goal_config = goals_by_id[subplot_config.id]
-            if subplot_config.specified_in == "python":
-                joined_plot_config.append(subplot_config)
-            else:
-                joined_plot_config.append(
-                    GOAL_TYPE_COMBINED_MODEL[goal_config.goal_type](**(subplot_config.__dict__ | goal_config.__dict__))
-                )
+            joined_plot_config.append(
+                GOAL_TYPE_COMBINED_MODEL[goal_config.goal_type](**(subplot_config.__dict__ | goal_config.__dict__))
+            )
+        elif goal_table_file:
+            logger.warning(
+                "A row in the plot table with specified_in='goal_generator' "
+                + "has an ID ('%s') that does not exist in the goal_table!",
+                subplot_config.id,
+            )
     return joined_plot_config

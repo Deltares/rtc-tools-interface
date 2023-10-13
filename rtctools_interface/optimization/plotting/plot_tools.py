@@ -72,9 +72,9 @@ def save_fig_as_html(fig, output_folder, priority, final_result) -> dict:
 
 
 def get_goal(subplot_config, all_goals) -> Union[BaseGoal, None]:
-    """Find the goal belonging to a subplot"""
+    """Find the goal belonging to a subplot. Only checks for goals as specified in the goal table."""
     for goal in all_goals:
-        if goal.goal_id == subplot_config.id:
+        if isinstance(goal, BaseGoal) and goal.goal_id == subplot_config.id:
             return goal
     return None
 
@@ -207,6 +207,7 @@ def set_plotly_layout(plotly_figure, final_result, result_dict, results_compare)
         font={"size": scale_factor * 12},
         title_font={"size": scale_factor * 16},
     )
+    plotly_figure.update_traces(hovertemplate="X: %{x}<br>Y: %{y}<br>")
     plotly_figure.update_annotations(font_size=scale_factor * 14)
     if results_compare:
         add_buttons_to_plotly(plotly_figure)

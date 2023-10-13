@@ -32,16 +32,20 @@ COMPARISON_RUN_SUFFIX = " (previous run)"
 USED_COLORS = []
 
 
-def get_row_col_number(i_plot, n_rows):
+def get_row_col_number(i_plot, n_rows, n_cols, row_first=False):
     """Get row and col number given a plot number."""
-    i_c = math.ceil((i_plot + 1) / n_rows) - 1
-    i_r = i_plot - i_c * n_rows
+    if row_first:
+        i_r = math.ceil((i_plot + 1) / n_cols) - 1
+        i_c = i_plot - i_r * n_cols
+    else:  # Count along column direction first.
+        i_c = math.ceil((i_plot + 1) / n_rows) - 1
+        i_r = i_plot - i_c * n_rows
     return i_c, i_r
 
 
-def get_subplot_axis(i_plot, n_rows, axs):
+def get_subplot_axis(i_plot, n_rows, n_cols, axs):
     """Determine the row and column index and returns the corresponding subplot object."""
-    i_c, i_r = get_row_col_number(i_plot, n_rows)
+    i_c, i_r = get_row_col_number(i_plot, n_rows, n_cols)
     subplot = axs[i_r, i_c]
     return subplot
 
@@ -405,7 +409,7 @@ def create_matplotlib_figure(
     # Add subplot for each row in the plot_table
     for subplot_config in plot_config:
         i_plot += 1
-        axis = get_subplot_axis(i_plot, n_rows, axs)
+        axis = get_subplot_axis(i_plot, n_rows, n_cols, axs)
         goal = get_goal(subplot_config, all_goals)
         subplot = SubplotMatplotlib(
             axis,
@@ -498,7 +502,7 @@ def create_plotly_figure(
     # Add subplot for each row in the plot_table
     for subplot_config in plot_config:
         i_plot += 1
-        i_c, i_r = get_row_col_number(i_plot, n_rows)
+        i_c, i_r = get_row_col_number(i_plot, n_rows, n_cols, row_first=True)
         goal = get_goal(subplot_config, all_goals)
         subplot = SubplotPlotly(
             subplot_config,

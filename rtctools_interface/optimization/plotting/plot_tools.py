@@ -134,6 +134,23 @@ def add_buttons_to_plotly(plotly_figure):
     )
 
 
+def check_empty_plot_table(plot_config):
+    """Chech whether there are any elements in the plot table."""
+    if len(plot_config) == 0:
+        logger.info("Nothing to plot." + " Are there any goals that are active and described in the plot_table?")
+        return True
+    return False
+
+
+def get_main_title(final_result: bool, result_dict):
+    """Generate main title."""
+    if final_result:
+        main_title = "Result after optimizing for all priorities"
+    else:
+        main_title = "Results after optimizing until priority {}".format(result_dict["priority"])
+    return main_title
+
+
 def create_matplotlib_figure(
     result_dict, results_prev, current_run: PlotDataAndConfig, final_result=False
 ) -> Union[StringIO, matplotlib.figure.Figure]:
@@ -143,18 +160,14 @@ def create_matplotlib_figure(
     results = result_dict["extract_result"]
     plot_config = current_run["plot_options"]["plot_config"]
     plot_max_rows = current_run["plot_options"]["plot_max_rows"]
-    if len(plot_config) == 0:
-        logger.info("Nothing to plot." + " Are there any goals that are active and described in the plot_table?")
+    if check_empty_plot_table(plot_config):
         return None
 
     # Initalize figure
     n_cols = math.ceil(len(plot_config) / plot_max_rows)
     n_rows = math.ceil(len(plot_config) / n_cols)
     fig, axs = plt.subplots(nrows=n_rows, ncols=n_cols, figsize=(n_cols * 9, n_rows * 3), dpi=80, squeeze=False)
-    if final_result:
-        main_title = "Results after optimizing for all priorities"
-    else:
-        main_title = "Results after optimizing until priority {}".format(result_dict["priority"])
+    main_title = get_main_title(final_result, result_dict)
     fig.suptitle(main_title, fontsize=14)
     i_plot = -1
 
@@ -185,6 +198,20 @@ def create_matplotlib_figure(
     )
 
 
+def set_plotly_layout(plotly_figure, final_result, result_dict, results_compare):
+    """Set the layout for the plotly figure."""
+    main_title = get_main_title(final_result, result_dict)
+    plotly_figure.update_layout(title_text=main_title)
+    scale_factor = 0.8
+    plotly_figure.update_layout(
+        font={"size": scale_factor * 12},
+        title_font={"size": scale_factor * 16},
+    )
+    plotly_figure.update_annotations(font_size=scale_factor * 14)
+    if results_compare:
+        add_buttons_to_plotly(plotly_figure)
+
+
 def create_plotly_figure(
     result_dict: IntermediateResult,
     results_prev: Optional[IntermediateResult],
@@ -194,26 +221,18 @@ def create_plotly_figure(
 ) -> Any:
     # pylint: disable=too-many-locals
     """Creates a figure with a subplot for each row in the plot_table."""
-    used_colors = []
-    results = result_dict["extract_result"]
     plot_config = current_run["plot_options"]["plot_config"]
-    plot_max_rows = current_run["plot_options"]["plot_max_rows"]
-    if len(plot_config) == 0:
-        logger.info("Nothing to plot." + " Are there any goals that are active and described in the plot_table?")
+    if check_empty_plot_table(plot_config):
         return None
-    # Initalize figure
-    n_cols = math.ceil(len(plot_config) / plot_max_rows)
+
+    n_cols = math.ceil(len(plot_config) / current_run["plot_options"]["plot_max_rows"])
     n_rows = math.ceil(len(plot_config) / n_cols)
-    if final_result:
-        main_title = "Result after optimizing for all priorities"
-    else:
-        main_title = "Results after optimizing until priority {}".format(result_dict["priority"])
     i_plot = -1
-
     plotly_figure = make_subplots(rows=n_rows, cols=n_cols, subplot_titles=len(plot_config) * [" "], shared_xaxes=True)
-
     all_goals = current_run["prio_independent_data"]["all_goals"]
+
     # Add subplot for each row in the plot_table
+    used_colors = []
     for subplot_config in plot_config:
         i_plot += 1
         i_c, i_r = get_row_col_number(i_plot, n_rows, n_cols, row_first=True)
@@ -221,7 +240,7 @@ def create_plotly_figure(
         subplot = SubplotPlotly(
             subplot_config,
             goal,
-            results,
+            result_dict["extract_result"],
             results_prev,
             current_run["prio_independent_data"],
             used_colors,
@@ -233,17 +252,8 @@ def create_plotly_figure(
         )
         subplot.plot()
 
-    plotly_figure.update_layout(title_text=main_title)
+    set_plotly_layout(plotly_figure, final_result, result_dict, results_compare)
 
-    # Scale text
-    scale_factor = 0.8
-    plotly_figure.update_layout(
-        font={"size": scale_factor * 12},
-        title_font={"size": scale_factor * 16},
-    )
-    plotly_figure.update_annotations(font_size=scale_factor * 14)
-    if results_compare:
-        add_buttons_to_plotly(plotly_figure)
     return save_fig_as_html(
         plotly_figure, current_run["plot_options"]["output_folder"], result_dict["priority"], final_result
     )

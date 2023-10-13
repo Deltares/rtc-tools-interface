@@ -212,6 +212,7 @@ def set_plotly_layout(plotly_figure, final_result, result_dict, results_compare)
     plotly_figure.update_annotations(font_size=scale_factor * 14)
     if results_compare:
         add_buttons_to_plotly(plotly_figure)
+    plotly_figure.update_traces(marker={"size": 5})
 
 
 def create_plotly_figure(

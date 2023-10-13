@@ -57,7 +57,11 @@ def read_goals_from_list(
     for plot_config in goals_to_generate:
         if not isinstance(plot_config, BaseGoalModel):
             raise TypeError("Each element in the list of goals to generate should be a child of BaseGoalModel")
-    return goals_to_generate
+    active_goals = []
+    for goal in goals_to_generate:
+        if int(goal.active) == 1:
+            active_goals.append(goal)
+    return active_goals
 
 
 def read_goals(

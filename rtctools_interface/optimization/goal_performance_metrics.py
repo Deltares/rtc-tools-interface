@@ -37,13 +37,22 @@ def performance_metrics_minmaximization(results: Dict[str, np.array], goal: Mini
     return pd.Series(metrics)
 
 
-def get_range_exceedance(timeseries: np.array, goal: RangeGoalModel, targets: TargetDict):
+def get_range_percentual_exceedance(timeseries: np.array, goal: RangeGoalModel, targets: TargetDict):
     """Calculate percentage of timesteps in which target is exceeded"""
     if not goal.goal_type in ["range", "range_rate_of_change"]:
         return None
     below_target = sum(np.where(timeseries + ABS_TOL < targets["target_min"], 1, 0)) / len(timeseries)
     above_target = sum(np.where(timeseries - ABS_TOL > targets["target_max"], 1, 0)) / len(timeseries)
-    return {"below_target": below_target, "above_target": above_target}
+    return {"perc_below_target": below_target, "perc_above_target": above_target}
+
+
+def get_range_total_exceedance(timeseries: np.array, goal: RangeGoalModel, targets: TargetDict):
+    """Calculate sum of absolute exceedances of the target"""
+    if not goal.goal_type in ["range", "range_rate_of_change"]:
+        return None
+    below_target = sum(np.abs(np.where(timeseries < targets["target_min"], timeseries - targets["target_min"], 0)))
+    above_target = sum(np.abs(np.where(timeseries > targets["target_max"], timeseries - targets["target_max"], 0)))
+    return {"sum_below_target": below_target, "sum_above_target": above_target}
 
 
 def performance_metrics_range(results: Dict[str, np.array], goal: RangeGoalModel, targets):
@@ -51,7 +60,8 @@ def performance_metrics_range(results: Dict[str, np.array], goal: RangeGoalModel
     metrics = {}
     state_timeseries = results[goal.state]
     metrics = metrics | get_basic_metrics(state_timeseries)
-    metrics = metrics | get_range_exceedance(state_timeseries, goal, targets)
+    metrics = metrics | get_range_percentual_exceedance(state_timeseries, goal, targets)
+    metrics = metrics | get_range_total_exceedance(state_timeseries, goal, targets)
     return pd.Series(metrics)
 
 

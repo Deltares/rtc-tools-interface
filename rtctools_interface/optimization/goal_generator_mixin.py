@@ -7,6 +7,7 @@ import pandas as pd
 
 from rtctools_interface.optimization.base_goal import BaseGoal
 from rtctools_interface.optimization.goal_performance_metrics import get_performance_metrics
+from rtctools_interface.optimization.helpers.statistics_mixin import StatisticsMixin
 from rtctools_interface.optimization.read_goals import read_goals
 
 logger = logging.getLogger("rtctools")
@@ -20,7 +21,7 @@ def write_performance_metrics(performance_metrics: Dict[str, pd.DataFrame], outp
         performance_metric_table.to_csv(output_path / f"{goal_id}.csv")
 
 
-class GoalGeneratorMixin:
+class GoalGeneratorMixin(StatisticsMixin):
     # TODO: remove pylint disable below once we have more public functions.
     # pylint: disable=too-few-public-methods
     """Add path goals as specified in the goal_table.
@@ -69,8 +70,9 @@ class GoalGeneratorMixin:
         """Calculate and store performance metrics."""
         results = self.extract_results()
         goal_generator_goals = self._all_goals
+        targets = self.collect_range_target_values(goal_generator_goals)
         for goal in goal_generator_goals:
-            new_row = get_performance_metrics(results, goal)
+            new_row = get_performance_metrics(results, goal, targets.get(goal.goal_id))
             if new_row is not None:
                 new_row.rename(label, inplace=True)
                 self.performance_metrics[goal.goal_id] = pd.concat(

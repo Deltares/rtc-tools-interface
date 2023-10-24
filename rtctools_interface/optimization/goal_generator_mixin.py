@@ -38,22 +38,23 @@ class GoalGeneratorMixin(StatisticsMixin):
         if not hasattr(self, "goal_table_file"):
             self.goal_table_file = os.path.join(self._input_folder, "goal_table.csv")
 
-        self._path_goals = read_goals(
+        self._goal_generator_path_goals = read_goals(
             self.goal_table_file, path_goal=True, read_from=self.read_from, goals_to_generate=self.goals_to_generate
         )
-        self._non_path_goals = read_goals(
+        self._goal_generator_non_path_goals = read_goals(
             self.goal_table_file, path_goal=False, read_from=self.read_from, goals_to_generate=self.goals_to_generate
         )
-        self._all_goals = self._path_goals + self._non_path_goals
-        # A dataframe for each goal
+        self._all_goal_generator_goals = self._goal_generator_path_goals + self._goal_generator_non_path_goals
+
+        # A dataframe for each goal defined by the goal generator
         self.performance_metrics = {}
-        for goal in self._all_goals:
+        for goal in self._all_goal_generator_goals:
             self.performance_metrics[goal.goal_id] = pd.DataFrame()
 
     def path_goals(self):
         """Return the list of path goals."""
         goals = super().path_goals()
-        new_goals = self._path_goals
+        new_goals = self._goal_generator_path_goals
         if new_goals:
             goals = goals + [BaseGoal(optimization_problem=self, **goal.__dict__) for goal in new_goals]
         return goals
@@ -61,7 +62,7 @@ class GoalGeneratorMixin(StatisticsMixin):
     def goals(self):
         """Return the list of goals."""
         goals = super().goals()
-        new_goals = self._non_path_goals
+        new_goals = self._goal_generator_non_path_goals
         if new_goals:
             goals = goals + [BaseGoal(optimization_problem=self, **goal.__dict__) for goal in new_goals]
         return goals
@@ -69,14 +70,14 @@ class GoalGeneratorMixin(StatisticsMixin):
     def store_performance_metrics(self, label):
         """Calculate and store performance metrics."""
         results = self.extract_results()
-        goal_generator_goals = self._all_goals
+        goal_generator_goals = self._all_goal_generator_goals
         targets = self.collect_range_target_values(goal_generator_goals)
         for goal in goal_generator_goals:
-            new_row = get_performance_metrics(results, goal, targets.get(goal.goal_id))
-            if new_row is not None:
-                new_row.rename(label, inplace=True)
+            next_row = get_performance_metrics(results, goal, targets.get(goal.goal_id))
+            if next_row is not None:
+                next_row.rename(label, inplace=True)
                 self.performance_metrics[goal.goal_id] = pd.concat(
-                    [self.performance_metrics[goal.goal_id].T, new_row], axis=1
+                    [self.performance_metrics[goal.goal_id].T, next_row], axis=1
                 ).T
 
     def priority_completed(self, priority):

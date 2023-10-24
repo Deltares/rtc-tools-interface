@@ -30,6 +30,7 @@ class GoalGeneratorMixin(StatisticsMixin):
     folder. One can also set the path to the goal_table_file manually
     with the `goal_table_file` class variable.
     """
+    calculate_performance_metrics = True
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -46,10 +47,11 @@ class GoalGeneratorMixin(StatisticsMixin):
         )
         self._all_goal_generator_goals = self._goal_generator_path_goals + self._goal_generator_non_path_goals
 
-        # A dataframe for each goal defined by the goal generator
-        self.performance_metrics = {}
-        for goal in self._all_goal_generator_goals:
-            self.performance_metrics[goal.goal_id] = pd.DataFrame()
+        if self.calculate_performance_metrics:
+            # A dataframe for each goal defined by the goal generator
+            self.performance_metrics = {}
+            for goal in self._all_goal_generator_goals:
+                self.performance_metrics[goal.goal_id] = pd.DataFrame()
 
     def path_goals(self):
         """Return the list of path goals."""
@@ -83,10 +85,12 @@ class GoalGeneratorMixin(StatisticsMixin):
     def priority_completed(self, priority):
         """Tasks after priority optimization."""
         super().priority_completed(priority)
-        self.store_performance_metrics(priority)
+        if self.calculate_performance_metrics:
+            self.store_performance_metrics(priority)
 
     def post(self):
         """Tasks after all optimization steps."""
         super().post()
-        self.store_performance_metrics("final_results")
-        write_performance_metrics(self.performance_metrics, self._output_folder)
+        if self.calculate_performance_metrics:
+            self.store_performance_metrics("final_results")
+            write_performance_metrics(self.performance_metrics, self._output_folder)

@@ -61,7 +61,7 @@ def performance_metrics_minmaximization(results: Dict[str, np.array], goal: Mini
 
 def get_range_percentual_exceedance(timeseries: np.array, goal: RangeGoalModel, targets: TargetDict):
     """Calculate percentage of timesteps in which target is exceeded"""
-    if not goal.goal_type in ["range", "range_rate_of_change"]:
+    if goal.goal_type not in ["range", "range_rate_of_change"]:
         return None
     below_target = sum(np.where(timeseries + ABS_TOL < targets["target_min"], 1, 0)) / len(timeseries)
     above_target = sum(np.where(timeseries - ABS_TOL > targets["target_max"], 1, 0)) / len(timeseries)
@@ -70,7 +70,7 @@ def get_range_percentual_exceedance(timeseries: np.array, goal: RangeGoalModel, 
 
 def get_range_total_exceedance(timeseries: np.array, goal: RangeGoalModel, targets: TargetDict):
     """Calculate sum of absolute exceedances of the target"""
-    if not goal.goal_type in ["range", "range_rate_of_change"]:
+    if goal.goal_type not in ["range", "range_rate_of_change"]:
         return None
     below_target = sum(np.abs(np.where(timeseries < targets["target_min"], timeseries - targets["target_min"], 0)))
     above_target = sum(np.abs(np.where(timeseries > targets["target_max"], timeseries - targets["target_max"], 0)))

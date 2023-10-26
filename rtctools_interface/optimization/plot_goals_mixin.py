@@ -5,7 +5,7 @@ import copy
 from pathlib import Path
 import pickle
 import time
-from typing import Union, List, Dict
+from typing import Union, List, Dict, Optional
 
 import numpy as np
 
@@ -27,6 +27,8 @@ from rtctools_interface.optimization.type_definitions import (
 )
 
 logger = logging.getLogger("rtctools")
+
+MAX_NUM_CACHED_FILES = 5
 
 
 def get_most_recent_cache(cache_folder):
@@ -50,6 +52,27 @@ def clean_cache_folder(cache_folder, max_files=10):
         for i in range(files_to_delete):
             file_to_delete = cache_path / files[i]
             file_to_delete.unlink()
+
+
+def write_cache_file(cache_folder: Path, results_to_store: PlotDataAndConfig):
+    """Write a file to the cache folder as a pickle file with the linux time as name."""
+    os.makedirs(cache_folder, exist_ok=True)
+    file_name = int(time.time())
+    with open(cache_folder / f"{file_name}.pickle", "wb") as handle:
+        pickle.dump(results_to_store, handle, protocol=pickle.HIGHEST_PROTOCOL)
+    clean_cache_folder(cache_folder, MAX_NUM_CACHED_FILES)
+
+
+def read_cache_file_from_folder(cache_folder: Path) -> Optional[PlotDataAndConfig]:
+    """Read the most recent file from the cache folder."""
+    cache_file_path = get_most_recent_cache(cache_folder)
+    loaded_data: Optional[PlotDataAndConfig]
+    if cache_file_path:
+        with open(cache_file_path, "rb") as handle:
+            loaded_data: PlotDataAndConfig = pickle.load(handle)
+    else:
+        loaded_data = None
+    return loaded_data
 
 
 class PlotGoalsMixin:
@@ -83,6 +106,12 @@ class PlotGoalsMixin:
             var for subplot_config in self.plot_config for var in subplot_config.variables_with_previous_result
         ]
         self.custom_variables = variables_style_1 + variables_style_2 + variables_with_previous_result
+
+        self._cache_folder = Path(self._output_folder) / "cached_results"
+        if "previous_run_plot_config" in kwargs:
+            self._previous_run = kwargs["previous_run_plot_config"]
+        else:
+            self._previous_run = read_cache_file_from_folder(self._cache_folder)
 
     def pre(self):
         """Tasks before optimizing."""
@@ -181,15 +210,6 @@ class PlotGoalsMixin:
             "prio_independent_data": prio_independent_data,
         }
 
-        # load previous results
-        cache_folder = Path(self._output_folder) / "cached_results"
-        cache_file_path = get_most_recent_cache(cache_folder)
-        if cache_file_path:
-            with open(cache_file_path, "rb") as handle:
-                previous_run: PlotDataAndConfig = pickle.load(handle)
-        else:
-            previous_run = None
-
         self.plot_data = {}
         if self.plot_results_each_priority:
             self.plot_data = self.plot_data | create_plot_each_priority(
@@ -198,12 +218,17 @@ class PlotGoalsMixin:
 
         if self.plot_final_results:
             self.plot_data = self.plot_data | create_plot_final_results(
-                current_run, previous_run, plotting_library=self.plotting_library
+                current_run, self._previous_run, plotting_library=self.plotting_library
             )
 
         # Cache results, such that in a next run they can be used for comparison
-        os.makedirs(cache_folder, exist_ok=True)
-        file_name = int(time.time())
-        with open(cache_folder / f"{file_name}.pickle", "wb") as handle:
-            pickle.dump(current_run, handle, protocol=pickle.HIGHEST_PROTOCOL)
-        clean_cache_folder(cache_folder, 5)
+        self._store_current_results(self._cache_folder, current_run)
+
+    def _store_current_results(self, cache_folder, results_to_store):
+        write_cache_file(cache_folder, results_to_store)
+        self._plot_data_and_config = results_to_store
+
+    @property
+    def get_plot_data_and_config(self):
+        """Get the plot data and config from the current run."""
+        return self._plot_data_and_config

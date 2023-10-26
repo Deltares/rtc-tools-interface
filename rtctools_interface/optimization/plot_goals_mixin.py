@@ -183,12 +183,12 @@ class PlotGoalsMixin:
 
         # load previous results
         cache_folder = Path(self._output_folder) / "cached_results"
-        cache = get_most_recent_cache(cache_folder)
-        if cache:
-            with open(cache, "rb") as handle:
-                plot_data_and_config_prev: PlotDataAndConfig = pickle.load(handle)
+        cache_file_path = get_most_recent_cache(cache_folder)
+        if cache_file_path:
+            with open(cache_file_path, "rb") as handle:
+                previous_run: PlotDataAndConfig = pickle.load(handle)
         else:
-            plot_data_and_config_prev = None
+            previous_run = None
 
         self.plot_data = {}
         if self.plot_results_each_priority:
@@ -198,7 +198,7 @@ class PlotGoalsMixin:
 
         if self.plot_final_results:
             self.plot_data = self.plot_data | create_plot_final_results(
-                current_run, plot_data_and_config_prev, plotting_library=self.plotting_library
+                current_run, previous_run, plotting_library=self.plotting_library
             )
 
         # Cache results, such that in a next run they can be used for comparison

@@ -190,39 +190,41 @@ class PlotGoalsMixin:
     def post(self):
         """Tasks after optimizing. Creates a plot for for each priority."""
         super().post()
-        prio_independent_data: PrioIndependentData = {
-            "io_datetimes": self.io.datetimes,
-            "times": self.times(),
-            "target_series": self.collect_range_target_values(self.plot_config),
-            "all_goals": self.goals() + self.path_goals(),
-        }
 
-        plot_options: PlotOptions = {
-            "plot_config": self.plot_config,
-            "plot_max_rows": self.plot_max_rows,
-            "output_folder": self._output_folder,
-            "save_plot_to": self.save_plot_to,
-        }
+        if self.solver_stats['success']:
+            prio_independent_data: PrioIndependentData = {
+                "io_datetimes": self.io.datetimes,
+                "times": self.times(),
+                "target_series": self.collect_range_target_values(self.plot_config),
+                "all_goals": self.goals() + self.path_goals(),
+            }
 
-        current_run: PlotDataAndConfig = {
-            "intermediate_results": self.intermediate_results,
-            "plot_options": plot_options,
-            "prio_independent_data": prio_independent_data,
-        }
+            plot_options: PlotOptions = {
+                "plot_config": self.plot_config,
+                "plot_max_rows": self.plot_max_rows,
+                "output_folder": self._output_folder,
+                "save_plot_to": self.save_plot_to,
+            }
 
-        self.plot_data = {}
-        if self.plot_results_each_priority:
-            self.plot_data = self.plot_data | create_plot_each_priority(
-                current_run, plotting_library=self.plotting_library
-            )
+            current_run: PlotDataAndConfig = {
+                "intermediate_results": self.intermediate_results,
+                "plot_options": plot_options,
+                "prio_independent_data": prio_independent_data,
+            }
 
-        if self.plot_final_results:
-            self.plot_data = self.plot_data | create_plot_final_results(
-                current_run, self._previous_run, plotting_library=self.plotting_library
-            )
+            self.plot_data = {}
+            if self.plot_results_each_priority:
+                self.plot_data = self.plot_data | create_plot_each_priority(
+                    current_run, plotting_library=self.plotting_library
+                )
 
-        # Cache results, such that in a next run they can be used for comparison
-        self._store_current_results(self._cache_folder, current_run)
+            if self.plot_final_results:
+                self.plot_data = self.plot_data | create_plot_final_results(
+                    current_run, self._previous_run, plotting_library=self.plotting_library
+                )
+
+            # Cache results, such that in a next run they can be used for comparison
+            self._store_current_results(self._cache_folder, current_run)
 
     def _store_current_results(self, cache_folder, results_to_store):
         write_cache_file(cache_folder, results_to_store)

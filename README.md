@@ -96,6 +96,19 @@ See the table below for an example content of the `goal_table.csv`.
 | goal_2 | reservoir_2_waterlevel     | 1      | range        | 0            | 15           | 10               | timeseries            | "target_series"        | "target_series"       | 10       |        |       |
 | goal_3 | electricity_cost     | 1      | minimization_path |              |              |                  |                  |            |            | 20       |        |       |
 
+## Goal performance metrics
+For all goals defined with the goal generator this rtc-tools-interface module will also calculate performance metrics. By default, these performance metrics are saved to a .csv in the folder `output/perfomance_metrics`, with one csv file per goal. With the class variable `calculate_performance_metrics` this functionality can be disabled (by default it is enabled).
+
+The calculated metrics are:
+- `timeseries_sum`: The sum of the state variable over all timesteps.
+- `timeseries_min`: The minimum of the state variable.
+- `timeseries_max`: The maximum of the state variable.
+- `timeseries_avg`: The average of the state variable.
+- `max_difference`: The maximum difference in one timestep.
+- `mean_absolute_percentual_difference`: The mean of the absolute percentual difference per timestep over all timesteps (only for range goals).
+- `mean_absolute_difference`: The mean absolute difference per timestep of the state variable over all timesteps (only for range goals).
+
+
 ## Automatic plotting of results
 With the `PlotGoalsMixin` one can easily make plots of the results of rtc-tools. To utilize this functionality, import the mixin as follows:
 ```python

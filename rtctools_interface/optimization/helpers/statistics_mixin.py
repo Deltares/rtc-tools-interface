@@ -18,6 +18,8 @@ logger = logging.getLogger("rtctools")
 
 
 class StatisticsMixin:
+    # TODO: remove pylint disable below once we have more public functions.
+    # pylint: disable=too-few-public-methods
     """A mixin class providing methods for collecting data and statistics from optimization results,
     useful for solution performance analysis."""
 

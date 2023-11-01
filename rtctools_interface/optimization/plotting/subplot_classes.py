@@ -75,7 +75,7 @@ class SubplotBase(ABC):
             PlotTableRow,
         ] = subplot_config
         self.goal: BaseGoal = goal
-        self.function_nominal = self.goal.function_nominal if self.goal else 1
+        self.function_nominal = self.goal["function_nominal"] if self.goal else 1
         self.results = results
         self.results_prev = results_prev
         self.results_compare = results_compare

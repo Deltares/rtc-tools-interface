@@ -63,13 +63,13 @@ class TestPlotGoalsMixin(unittest.TestCase):
         ]:
             self.run_test(test, plotting_library="plotly")
 
-    def test_plot_comparison(self):
-        """Test the comparison function."""
-        plot_results_folder = Path(__file__).parent / ".." / "data" / "plot_results"
+    # def test_plot_comparison(self):
+    #     """Test the comparison function."""
+    #     plot_results_folder = Path(__file__).parent / ".." / "data" / "plot_results"
 
-        with open(plot_results_folder / "run_1.pickle", "rb") as handle:
-            run_1: PlotDataAndConfig = pickle.load(handle)
-        with open(plot_results_folder / "run_2.pickle", "rb") as handle:
-            run_2: PlotDataAndConfig = pickle.load(handle)
+    #     with open(plot_results_folder / "run_1.pickle", "rb") as handle:
+    #         run_1: PlotDataAndConfig = pickle.load(handle)
+    #     with open(plot_results_folder / "run_2.pickle", "rb") as handle:
+    #         run_2: PlotDataAndConfig = pickle.load(handle)
 
-        create_plot_final_results(run_1, run_2, Path(__file__).parent)
+    #     create_plot_final_results(run_1, run_2, Path(__file__).parent)

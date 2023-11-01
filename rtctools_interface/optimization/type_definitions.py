@@ -1,11 +1,10 @@
 """Type definitions for rtc_tools interface."""
 import datetime
 import pathlib
-from typing import TypedDict, List, Dict, Literal, Union
+from typing import Optional, Tuple, TypedDict, List, Dict, Literal, Union
 
 import numpy as np
 
-from rtctools_interface.optimization.base_goal import BaseGoal
 from rtctools_interface.optimization.plot_and_goal_schema import (
     MinimizationGoalCombinedModel,
     MaximizationGoalCombinedModel,
@@ -22,13 +21,29 @@ class TargetDict(TypedDict):
     target_max: np.ndarray
 
 
+class GoalConfig(TypedDict):
+    """Configuration for a goal."""
+
+    goal_id: str
+    state: str
+    goal_type: str
+    function_min: Optional[float]
+    function_max: Optional[float]
+    function_nominal: Optional[float]
+    target_min: Tuple[float, np.ndarray]
+    target_max: Tuple[float, np.ndarray]
+    priority: int
+    weight: float
+    order: int
+
+
 class PrioIndependentData(TypedDict):
     """Data for one optimization run, which is independent of the priority."""
 
     io_datetimes: List[datetime.datetime]
     times: np.ndarray
     target_series: Dict[str, TargetDict]
-    all_goals: List[BaseGoal]
+    all_goals: List[GoalConfig]
 
 
 class PlotOptions(TypedDict):

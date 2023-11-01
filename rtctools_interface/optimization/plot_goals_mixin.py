@@ -141,7 +141,7 @@ class PlotGoalsMixin(StatisticsMixin):
                 "io_datetimes": self.io.datetimes,
                 "times": self.times(),
                 "target_series": self.collect_range_target_values(self.plot_config),
-                "all_goals": self.goals() + self.path_goals(),
+                "all_goals": [goal.get_goal_config() for goal in self.goals() + self.path_goals()],
             }
 
             plot_options: PlotOptions = {

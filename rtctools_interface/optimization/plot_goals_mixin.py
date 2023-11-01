@@ -99,6 +99,9 @@ class PlotGoalsMixin(StatisticsMixin):
             var for subplot_config in self.plot_config for var in subplot_config.variables_with_previous_result
         ]
         self.custom_variables = variables_style_1 + variables_style_2 + variables_with_previous_result
+        self.state_variables = [
+            subplot_config.state for subplot_config in self.plot_config if subplot_config.get("state")
+        ]
 
         self._cache_folder = Path(self._output_folder) / "cached_results"
         if "previous_run_plot_config" in kwargs:
@@ -114,13 +117,18 @@ class PlotGoalsMixin(StatisticsMixin):
     def priority_completed(self, priority: int) -> None:
         """Store priority-dependent results required for plotting."""
         extracted_results = copy.deepcopy(self.extract_results())
-        results_custom_variables = {
-            custom_variable: self.get_timeseries(custom_variable)
-            for custom_variable in self.custom_variables
-            if custom_variable not in extracted_results
-        }
-        extracted_results.update(results_custom_variables)
-        to_store = {"extract_result": extracted_results, "priority": priority}
+        all_variables_to_store = set(self.custom_variables + self.state_variables)
+        timeseries_to_store = {}
+        for timeseries_name in all_variables_to_store:
+            try:
+                timeseries_to_store[timeseries_name] = extracted_results[timeseries_name]
+            except KeyError:
+                try:
+                    timeseries_to_store[timeseries_name] = self.get_timeseries(timeseries_name)
+                except KeyError as exc:
+                    raise KeyError("Cannot find timeseries for %s" % timeseries_name) from exc
+
+        to_store = {"extract_result": timeseries_to_store, "priority": priority}
         self.intermediate_results.append(to_store)
         super().priority_completed(priority)
 

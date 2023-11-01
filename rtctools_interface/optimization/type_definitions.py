@@ -18,15 +18,15 @@ from rtctools_interface.optimization.plot_table_schema import PlotTableRow
 class TargetDict(TypedDict):
     """Target min and max timeseries for a goal."""
 
-    target_min: np.array
-    target_max: np.array
+    target_min: np.ndarray
+    target_max: np.ndarray
 
 
 class PrioIndependentData(TypedDict):
     """Data for one optimization run, which is independent of the priority."""
 
     io_datetimes: List[datetime.datetime]
-    times: np.array
+    times: np.ndarray
     target_series: Dict[str, TargetDict]
     all_goals: List[BaseGoal]
 
@@ -52,7 +52,7 @@ class IntermediateResult(TypedDict):
     """Dict containing the results (timeseries) for one priority optimization."""
 
     priority: int
-    extract_result: Dict[str, np.array]
+    extract_result: Dict[str, np.ndarray]
 
 
 class PlotDataAndConfig(TypedDict):

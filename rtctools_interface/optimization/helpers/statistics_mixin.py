@@ -76,5 +76,5 @@ class StatisticsMixin:
                     message = "Target type {} not known for goal {}.".format(goal.target_data_type, goal.goal_id)
                     logger.error(message)
                     raise ValueError(message)
-                target_series[goal.goal_id] = {"target_min": target_min, "target_max": target_max}
+                target_series[str(goal.goal_id)] = {"target_min": target_min, "target_max": target_max}
         return target_series

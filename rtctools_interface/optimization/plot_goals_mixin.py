@@ -3,15 +3,12 @@ import logging
 import os
 import copy
 from pathlib import Path
-import pickle
 import time
 from typing import Optional
 
+from rtctools_interface.optimization.helpers.serialization import deserialize, serialize
 from rtctools_interface.optimization.helpers.statistics_mixin import StatisticsMixin
-
-
 from rtctools_interface.optimization.plotting.plot_tools import create_plot_each_priority, create_plot_final_results
-
 from rtctools_interface.optimization.read_plot_table import get_joined_plot_config
 from rtctools_interface.optimization.type_definitions import (
     PlotDataAndConfig,
@@ -27,17 +24,17 @@ MAX_NUM_CACHED_FILES = 5
 def get_most_recent_cache(cache_folder):
     """Get the most recent pickle file, based on its name."""
     cache_folder = Path(cache_folder)
-    pickle_files = list(cache_folder.glob("*.pickle"))
+    json_files = list(cache_folder.glob("*.json"))
 
-    if pickle_files:
-        return max(pickle_files, key=lambda file: int(file.stem), default=None)
+    if json_files:
+        return max(json_files, key=lambda file: int(file.stem), default=None)
     return None
 
 
 def clean_cache_folder(cache_folder, max_files=10):
     """Clean the cache folder with pickles, remove the oldest ones when there are more than `max_files`."""
     cache_path = Path(cache_folder)
-    files = [f for f in cache_path.iterdir() if f.suffix == ".pickle"]
+    files = [f for f in cache_path.iterdir() if f.suffix == ".json"]
 
     if len(files) > max_files:
         files.sort(key=lambda x: int(x.stem))
@@ -51,8 +48,9 @@ def write_cache_file(cache_folder: Path, results_to_store: PlotDataAndConfig):
     """Write a file to the cache folder as a pickle file with the linux time as name."""
     os.makedirs(cache_folder, exist_ok=True)
     file_name = int(time.time())
-    with open(cache_folder / f"{file_name}.pickle", "wb") as handle:
-        pickle.dump(results_to_store, handle, protocol=pickle.HIGHEST_PROTOCOL)
+    with open(cache_folder / f"{file_name}.json", "w", encoding="utf-8") as json_file:
+        json_file.write(serialize(results_to_store))
+
     clean_cache_folder(cache_folder, MAX_NUM_CACHED_FILES)
 
 
@@ -61,8 +59,8 @@ def read_cache_file_from_folder(cache_folder: Path) -> Optional[PlotDataAndConfi
     cache_file_path = get_most_recent_cache(cache_folder)
     loaded_data: Optional[PlotDataAndConfig]
     if cache_file_path:
-        with open(cache_file_path, "rb") as handle:
-            loaded_data: PlotDataAndConfig = pickle.load(handle)
+        with open(cache_file_path, "r", encoding="utf-8") as handle:
+            loaded_data = deserialize(handle.read())
     else:
         loaded_data = None
     return loaded_data

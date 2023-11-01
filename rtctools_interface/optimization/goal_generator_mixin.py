@@ -75,7 +75,7 @@ class GoalGeneratorMixin(StatisticsMixin):
         goal_generator_goals = self._all_goal_generator_goals
         targets = self.collect_range_target_values(goal_generator_goals)
         for goal in goal_generator_goals:
-            next_row = get_performance_metrics(results, goal, targets.get(goal.goal_id))
+            next_row = get_performance_metrics(results, goal, targets.get(str(goal.goal_id)))
             if next_row is not None:
                 next_row.rename(label, inplace=True)
                 self.performance_metrics[goal.goal_id] = pd.concat(

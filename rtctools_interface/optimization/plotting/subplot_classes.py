@@ -85,7 +85,7 @@ class SubplotBase(ABC):
         self.used_colors = used_colors
 
         if self.config.get("goal_type") in ["range", "range_rate_of_change"]:
-            targets = prio_independent_data["target_series"][self.config.goal_id]
+            targets = prio_independent_data["target_series"][str(self.config.goal_id)]
             self.target_min, self.target_max = targets["target_min"], targets["target_max"]
         else:
             self.target_min, self.target_max = None, None

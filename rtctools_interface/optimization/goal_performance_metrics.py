@@ -21,7 +21,9 @@ ABS_TOL = 0.001
 
 
 def get_mean_absolute_percentual_difference(timeseries: np.ndarray) -> float:
-    """Calculate the mean absolute percentual difference."""
+    """Calculate the mean absolute percentual difference, ignoring entries where timeseries = 0."""
+    nonzero_indices = np.nonzero(timeseries)
+    timeseries = timeseries[nonzero_indices]
     differences = np.diff(timeseries)
     mapd = np.mean(np.abs(differences / timeseries[:-1]))
     return mapd

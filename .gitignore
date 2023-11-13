@@ -30,3 +30,4 @@ dist
 *.html
 *.pickle
 *.csv
+*.json

@@ -8,6 +8,7 @@ from rtctools.optimization.optimization_problem import OptimizationProblem
 from rtctools.optimization.timeseries import Timeseries
 
 from rtctools_interface.optimization.goal_table_schema import GOAL_TYPES, TARGET_DATA_TYPES
+from rtctools_interface.optimization.type_definitions import GoalConfig
 
 
 logger = logging.getLogger("rtctools")
@@ -47,7 +48,6 @@ class BaseGoal(Goal):
     ):
         self.goal_id = goal_id
         self.state = state
-        self.goal_type = None
         self._set_goal_type(goal_type)
         if goal_type in ["range", "range_rate_of_change"]:
             self._set_function_bounds(
@@ -205,3 +205,26 @@ class BaseGoal(Goal):
             set_parameter_target()
         elif target_data_type == "timeseries":
             set_timeseries_target()
+
+    def get_goal_config(self) -> GoalConfig:
+        """
+        Serialize the goal configuration into a dictionary.
+        """
+        goal_config: GoalConfig = {
+            "goal_id": self.goal_id,
+            "state": self.state,
+            "goal_type": self.goal_type,
+            "function_min": self.function_range[0] if np.isfinite(self.function_range[0]) else None,
+            "function_max": self.function_range[1] if np.isfinite(self.function_range[1]) else None,
+            "function_nominal": self.function_nominal if np.isfinite(self.function_nominal) else None,
+            "target_min": self.target_min,
+            "target_max": self.target_max,
+            "priority": self.priority,
+            "weight": self.weight,
+            "order": self.order,
+        }
+        if isinstance(self.target_min, Timeseries):
+            goal_config["target_min"] = self.target_min.values
+        if isinstance(self.target_max, Timeseries):
+            goal_config["target_max"] = self.target_max.values
+        return goal_config

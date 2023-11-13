@@ -49,9 +49,9 @@ class GoalGeneratorMixin(StatisticsMixin):
 
         if self.calculate_performance_metrics:
             # A dataframe for each goal defined by the goal generator
-            self.performance_metrics = {}
+            self._performance_metrics = {}
             for goal in self._all_goal_generator_goals:
-                self.performance_metrics[goal.goal_id] = pd.DataFrame()
+                self._performance_metrics[goal.goal_id] = pd.DataFrame()
 
     def path_goals(self):
         """Return the list of path goals."""
@@ -75,11 +75,11 @@ class GoalGeneratorMixin(StatisticsMixin):
         goal_generator_goals = self._all_goal_generator_goals
         targets = self.collect_range_target_values(goal_generator_goals)
         for goal in goal_generator_goals:
-            next_row = get_performance_metrics(results, goal, targets.get(goal.goal_id))
+            next_row = get_performance_metrics(results, goal, targets.get(str(goal.goal_id)))
             if next_row is not None:
                 next_row.rename(label, inplace=True)
-                self.performance_metrics[goal.goal_id] = pd.concat(
-                    [self.performance_metrics[goal.goal_id].T, next_row], axis=1
+                self._performance_metrics[goal.goal_id] = pd.concat(
+                    [self._performance_metrics[goal.goal_id].T, next_row], axis=1
                 ).T
 
     def priority_completed(self, priority):
@@ -93,4 +93,8 @@ class GoalGeneratorMixin(StatisticsMixin):
         super().post()
         if self.calculate_performance_metrics:
             self.store_performance_metrics("final_results")
-            write_performance_metrics(self.performance_metrics, self._output_folder)
+            write_performance_metrics(self._performance_metrics, self._output_folder)
+
+    def get_performance_metrics(self):
+        """Get the plot data and config from the current run."""
+        return self._performance_metrics

@@ -14,14 +14,15 @@ from rtctools_interface.optimization.type_definitions import PlotDataAndConfig
 def custom_encoder(obj):
     """Custom JSON encoder for types not supported by default."""
     if isinstance(obj, (datetime.datetime, datetime.date)):
-        return obj.isoformat()
+        return {"__type__": "datetime" if isinstance(obj, datetime.datetime) else "date", "value": obj.isoformat()}
     if isinstance(obj, np.ndarray):
         return {"__type__": "ndarray", "data": obj.tolist()}
     if isinstance(obj, Path):
-        return str(obj)
+        return {"__type__": "path", "value": str(obj)}
     if hasattr(obj, "dict"):
         return obj.dict()
     raise TypeError(f"Object of type {type(obj).__name__} is not JSON serializable")
+
 
 
 def serialize(plot_data_and_config: PlotDataAndConfig) -> str:
@@ -32,18 +33,15 @@ def serialize(plot_data_and_config: PlotDataAndConfig) -> str:
 def custom_decoder(dct: Any) -> Any:
     """Custom JSON decoder for types not supported by default."""
     for key, value in dct.items():
-        if isinstance(value, str):
-            try:
-                if "T" in value:
-                    dct[key] = datetime.datetime.fromisoformat(value)
-                elif "-" in value:
-                    dct[key] = datetime.date.fromisoformat(value)
-                elif Path(value).exists():
-                    dct[key] = Path(value)
-            except ValueError:
-                pass
-        elif isinstance(value, dict) and value.get("__type__") == "ndarray":
-            dct[key] = np.array(value["data"])
+        if isinstance(value, dict):
+            if value.get("__type__") == "datetime":
+                dct[key] = datetime.datetime.fromisoformat(value["value"])
+            elif value.get("__type__") == "date":
+                dct[key] = datetime.date.fromisoformat(value["value"])
+            elif value.get("__type__") == "ndarray":
+                dct[key] = np.array(value["data"])
+            elif value.get("__type__") == "path" and value["value"]:
+                dct[key] = Path(value["value"])
     return dct
 
 

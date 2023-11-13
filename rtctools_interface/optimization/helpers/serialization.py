@@ -24,7 +24,6 @@ def custom_encoder(obj):
     raise TypeError(f"Object of type {type(obj).__name__} is not JSON serializable")
 
 
-
 def serialize(plot_data_and_config: PlotDataAndConfig) -> str:
     """Serialize the PlotDataAndConfig object to a JSON string."""
     return json.dumps(plot_data_and_config, default=custom_encoder)
@@ -32,17 +31,22 @@ def serialize(plot_data_and_config: PlotDataAndConfig) -> str:
 
 def custom_decoder(dct: Any) -> Any:
     """Custom JSON decoder for types not supported by default."""
-    for key, value in dct.items():
-        if isinstance(value, dict):
-            if value.get("__type__") == "datetime":
-                dct[key] = datetime.datetime.fromisoformat(value["value"])
-            elif value.get("__type__") == "date":
-                dct[key] = datetime.date.fromisoformat(value["value"])
-            elif value.get("__type__") == "ndarray":
-                dct[key] = np.array(value["data"])
-            elif value.get("__type__") == "path" and value["value"]:
-                dct[key] = Path(value["value"])
-    return dct
+    if isinstance(dct, dict):
+        for key, value in dct.items():
+            dct[key] = custom_decoder(value)  # Recursively process each value
+        if dct.get("__type__") == "datetime":
+            return datetime.datetime.fromisoformat(dct["value"])
+        elif dct.get("__type__") == "date":
+            return datetime.date.fromisoformat(dct["value"])
+        elif dct.get("__type__") == "ndarray":
+            return np.array(dct["data"])
+        elif dct.get("__type__") == "path" and dct["value"]:
+            return Path(dct["value"])
+        return dct
+    elif isinstance(dct, list):
+        return [custom_decoder(item) for item in dct]  # Recursively process each item in the list
+    else:
+        return dct
 
 
 def deserialize(serialized_str: str) -> PlotDataAndConfig:

@@ -1,16 +1,9 @@
 """Type definitions for rtc_tools interface."""
 import datetime
 import pathlib
-from typing import Optional, Tuple, TypedDict, List, Dict, Literal, Union
+from typing import Optional, Tuple, TypedDict, List, Dict, Literal
 
 import numpy as np
-
-from rtctools_interface.optimization.plot_and_goal_schema import (
-    MinimizationGoalCombinedModel,
-    MaximizationGoalCombinedModel,
-    RangeGoalCombinedModel,
-    RangeRateOfChangeGoalCombinedModel,
-)
 from rtctools_interface.optimization.plot_table_schema import PlotTableRow
 
 
@@ -32,6 +25,8 @@ class GoalConfig(TypedDict):
     function_nominal: Optional[float]
     target_min: Tuple[float, np.ndarray]
     target_max: Tuple[float, np.ndarray]
+    target_min_series: Optional[np.ndarray]
+    target_max_series: Optional[np.ndarray]
     priority: int
     weight: float
     order: int
@@ -42,22 +37,13 @@ class PrioIndependentData(TypedDict):
 
     io_datetimes: List[datetime.datetime]
     times: np.ndarray
-    target_series: Dict[str, TargetDict]
-    all_goals: List[GoalConfig]
+    base_goals: List[GoalConfig]
 
 
 class PlotOptions(TypedDict):
     """Plot configuration for on optimization run."""
 
-    plot_config: List[
-        Union[
-            MinimizationGoalCombinedModel,
-            MaximizationGoalCombinedModel,
-            RangeGoalCombinedModel,
-            RangeRateOfChangeGoalCombinedModel,
-            PlotTableRow,
-        ]
-    ]
+    plot_config: PlotTableRow
     plot_max_rows: int
     output_folder: pathlib.Path
     save_plot_to: Literal["image", "stringio"]
@@ -67,7 +53,7 @@ class IntermediateResult(TypedDict):
     """Dict containing the results (timeseries) for one priority optimization."""
 
     priority: int
-    extract_result: Dict[str, np.ndarray]
+    timeseries_data: Dict[str, np.ndarray]
 
 
 class PlotDataAndConfig(TypedDict):

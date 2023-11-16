@@ -6,7 +6,6 @@ from typing import Any
 
 import numpy as np
 import pandas as pd
-from rtctools_interface.optimization.plot_and_goal_schema import GOAL_TYPE_COMBINED_MODEL
 from rtctools_interface.optimization.plot_table_schema import PlotTableRow
 
 from rtctools_interface.optimization.type_definitions import PlotDataAndConfig
@@ -60,14 +59,7 @@ def deserialize(serialized_str: str) -> PlotDataAndConfig:
 
     # Reconstruct pydantic models
     if data and "plot_options" in data:
-        goal_generator_goals = [
-            GOAL_TYPE_COMBINED_MODEL[item["goal_type"]](**item)
-            for item in data["plot_options"]["plot_config"]
-            if item["specified_in"] == "goal_generator"
-        ]
-        python_goals = [
-            PlotTableRow(**item) for item in data["plot_options"]["plot_config"] if item["specified_in"] == "python"
-        ]
-        data["plot_options"]["plot_config"] = goal_generator_goals + python_goals
+        plot_table_rows = [PlotTableRow(**item) for item in data["plot_options"]["plot_config"]]
+        data["plot_options"]["plot_config"] = plot_table_rows
 
     return data

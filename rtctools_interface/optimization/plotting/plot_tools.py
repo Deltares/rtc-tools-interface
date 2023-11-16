@@ -10,13 +10,12 @@ import matplotlib
 import matplotlib.pyplot as plt
 from plotly.subplots import make_subplots
 
-from rtctools_interface.optimization.base_goal import BaseGoal
 from rtctools_interface.optimization.plotting.subplot_classes import (
     COMPARISON_RUN_SUFFIX,
     SubplotMatplotlib,
     SubplotPlotly,
 )
-from rtctools_interface.optimization.type_definitions import IntermediateResult, PlotDataAndConfig
+from rtctools_interface.optimization.type_definitions import GoalConfig, IntermediateResult, PlotDataAndConfig
 
 logger = logging.getLogger("rtctools")
 
@@ -71,12 +70,12 @@ def save_fig_as_html(fig, output_folder, priority, final_result) -> dict:
     return fig
 
 
-def get_goal(subplot_config, all_goals) -> Union[BaseGoal, None]:
+def get_goal(subplot_config, base_goals) -> Union[GoalConfig, None]:
     """Find the goal belonging to a subplot. Only checks for goals as specified in the goal table."""
-    for goal in all_goals:
+    for goal in base_goals:
         if goal.get("goal_id") == subplot_config.id:
             return goal
-    return None
+    return {}
 
 
 def save_fig_as_stringio(fig):
@@ -157,7 +156,7 @@ def create_matplotlib_figure(
     # pylint: disable=too-many-locals
     """Creates a figure with a subplot for each row in the plot_table."""
     used_colors = []
-    results = result_dict["extract_result"]
+    results = result_dict["timeseries_data"]
     plot_config = current_run["plot_options"]["plot_config"]
     plot_max_rows = current_run["plot_options"]["plot_max_rows"]
     if check_empty_plot_table(plot_config):
@@ -171,12 +170,12 @@ def create_matplotlib_figure(
     fig.suptitle(main_title, fontsize=14)
     i_plot = -1
 
-    all_goals = current_run["prio_independent_data"]["all_goals"]
+    base_goals = current_run["prio_independent_data"]["base_goals"]
     # Add subplot for each row in the plot_table
     for subplot_config in plot_config:
         i_plot += 1
         axis = get_subplot_axis(i_plot, n_rows, n_cols, axs)
-        goal = get_goal(subplot_config, all_goals)
+        goal = get_goal(subplot_config, base_goals)
         subplot = SubplotMatplotlib(
             axis,
             subplot_config,
@@ -232,18 +231,18 @@ def create_plotly_figure(
     n_rows = math.ceil(len(plot_config) / n_cols)
     i_plot = -1
     plotly_figure = make_subplots(rows=n_rows, cols=n_cols, subplot_titles=len(plot_config) * [" "], shared_xaxes=True)
-    all_goals = current_run["prio_independent_data"]["all_goals"]
+    base_goals = current_run["prio_independent_data"]["base_goals"]
 
     # Add subplot for each row in the plot_table
     used_colors = []
     for subplot_config in plot_config:
         i_plot += 1
         i_c, i_r = get_row_col_number(i_plot, n_rows, n_cols, row_first=True)
-        goal = get_goal(subplot_config, all_goals)
+        goal = get_goal(subplot_config, base_goals)
         subplot = SubplotPlotly(
             subplot_config,
             goal,
-            result_dict["extract_result"],
+            result_dict["timeseries_data"],
             results_prev,
             current_run["prio_independent_data"],
             used_colors,

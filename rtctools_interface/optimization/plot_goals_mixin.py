@@ -84,12 +84,9 @@ class PlotGoalsMixin(StatisticsMixin):
             plot_table_file = os.path.join(self._input_folder, "plot_table.csv")
         plot_config_list = kwargs.get("plot_config_list", [])
         read_from = kwargs.get("read_goals_from", "csv_table")
-        goals_to_generate = kwargs.get("goals_to_generate", [])
         self.save_plot_to = kwargs.get("save_plot_to", "image")
         self.plotting_library = kwargs.get("plotting_library", "plotly")
-        self.plot_config = get_joined_plot_config(
-            plot_table_file, getattr(self, "goal_table_file", None), plot_config_list, read_from, goals_to_generate
-        )
+        self.plot_config = get_joined_plot_config(plot_table_file, plot_config_list, read_from)
 
         # Store list of variable-names that may not be present in the results.
         variables_style_1 = [var for subplot_config in self.plot_config for var in subplot_config.variables_style_1]
@@ -98,9 +95,11 @@ class PlotGoalsMixin(StatisticsMixin):
             var for subplot_config in self.plot_config for var in subplot_config.variables_with_previous_result
         ]
         self.custom_variables = variables_style_1 + variables_style_2 + variables_with_previous_result
-        self.state_variables = [
-            subplot_config.state for subplot_config in self.plot_config if subplot_config.get("state")
-        ]
+
+        if hasattr(self, "_all_goal_generator_goals"):
+            self.state_variables = list({base_goal.state for base_goal in self._all_goal_generator_goals})
+        else:
+            self.state_variables = []
 
         self._cache_folder = Path(self._output_folder) / "cached_results"
         if "previous_run_plot_config" in kwargs:
@@ -127,7 +126,7 @@ class PlotGoalsMixin(StatisticsMixin):
                 except KeyError as exc:
                     raise KeyError("Cannot find timeseries for %s" % timeseries_name) from exc
 
-        to_store = {"extract_result": timeseries_to_store, "priority": priority}
+        to_store = {"timeseries_data": timeseries_to_store, "priority": priority}
         self.intermediate_results.append(to_store)
         super().priority_completed(priority)
 
@@ -139,8 +138,7 @@ class PlotGoalsMixin(StatisticsMixin):
             prio_independent_data: PrioIndependentData = {
                 "io_datetimes": self.io.datetimes,
                 "times": self.times(),
-                "target_series": self.collect_range_target_values(self.plot_config),
-                "all_goals": [
+                "base_goals": [
                     goal.get_goal_config() for goal in self.goals() + self.path_goals() if isinstance(goal, BaseGoal)
                 ],
             }

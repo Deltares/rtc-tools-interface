@@ -2,22 +2,15 @@
 from abc import abstractmethod, ABC
 import logging
 import random
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, Optional
 
 import matplotlib.dates as mdates
 import matplotlib.ticker as mtick
 import plotly.graph_objects as go
 
 import numpy as np
-from rtctools_interface.optimization.base_goal import BaseGoal
-from rtctools_interface.optimization.plot_and_goal_schema import (
-    MinimizationGoalCombinedModel,
-    MaximizationGoalCombinedModel,
-    RangeGoalCombinedModel,
-    RangeRateOfChangeGoalCombinedModel,
-)
 from rtctools_interface.optimization.plot_table_schema import PlotTableRow
-from rtctools_interface.optimization.type_definitions import IntermediateResult, PrioIndependentData
+from rtctools_interface.optimization.type_definitions import GoalConfig, IntermediateResult, PrioIndependentData
 
 logger = logging.getLogger("rtctools")
 
@@ -59,41 +52,36 @@ class SubplotBase(ABC):
 
     def __init__(
         self,
-        subplot_config,
-        goal,
+        subplot_config: PlotTableRow,
+        goal: GoalConfig,
         results: Dict[str, Any],
         results_prev: IntermediateResult,
         prio_independent_data: PrioIndependentData,
         used_colors,
         results_compare: Optional[IntermediateResult] = None,
     ):
-        self.config: Union[
-            MinimizationGoalCombinedModel,
-            MaximizationGoalCombinedModel,
-            RangeGoalCombinedModel,
-            RangeRateOfChangeGoalCombinedModel,
-            PlotTableRow,
-        ] = subplot_config
-        self.goal: BaseGoal = goal
+        self.config: PlotTableRow = subplot_config
+        self.goal: GoalConfig = goal
         self.function_nominal = self.goal["function_nominal"] if self.goal else 1
         self.results = results
         self.results_prev = results_prev
         self.results_compare = results_compare
         self.datetimes = prio_independent_data["io_datetimes"]
         self.time_deltas = get_timedeltas(prio_independent_data["times"])
-        self.rate_of_change = self.config.get("goal_type") in ["range_rate_of_change"]
+        self.rate_of_change = self.goal.get("goal_type") in ["range_rate_of_change"]
         self.used_colors = used_colors
 
-        if self.config.get("goal_type") in ["range", "range_rate_of_change"]:
-            targets = prio_independent_data["target_series"][str(self.config.goal_id)]
-            self.target_min, self.target_max = targets["target_min"], targets["target_max"]
+        if self.goal.get("goal_type") in ["range", "range_rate_of_change"]:
+            self.target_min, self.target_max = self.goal["target_min_series"], self.goal["target_max_series"]
         else:
             self.target_min, self.target_max = None, None
 
         if "custom_title" in self.config.__dict__ and isinstance(self.config.custom_title, str):
             self.subplot_title = self.config.custom_title
         elif self.config.specified_in == "goal_generator":
-            self.subplot_title = "Goal for {} (active from priority {})".format(self.config.state, self.config.priority)
+            self.subplot_title = "Goal for {} (active from priority {})".format(
+                self.goal["state"], self.goal["priority"]
+            )
         else:
             self.subplot_title = ""
 
@@ -111,7 +99,7 @@ class SubplotBase(ABC):
         color = generate_unique_color(self.used_colors)
         self.plot_timeseries(label, timeseries_data, color=color, linestyle=linestyle, linewidth=linewidth)
         if self.results_compare:
-            timeseries_data = self.results_compare["extract_result"][state_name]
+            timeseries_data = self.results_compare["timeseries_data"][state_name]
             label += COMPARISON_RUN_SUFFIX
             self.plot_timeseries(label, timeseries_data, linestyle="dotted", color=color, linewidth=linewidth)
 
@@ -121,7 +109,7 @@ class SubplotBase(ABC):
         self.plot_with_comparison(label, state_name, linestyle=linestyle, linewidth=linewidth)
 
         if self.results_prev:
-            timeseries_data = self.results_prev["extract_result"][state_name]
+            timeseries_data = self.results_prev["timeseries_data"][state_name]
             label += " (at previous priority optimization)"
             self.plot_timeseries(
                 label,
@@ -142,10 +130,10 @@ class SubplotBase(ABC):
     def plot(self):
         """Plot the data in the subplot and format."""
         if self.config.specified_in == "goal_generator":
-            self.plot_with_previous(self.config.state, self.config.state)
+            self.plot_with_previous(self.goal["state"], self.goal["state"])
         self.plot_additional_variables()
         self.format_subplot()
-        if self.config.specified_in == "goal_generator" and self.config.goal_type in [
+        if self.config.specified_in == "goal_generator" and self.goal["goal_type"] in [
             "range",
             "range_rate_of_change",
         ]:
@@ -190,8 +178,8 @@ class SubplotMatplotlib(SubplotBase):
     def __init__(
         self,
         axis,
-        subplot_config,
-        goal,
+        subplot_config: PlotTableRow,
+        goal: GoalConfig,
         results: Dict[str, Any],
         results_prev: IntermediateResult,
         prio_independent_data: PrioIndependentData,
@@ -233,8 +221,8 @@ class SubplotPlotly(SubplotBase):
 
     def __init__(
         self,
-        subplot_config,
-        goal,
+        subplot_config: PlotTableRow,
+        goal: GoalConfig,
         results: Dict[str, Any],
         results_prev: IntermediateResult,
         prio_independent_data: PrioIndependentData,

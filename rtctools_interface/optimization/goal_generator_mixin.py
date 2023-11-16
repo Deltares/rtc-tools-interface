@@ -73,7 +73,8 @@ class GoalGeneratorMixin(StatisticsMixin):
         """Calculate and store performance metrics."""
         results = self.extract_results()
         goal_generator_goals = self._all_goal_generator_goals
-        targets = self.collect_range_target_values(goal_generator_goals)
+        all_base_goals = [goal for goal in self.goals() + self.path_goals() if isinstance(goal, BaseGoal)]
+        targets = self.collect_range_target_values(all_base_goals)
         for goal in goal_generator_goals:
             next_row = get_performance_metrics(results, goal, targets.get(str(goal.goal_id)))
             if next_row is not None:

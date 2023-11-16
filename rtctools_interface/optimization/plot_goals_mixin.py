@@ -10,6 +10,7 @@ from rtctools_interface.optimization.helpers.serialization import deserialize, s
 from rtctools_interface.optimization.helpers.statistics_mixin import StatisticsMixin
 from rtctools_interface.optimization.plotting.plot_tools import create_plot_each_priority, create_plot_final_results
 from rtctools_interface.optimization.read_plot_table import get_joined_plot_config
+from rtctools_interface.optimization.base_goal import BaseGoal
 from rtctools_interface.optimization.type_definitions import (
     PlotDataAndConfig,
     PlotOptions,
@@ -139,7 +140,9 @@ class PlotGoalsMixin(StatisticsMixin):
                 "io_datetimes": self.io.datetimes,
                 "times": self.times(),
                 "target_series": self.collect_range_target_values(self.plot_config),
-                "all_goals": [goal.get_goal_config() for goal in self.goals() + self.path_goals()],
+                "all_goals": [
+                    goal.get_goal_config() for goal in self.goals() + self.path_goals() if isinstance(goal, BaseGoal)
+                ],
             }
 
             plot_options: PlotOptions = {

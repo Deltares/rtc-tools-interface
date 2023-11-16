@@ -75,7 +75,7 @@ def get_goal(subplot_config, base_goals) -> Union[GoalConfig, None]:
     for goal in base_goals:
         if goal.get("goal_id") == subplot_config.id:
             return goal
-    return {}
+    return None
 
 
 def save_fig_as_stringio(fig):
@@ -155,7 +155,7 @@ def create_matplotlib_figure(
 ) -> Union[StringIO, matplotlib.figure.Figure]:
     # pylint: disable=too-many-locals
     """Creates a figure with a subplot for each row in the plot_table."""
-    used_colors = []
+    used_colors: list = []
     results = result_dict["timeseries_data"]
     plot_config = current_run["plot_options"]["plot_config"]
     plot_max_rows = current_run["plot_options"]["plot_max_rows"]
@@ -234,7 +234,7 @@ def create_plotly_figure(
     base_goals = current_run["prio_independent_data"]["base_goals"]
 
     # Add subplot for each row in the plot_table
-    used_colors = []
+    used_colors: list = []
     for subplot_config in plot_config:
         i_plot += 1
         i_c, i_r = get_row_col_number(i_plot, n_rows, n_cols, row_first=True)

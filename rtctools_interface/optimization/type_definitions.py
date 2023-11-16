@@ -43,7 +43,7 @@ class PrioIndependentData(TypedDict):
 class PlotOptions(TypedDict):
     """Plot configuration for on optimization run."""
 
-    plot_config: PlotTableRow
+    plot_config: List[PlotTableRow]
     plot_max_rows: int
     output_folder: pathlib.Path
     save_plot_to: Literal["image", "stringio"]

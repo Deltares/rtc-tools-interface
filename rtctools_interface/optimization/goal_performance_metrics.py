@@ -63,33 +63,37 @@ def performance_metrics_minmaximization(results: Dict[str, np.ndarray], goal: Mi
 
 def get_range_percentual_exceedance(
     timeseries: np.ndarray, goal: RangeGoalModel, targets: TargetDict
-) -> Optional[dict[str, float]]:
+) -> Optional[dict[str, Optional[float]]]:
     """Calculate percentage of timesteps in which target is exceeded"""
     if goal.goal_type not in ["range", "range_rate_of_change"]:
         below_target = None
         above_target = None
     else:
-        below_target = sum(np.where(timeseries + ABS_TOL < targets["target_min"], 1, 0)) / len(timeseries)
-        above_target = sum(np.where(timeseries - ABS_TOL > targets["target_max"], 1, 0)) / len(timeseries)
+        below_target = float(sum(np.where(timeseries + ABS_TOL < targets["target_min"], 1, 0)) / len(timeseries))
+        above_target = float(sum(np.where(timeseries - ABS_TOL > targets["target_max"], 1, 0)) / len(timeseries))
     return {"perc_below_target": below_target, "perc_above_target": above_target}
 
 
 def get_range_total_exceedance(
     timeseries: np.ndarray, goal: RangeGoalModel, targets: TargetDict
-) -> Optional[dict[str, float]]:
+) -> Optional[dict[str, Optional[float]]]:
     """Calculate sum of absolute exceedances of the target"""
     if goal.goal_type not in ["range", "range_rate_of_change"]:
         below_target = None
         above_target = None
     else:
-        below_target = sum(np.abs(np.where(timeseries < targets["target_min"], timeseries - targets["target_min"], 0)))
-        above_target = sum(np.abs(np.where(timeseries > targets["target_max"], timeseries - targets["target_max"], 0)))
+        below_target = float(
+            sum(np.abs(np.where(timeseries < targets["target_min"], timeseries - targets["target_min"], 0)))
+        )
+        above_target = float(
+            sum(np.abs(np.where(timeseries > targets["target_max"], timeseries - targets["target_max"], 0)))
+        )
     return {"sum_below_target": below_target, "sum_above_target": above_target}
 
 
 def performance_metrics_range(results: Dict[str, np.ndarray], goal: RangeGoalModel, targets: TargetDict) -> pd.Series:
     """Get all relevant statistics for a range goal."""
-    metrics = {}
+    metrics: dict = {}
     state_timeseries = results[goal.state]
     metrics = metrics | get_basic_metrics(state_timeseries)
     metrics = metrics | get_range_percentual_exceedance(state_timeseries, goal, targets)
@@ -101,7 +105,7 @@ def performance_metrics_rangerateofchange(
     results: Dict[str, np.ndarray], goal: RangeGoalModel, _targets: TargetDict
 ) -> pd.Series:
     """Get all relevant statistics for a range-rate-of-change goal."""
-    metrics = {}
+    metrics: dict[str, Optional[float]] = {}
     state_timeseries = results[goal.state]
     metrics = metrics | get_basic_metrics(state_timeseries)
     return pd.Series(metrics)

@@ -53,32 +53,35 @@ class SubplotBase(ABC):
     def __init__(
         self,
         subplot_config: PlotTableRow,
-        goal: GoalConfig,
+        goal: Optional[GoalConfig],
         results: Dict[str, Any],
-        results_prev: IntermediateResult,
+        results_prev: Optional[IntermediateResult],
         prio_independent_data: PrioIndependentData,
         used_colors,
         results_compare: Optional[IntermediateResult] = None,
     ):
         self.config: PlotTableRow = subplot_config
-        self.goal: GoalConfig = goal
+        self.goal = goal
         self.function_nominal = self.goal["function_nominal"] if self.goal else 1
         self.results = results
         self.results_prev = results_prev
         self.results_compare = results_compare
         self.datetimes = prio_independent_data["io_datetimes"]
         self.time_deltas = get_timedeltas(prio_independent_data["times"])
-        self.rate_of_change = self.goal.get("goal_type") in ["range_rate_of_change"]
         self.used_colors = used_colors
 
-        if self.goal.get("goal_type") in ["range", "range_rate_of_change"]:
-            self.target_min, self.target_max = self.goal["target_min_series"], self.goal["target_max_series"]
+        if self.goal:
+            self.rate_of_change = self.goal.get("goal_type") in ["range_rate_of_change"]
+            if self.goal.get("goal_type") in ["range", "range_rate_of_change"]:
+                self.target_min, self.target_max = self.goal["target_min_series"], self.goal["target_max_series"]
+            else:
+                self.target_min, self.target_max = None, None
         else:
-            self.target_min, self.target_max = None, None
+            self.rate_of_change = False
 
         if "custom_title" in self.config.__dict__ and isinstance(self.config.custom_title, str):
             self.subplot_title = self.config.custom_title
-        elif self.config.specified_in == "goal_generator":
+        elif self.config.specified_in == "goal_generator" and self.goal:
             self.subplot_title = "Goal for {} (active from priority {})".format(
                 self.goal["state"], self.goal["priority"]
             )
@@ -129,14 +132,19 @@ class SubplotBase(ABC):
 
     def plot(self):
         """Plot the data in the subplot and format."""
-        if self.config.specified_in == "goal_generator":
+        if self.config.specified_in == "goal_generator" and self.goal:
             self.plot_with_previous(self.goal["state"], self.goal["state"])
         self.plot_additional_variables()
         self.format_subplot()
-        if self.config.specified_in == "goal_generator" and self.goal["goal_type"] in [
-            "range",
-            "range_rate_of_change",
-        ]:
+        if (
+            self.config.specified_in == "goal_generator"
+            and self.goal
+            and self.goal["goal_type"]
+            in [
+                "range",
+                "range_rate_of_change",
+            ]
+        ):
             self.add_ranges()
 
     def add_ranges(self):
@@ -179,9 +187,9 @@ class SubplotMatplotlib(SubplotBase):
         self,
         axis,
         subplot_config: PlotTableRow,
-        goal: GoalConfig,
+        goal: Optional[GoalConfig],
         results: Dict[str, Any],
-        results_prev: IntermediateResult,
+        results_prev: Optional[IntermediateResult],
         prio_independent_data: PrioIndependentData,
         used_colors,
     ):
@@ -222,9 +230,9 @@ class SubplotPlotly(SubplotBase):
     def __init__(
         self,
         subplot_config: PlotTableRow,
-        goal: GoalConfig,
+        goal: Optional[GoalConfig],
         results: Dict[str, Any],
-        results_prev: IntermediateResult,
+        results_prev: Optional[IntermediateResult],
         prio_independent_data: PrioIndependentData,
         used_colors,
         results_compare: Optional[IntermediateResult] = None,

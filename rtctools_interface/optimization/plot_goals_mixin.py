@@ -20,6 +20,7 @@ from rtctools_interface.optimization.type_definitions import (
 logger = logging.getLogger("rtctools")
 
 MAX_NUM_CACHED_FILES = 5
+CONFIG_VERSION: float = 1.0
 
 
 def get_most_recent_cache(cache_folder):
@@ -61,7 +62,12 @@ def read_cache_file_from_folder(cache_folder: Path) -> Optional[PlotDataAndConfi
     loaded_data: Optional[PlotDataAndConfig]
     if cache_file_path:
         with open(cache_file_path, "r", encoding="utf-8") as handle:
-            loaded_data = deserialize(handle.read())
+            loaded_data: dict = deserialize(handle.read())
+        if loaded_data.get("config_version", 0) < CONFIG_VERSION:
+            logger.warning(
+                "The cache file that was found is not supported by the current version of rtc-tools-interface!"
+            )
+            loaded_data = None
     else:
         loaded_data = None
     return loaded_data
@@ -154,6 +160,7 @@ class PlotGoalsMixin(StatisticsMixin):
                 "intermediate_results": self.intermediate_results,
                 "plot_options": plot_options,
                 "prio_independent_data": prio_independent_data,
+                "config_version": CONFIG_VERSION,
             }
 
             self.plot_data = {}

@@ -62,3 +62,4 @@ class PlotDataAndConfig(TypedDict):
     intermediate_results: List[IntermediateResult]
     plot_options: PlotOptions
     prio_independent_data: PrioIndependentData
+    config_version: float

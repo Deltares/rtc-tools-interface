@@ -4,7 +4,7 @@ import pathlib
 from typing import Optional, Tuple, TypedDict, List, Dict, Literal
 
 import numpy as np
-from rtctools_interface.optimization.plot_table_schema import PlotTableRow
+from rtctools_interface.utils.plot_table_schema import PlotTableRow
 
 
 class TargetDict(TypedDict):

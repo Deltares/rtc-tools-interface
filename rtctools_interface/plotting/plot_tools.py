@@ -10,12 +10,12 @@ import matplotlib
 import matplotlib.pyplot as plt
 from plotly.subplots import make_subplots
 
-from rtctools_interface.optimization.plotting.subplot_classes import (
+from rtctools_interface.plotting.subplot_classes import (
     COMPARISON_RUN_SUFFIX,
     SubplotMatplotlib,
     SubplotPlotly,
 )
-from rtctools_interface.optimization.type_definitions import GoalConfig, IntermediateResult, PlotDataAndConfig
+from rtctools_interface.utils.type_definitions import GoalConfig, IntermediateResult, PlotDataAndConfig
 
 logger = logging.getLogger("rtctools")
 

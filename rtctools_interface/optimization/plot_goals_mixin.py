@@ -6,12 +6,12 @@ from pathlib import Path
 import time
 from typing import Optional
 
-from rtctools_interface.optimization.helpers.serialization import deserialize, serialize
+from rtctools_interface.utils.serialization import deserialize, serialize
 from rtctools_interface.optimization.helpers.statistics_mixin import StatisticsMixin
-from rtctools_interface.optimization.plotting.plot_tools import create_plot_each_priority, create_plot_final_results
-from rtctools_interface.optimization.read_plot_table import get_plot_config
+from rtctools_interface.plotting.plot_tools import create_plot_each_priority, create_plot_final_results
+from rtctools_interface.utils.read_plot_table import get_plot_config
 from rtctools_interface.optimization.base_goal import BaseGoal
-from rtctools_interface.optimization.type_definitions import (
+from rtctools_interface.utils.type_definitions import (
     PlotDataAndConfig,
     PlotOptions,
     PrioIndependentData,

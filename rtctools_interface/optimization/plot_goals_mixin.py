@@ -9,7 +9,7 @@ from typing import Optional
 from rtctools_interface.optimization.helpers.serialization import deserialize, serialize
 from rtctools_interface.optimization.helpers.statistics_mixin import StatisticsMixin
 from rtctools_interface.optimization.plotting.plot_tools import create_plot_each_priority, create_plot_final_results
-from rtctools_interface.optimization.read_plot_table import get_joined_plot_config
+from rtctools_interface.optimization.read_plot_table import get_plot_config
 from rtctools_interface.optimization.base_goal import BaseGoal
 from rtctools_interface.optimization.type_definitions import (
     PlotDataAndConfig,
@@ -92,7 +92,7 @@ class PlotGoalsMixin(StatisticsMixin):
         read_from = kwargs.get("read_goals_from", "csv_table")
         self.save_plot_to = kwargs.get("save_plot_to", "image")
         self.plotting_library = kwargs.get("plotting_library", "plotly")
-        self.plot_config = get_joined_plot_config(plot_table_file, plot_config_list, read_from)
+        self.plot_config = get_plot_config(plot_table_file, plot_config_list, read_from)
 
         # Store list of variable-names that may not be present in the results.
         variables_style_1 = [var for subplot_config in self.plot_config for var in subplot_config.variables_style_1]

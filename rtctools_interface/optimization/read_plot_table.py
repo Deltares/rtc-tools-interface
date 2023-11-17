@@ -39,19 +39,10 @@ def read_plot_config_from_list(plot_config: List[PlotTableRow]) -> List[PlotTabl
     return plot_config
 
 
-def get_plot_config(plot_table_file=None, plot_config_list=None, read_from="csv_table"):
+def get_plot_config(plot_table_file=None, plot_config_list=None, read_from="csv_table") -> list[PlotTableRow]:
     """Get plot config rows."""
     if read_from == "csv_table":
         return read_plot_config_from_csv(plot_table_file)
     if read_from == "passed_list":
         return read_plot_config_from_list(plot_config_list)
     raise ValueError("PlotGoalsMixin should either read from 'csv_table' or 'passed_list'")
-
-
-def get_joined_plot_config(plot_table_file, plot_config_list, read_from) -> list[PlotTableRow]:
-    """Read plot table for PlotGoals and merge with goals table"""
-    plot_table = get_plot_config(
-        plot_table_file=plot_table_file, plot_config_list=plot_config_list, read_from=read_from
-    )
-
-    return plot_table

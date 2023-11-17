@@ -103,9 +103,20 @@ class PlotGoalsMixin(StatisticsMixin):
         self.custom_variables = variables_style_1 + variables_style_2 + variables_with_previous_result
 
         if hasattr(self, "_all_goal_generator_goals"):
-            self.state_variables = list({base_goal.state for base_goal in self._all_goal_generator_goals})
+            all_goal_generator_goals = self._all_goal_generator_goals
+            self.state_variables = list({base_goal.state for base_goal in all_goal_generator_goals})
         else:
             self.state_variables = []
+            all_goal_generator_goals = []
+
+        # Remove PlotTableRows corresponding to a goal in the goal in the goal generator,
+        # but that goal is not specified in the goal table.
+        goal_generator_goal_ids = [goal.goal_id for goal in all_goal_generator_goals]
+        self.plot_config = [
+            plot_table_row
+            for plot_table_row in self.plot_config
+            if plot_table_row.id in goal_generator_goal_ids or plot_table_row.specified_in == "python"
+        ]
 
         self._cache_folder = Path(self._output_folder) / "cached_results"
         if "previous_run_plot_config" in kwargs:

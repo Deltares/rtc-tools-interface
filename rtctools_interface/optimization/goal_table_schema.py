@@ -103,7 +103,7 @@ PATH_GOALS = {
     "range": RangeGoalModel,
     "range_rate_of_change": RangeRateOfChangeGoalModel,
 }
-NON_PATH_GOALS = {}
+NON_PATH_GOALS: dict = {}
 GOAL_TYPES = PATH_GOALS | NON_PATH_GOALS
 TARGET_DATA_TYPES = [
     "value",

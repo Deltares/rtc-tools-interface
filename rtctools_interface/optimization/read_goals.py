@@ -54,8 +54,8 @@ def read_goals_from_list(
     """Read goals from a list. Validates whether the goals are of correct type."""
     if not isinstance(goals_to_generate, list):
         raise TypeError(f"Pass a list of goal elements, not a {type(goals_to_generate)}")
-    for plot_config in goals_to_generate:
-        if not isinstance(plot_config, BaseGoalModel):
+    for base_goal in goals_to_generate:
+        if not isinstance(base_goal, BaseGoalModel):
             raise TypeError("Each element in the list of goals to generate should be a child of BaseGoalModel")
     active_goals = []
     for goal in goals_to_generate:

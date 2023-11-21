@@ -48,6 +48,7 @@ class BaseGoal(Goal):
     ):
         self.goal_id = goal_id
         self.state = state
+        self.target_data_type = target_data_type
         self._set_goal_type(goal_type)
         if goal_type in ["range", "range_rate_of_change"]:
             self._set_function_bounds(
@@ -59,7 +60,6 @@ class BaseGoal(Goal):
         if goal_type in ["range", "range_rate_of_change"]:
             self._set_target_bounds(
                 optimization_problem=optimization_problem,
-                target_data_type=target_data_type,
                 target_min=target_min,
                 target_max=target_max,
             )
@@ -155,7 +155,6 @@ class BaseGoal(Goal):
     def _set_target_bounds(
         self,
         optimization_problem: OptimizationProblem,
-        target_data_type="value",
         target_min=np.nan,
         target_max=np.nan,
     ):
@@ -193,18 +192,20 @@ class BaseGoal(Goal):
             elif np.isnan(target_min):
                 self.target_min = np.nan
 
-        if target_data_type not in TARGET_DATA_TYPES:
+        if self.target_data_type not in TARGET_DATA_TYPES:
             raise ValueError(f"target_data_type should be one of {TARGET_DATA_TYPES}.")
 
-        if self.goal_type == "range_rate_of_change" and target_data_type != "value":
+        if self.goal_type == "range_rate_of_change" and self.target_data_type != "value":
             raise ValueError("For range_rate_of_change goal only the `value` target type is supported.")
 
-        if target_data_type == "value":
+        if self.target_data_type == "value":
             set_value_target()
-        elif target_data_type == "parameter":
+        elif self.target_data_type == "parameter":
             set_parameter_target()
-        elif target_data_type == "timeseries":
+        elif self.target_data_type == "timeseries":
             set_timeseries_target()
+
+        self._target_dict = optimization_problem.collect_range_target_values_from_basegoal(self)
 
     def get_goal_config(self) -> GoalConfig:
         """
@@ -217,6 +218,8 @@ class BaseGoal(Goal):
             "function_min": self.function_range[0] if np.isfinite(self.function_range[0]) else None,
             "function_max": self.function_range[1] if np.isfinite(self.function_range[1]) else None,
             "function_nominal": self.function_nominal if np.isfinite(self.function_nominal) else None,
+            "target_min_series": None,
+            "target_max_series": None,
             "target_min": self.target_min,
             "target_max": self.target_max,
             "priority": self.priority,
@@ -227,4 +230,8 @@ class BaseGoal(Goal):
             goal_config["target_min"] = self.target_min.values
         if isinstance(self.target_max, Timeseries):
             goal_config["target_max"] = self.target_max.values
+
+        if hasattr(self, "_target_dict"):
+            goal_config["target_min_series"] = self._target_dict["target_min"]
+            goal_config["target_max_series"] = self._target_dict["target_max"]
         return goal_config

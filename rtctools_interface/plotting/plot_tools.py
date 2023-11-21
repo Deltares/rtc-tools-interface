@@ -144,7 +144,7 @@ def check_empty_plot_table(plot_config):
 def get_main_title(final_result: bool, result_dict):
     """Generate main title."""
     if final_result:
-        main_title = "Result after optimizing for all priorities"
+        main_title = "Final results"
     else:
         main_title = "Results after optimizing until priority {}".format(result_dict["priority"])
     return main_title

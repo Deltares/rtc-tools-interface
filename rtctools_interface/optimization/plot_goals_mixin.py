@@ -4,7 +4,8 @@ import os
 import copy
 from pathlib import Path
 import time
-from typing import Optional
+from typing import List, Optional
+from rtctools_interface.utils.plot_table_schema import PlotTableRow
 
 from rtctools_interface.utils.serialization import deserialize, serialize
 from rtctools_interface.optimization.helpers.statistics_mixin import StatisticsMixin
@@ -73,6 +74,16 @@ def read_cache_file_from_folder(cache_folder: Path) -> Optional[PlotDataAndConfi
     return loaded_data
 
 
+def get_plot_variables(plot_config: list[PlotTableRow]) -> List[str]:
+    """Get list of variable-names that are in the plot table."""
+    variables_style_1 = [var for subplot_config in plot_config for var in subplot_config.variables_style_1]
+    variables_style_2 = [var for subplot_config in plot_config for var in subplot_config.variables_style_2]
+    variables_with_previous_result = [
+        var for subplot_config in plot_config for var in subplot_config.variables_with_previous_result
+    ]
+    return variables_style_1 + variables_style_2 + variables_with_previous_result
+
+
 class PlotGoalsMixin(StatisticsMixin):
     """
     Class for plotting results.
@@ -94,14 +105,7 @@ class PlotGoalsMixin(StatisticsMixin):
         self.plotting_library = kwargs.get("plotting_library", "plotly")
         self.plot_config = get_plot_config(plot_table_file, plot_config_list, read_from)
 
-        # Store list of variable-names that may not be present in the results.
-        variables_style_1 = [var for subplot_config in self.plot_config for var in subplot_config.variables_style_1]
-        variables_style_2 = [var for subplot_config in self.plot_config for var in subplot_config.variables_style_2]
-        variables_with_previous_result = [
-            var for subplot_config in self.plot_config for var in subplot_config.variables_with_previous_result
-        ]
-        self.custom_variables = variables_style_1 + variables_style_2 + variables_with_previous_result
-
+        self.custom_variables = get_plot_variables(self.plot_config)
         if hasattr(self, "_all_goal_generator_goals"):
             all_goal_generator_goals = self._all_goal_generator_goals
             self.state_variables = list({base_goal.state for base_goal in all_goal_generator_goals})

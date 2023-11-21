@@ -4,7 +4,9 @@ import os
 import copy
 from pathlib import Path
 import time
-from typing import List, Optional
+from typing import Dict, List, Optional
+
+import numpy as np
 from rtctools_interface.utils.plot_table_schema import PlotTableRow
 
 from rtctools_interface.utils.serialization import deserialize, serialize
@@ -95,10 +97,8 @@ def filter_plot_config(plot_config: list[PlotTableRow], all_goal_generator_goals
     return new_plot_config
 
 
-class PlotGoalsMixin(StatisticsMixin):
-    """
-    Class for plotting results.
-    """
+class PlottingBaseMixin:
+    """Base class for creating plots."""
 
     plot_max_rows = 4
     plot_results_each_priority = True
@@ -137,64 +137,40 @@ class PlotGoalsMixin(StatisticsMixin):
         super().pre()
         self.intermediate_results = []
 
-    def priority_completed(self, priority: int) -> None:
-        """Store priority-dependent results required for plotting."""
+    def collect_timeseries_data(self, all_variables_to_store: List[str]) -> Dict[str, np.ndarray]:
+        """Collect the timeseries data for a list of variables."""
         extracted_results = copy.deepcopy(self.extract_results())
-        all_variables_to_store = set(self.custom_variables + self.state_variables)
-        timeseries_to_store = {}
+        timeseries_data = {}
         for timeseries_name in all_variables_to_store:
             try:
-                timeseries_to_store[timeseries_name] = extracted_results[timeseries_name]
+                timeseries_data[timeseries_name] = extracted_results[timeseries_name]
             except KeyError:
                 try:
-                    timeseries_to_store[timeseries_name] = self.get_timeseries(timeseries_name)
+                    timeseries_data[timeseries_name] = self.get_timeseries(timeseries_name)
                 except KeyError as exc:
                     raise KeyError("Cannot find timeseries for %s" % timeseries_name) from exc
+        return timeseries_data
 
-        to_store = {"timeseries_data": timeseries_to_store, "priority": priority}
-        self.intermediate_results.append(to_store)
-        super().priority_completed(priority)
-
-    def post(self):
-        """Tasks after optimizing. Creates a plot for for each priority."""
-        super().post()
-
-        if self.solver_stats["success"]:
-            prio_independent_data: PrioIndependentData = {
-                "io_datetimes": self.io.datetimes,
-                "times": self.times(),
-                "base_goals": [
-                    goal.get_goal_config() for goal in self.goals() + self.path_goals() if isinstance(goal, BaseGoal)
-                ],
-            }
-
-            plot_options: PlotOptions = {
-                "plot_config": self.plot_config,
-                "plot_max_rows": self.plot_max_rows,
-                "output_folder": self._output_folder,
-                "save_plot_to": self.save_plot_to,
-            }
-
-            current_run: PlotDataAndConfig = {
-                "intermediate_results": self.intermediate_results,
-                "plot_options": plot_options,
-                "prio_independent_data": prio_independent_data,
-                "config_version": CONFIG_VERSION,
-            }
-
-            self.plot_data = {}
-            if self.plot_results_each_priority:
-                self.plot_data = self.plot_data | create_plot_each_priority(
-                    current_run, plotting_library=self.plotting_library
-                )
-
-            if self.plot_final_results:
-                self.plot_data = self.plot_data | create_plot_final_results(
-                    current_run, self._previous_run, plotting_library=self.plotting_library
-                )
-
-            # Cache results, such that in a next run they can be used for comparison
-            self._store_current_results(self._cache_folder, current_run)
+    def create_plot_data_and_config(self, base_goals: list) -> PlotDataAndConfig:
+        """Create the PlotDataAndConfig dict."""
+        prio_independent_data: PrioIndependentData = {
+            "io_datetimes": self.io.datetimes,
+            "times": self.times(),
+            "base_goals": base_goals,
+        }
+        plot_options: PlotOptions = {
+            "plot_config": self.plot_config,
+            "plot_max_rows": self.plot_max_rows,
+            "output_folder": self._output_folder,
+            "save_plot_to": self.save_plot_to,
+        }
+        plot_data_and_config: PlotDataAndConfig = {
+            "intermediate_results": self.intermediate_results,
+            "plot_options": plot_options,
+            "prio_independent_data": prio_independent_data,
+            "config_version": CONFIG_VERSION,
+        }
+        return plot_data_and_config
 
     def _store_current_results(self, cache_folder, results_to_store):
         write_cache_file(cache_folder, results_to_store)
@@ -204,3 +180,38 @@ class PlotGoalsMixin(StatisticsMixin):
     def get_plot_data_and_config(self):
         """Get the plot data and config from the current run."""
         return self._plot_data_and_config
+
+
+class PlotGoalsMixin(StatisticsMixin, PlottingBaseMixin):
+    """
+    Class for plotting results.
+    """
+
+    def priority_completed(self, priority: int) -> None:
+        """Store priority-dependent results required for plotting."""
+        timeseries_data = self.collect_timeseries_data(list(set(self.custom_variables + self.state_variables)))
+        to_store = {"timeseries_data": timeseries_data, "priority": priority}
+        self.intermediate_results.append(to_store)
+        super().priority_completed(priority)
+
+    def post(self):
+        """Tasks after optimizing. Creates a plot for for each priority."""
+        super().post()
+
+        if self.solver_stats["success"]:
+            base_goals = [
+                goal.get_goal_config() for goal in self.goals() + self.path_goals() if isinstance(goal, BaseGoal)
+            ]
+            current_run = self.create_plot_data_and_config(base_goals)
+            # Cache results, such that in a next run they can be used for comparison
+            self._store_current_results(self._cache_folder, current_run)
+
+            # Create the plots
+            plot_data = {}
+            if self.plot_results_each_priority:
+                plot_data = plot_data | create_plot_each_priority(current_run, plotting_library=self.plotting_library)
+
+            if self.plot_final_results:
+                plot_data = plot_data | create_plot_final_results(
+                    current_run, self._previous_run, plotting_library=self.plotting_library
+                )

@@ -84,6 +84,17 @@ def get_plot_variables(plot_config: list[PlotTableRow]) -> List[str]:
     return variables_style_1 + variables_style_2 + variables_with_previous_result
 
 
+def filter_plot_config(plot_config: list[PlotTableRow], all_goal_generator_goals) -> list[PlotTableRow]:
+    """ "Remove PlotTableRows corresponding to non-existing goals in the goal generator."""
+    goal_generator_goal_ids = [goal.goal_id for goal in all_goal_generator_goals]
+    new_plot_config = [
+        plot_table_row
+        for plot_table_row in plot_config
+        if plot_table_row.id in goal_generator_goal_ids or plot_table_row.specified_in == "python"
+    ]
+    return new_plot_config
+
+
 class PlotGoalsMixin(StatisticsMixin):
     """
     Class for plotting results.
@@ -113,14 +124,7 @@ class PlotGoalsMixin(StatisticsMixin):
             self.state_variables = []
             all_goal_generator_goals = []
 
-        # Remove PlotTableRows corresponding to a goal in the goal in the goal generator,
-        # but that goal is not specified in the goal table.
-        goal_generator_goal_ids = [goal.goal_id for goal in all_goal_generator_goals]
-        self.plot_config = [
-            plot_table_row
-            for plot_table_row in self.plot_config
-            if plot_table_row.id in goal_generator_goal_ids or plot_table_row.specified_in == "python"
-        ]
+        self.plot_config = filter_plot_config(self.plot_config, all_goal_generator_goals)
 
         self._cache_folder = Path(self._output_folder) / "cached_results"
         if "previous_run_plot_config" in kwargs:

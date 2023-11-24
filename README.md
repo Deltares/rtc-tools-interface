@@ -110,28 +110,32 @@ The calculated metrics are:
 
 
 ## Automatic plotting of results
-With the `PlotGoalsMixin` one can easily make plots of the results of rtc-tools. To utilize this functionality, import the mixin as follows:
+With the `PlotMixin` one can easily make plots of the results of rtc-tools. This functionality can be used both for optimization and simulation problems. For optimization problems, use:
 ```python
-from rtctools_interface.optimization.plot_goals_mixin import PlotGoalsMixin
+from rtctools_interface.optimization.plot_mixin import PlotMixin
 ```
-Then, add the `PlotGoalsMixin` to your optimization problem class. The PlotGoalsMixin can create a plot after each priority and/or a plot with the final results only.
-By default, the `PlotGoalsMixin` will make both. This can be changed by setting the class variables `plot_results_each_priority` and `plot_final_results` to either `True` or `False` in your problem class.
+and for simulation problems use:
+```python
+from rtctools_interface.simulation.plot_mixin import PlotMixin
+```
+Then, add the `PlotMixin` to your optimization/simulation problem class. For optimization problems, the PlotMixin can create a plot after each priority and/or a plot with the final results only.
+By default, the `PlotMixin` will make both. This can be changed by setting the class variables `plot_results_each_priority` and `plot_final_results` to either `True` or `False` in your problem class.
 
-Furthermore, the PlotGoalsMixin can either create `Plotly` plots and `matplotlib` plots. The `matplotlib` plots will be exported as `png`, the Plotly figures as `html`. By default, `Plotly` is used. To change this, pass the keyword-argument `plotting_library="matplotlib"` to the `run_optimization_problem` function.
+Furthermore, the PlotMixin can either create `Plotly` plots and `matplotlib` plots. The `matplotlib` plots will be exported as `png`, the Plotly figures as `html`. By default, `Plotly` is used. To change this, pass the keyword-argument `plotting_library="matplotlib"` to the `run_optimization_problem` function.
 
 ### Comparing results from different runs
--  The plots for a particular priority will contain line segments with the results from the previous priority result. This makes it easy to see what changed from priority to priority.
-- The `final_results` plot will show the result from the **previous optimization run**. This allows for comparing results from different scenario's (like input timeseries or differently parametrized goals). Note that is not possible to change the number of goals between two comparison runs. This feature currently only works with Plotly plots, where a dropdown is available to hide the previous results.
+- In optimization mode, the plots for a particular priority will contain line segments with the results from the previous priority result. This makes it easy to see what changed from priority to priority.
+- The `final_results` plot will show the result from the **previous run**. This allows for comparing results from different scenario's (like input timeseries or changes to the model). Note that is not possible to change the number of goals between two comparison runs. This feature currently only works with Plotly plots, where a dropdown is available to hide the previous results.
 ### Configuration variables
-The following class variables can be set to change the behaviour of the PlotGoalsMixin:
+The following class variables can be set to change the behaviour of the PlotMixin:
 - `plot_max_rows`: an integer number for the maximum number of rows (default is 4). The number of columns will be derived from that.
-- `plot_results_each_priority`: boolean indicating whether the plots for each priority should be generated and saved. Default is True.
+- `plot_results_each_priority`: Only for optimization: boolean indicating whether the plots for each priority should be generated and saved. Default is True.
 - `plot_table_file`: path to plot table csv file. Default is `input\plot_table.csv`.
 
 ### Specifying the plot table
-There are two types of plots that can be made with the PlotGoalsMixin
-1. Plots based on goals in the goal_generator table
-2. Plots of arbitrary states, for example ones being optimized in a goal defined in Python.
+There are two types of plots that can be made with the PlotMixin
+1. Plots of arbitrary states, for example ones being optimized in a goal defined in Python.
+2. Plots based on goals in the goal_generator table (only applicable to optimization problems).
 
 To add a plot for a goal in the `goal_generator` table, one should add a row to the `plot_table` with an `id` equal to the id of the goal in the `goal_generator` to be plotted. The `specified_in` field should be set to `goal_generator`. Rows of the `plot_table` with `specified_in`=`goal_generator` but with an `id` that does not occcur in the `goal_table`, are ignored.  
 

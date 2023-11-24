@@ -9,11 +9,11 @@ logger = logging.getLogger("rtctools")
 
 class PlotMixin(PlottingBaseMixin):
     """
-    Class for plotting results.
+    Class for plotting results based on the plot_table.
     """
 
     def post(self):
-        """Tasks after optimizing. Creates a plot for for each priority."""
+        """Tasks after optimizing."""
         super().post()
 
         timeseries_data = self.collect_timeseries_data(self.custom_variables)

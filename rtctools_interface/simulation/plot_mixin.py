@@ -12,6 +12,8 @@ class PlotMixin(PlottingBaseMixin):
     Class for plotting results based on the plot_table.
     """
 
+    optimization_problem = False
+
     def post(self):
         """Tasks after optimizing."""
         super().post()

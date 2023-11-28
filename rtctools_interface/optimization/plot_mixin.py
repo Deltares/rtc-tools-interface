@@ -9,10 +9,12 @@ from rtctools_interface.utils.results_collection import PlottingBaseMixin
 logger = logging.getLogger("rtctools")
 
 
-class PlotMixin(StatisticsMixin, PlottingBaseMixin):
+class PlotMixin(PlottingBaseMixin, StatisticsMixin):
     """
     Class for plotting results.
     """
+
+    optimization_problem = True
 
     def priority_completed(self, priority: int) -> None:
         """Store priority-dependent results required for plotting."""

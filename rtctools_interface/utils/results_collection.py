@@ -8,6 +8,7 @@ from typing import Dict, List, Optional
 
 import numpy as np
 from rtctools_interface.utils.plot_table_schema import PlotTableRow
+from rtctools_interface.utils.read_goals_mixin import ReadGoalsMixin
 
 from rtctools_interface.utils.serialization import deserialize, serialize
 from rtctools_interface.utils.read_plot_table import get_plot_config
@@ -94,7 +95,7 @@ def filter_plot_config(plot_config: list[PlotTableRow], all_goal_generator_goals
     return new_plot_config
 
 
-class PlottingBaseMixin:
+class PlottingBaseMixin(ReadGoalsMixin):
     """Base class for creating plots.
 
     Reads the plot table, if available the goal table, and contains functions to store all required data for plots."""
@@ -116,7 +117,13 @@ class PlottingBaseMixin:
         self.plot_config = get_plot_config(plot_table_file, plot_config_list, read_from)
 
         self.custom_variables = get_plot_variables(self.plot_config)
-        if hasattr(self, "_all_goal_generator_goals"):
+
+        if not hasattr(self, "_all_goal_generator_goals") and self.optimization_problem:
+            goals_to_generate = kwargs.get("goals_to_generate", [])
+            read_from = kwargs.get("read_goals_from", "csv_table")
+            self.load_goals(read_from, goals_to_generate)
+
+        if self.optimization_problem:
             all_goal_generator_goals = self._all_goal_generator_goals
             self.state_variables = list({base_goal.state for base_goal in all_goal_generator_goals})
         else:

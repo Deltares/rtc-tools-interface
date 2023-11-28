@@ -2,13 +2,12 @@
 from pathlib import Path
 from typing import Dict, Union
 import logging
-import os
 import pandas as pd
 
 from rtctools_interface.optimization.base_goal import BaseGoal
 from rtctools_interface.optimization.goal_performance_metrics import get_performance_metrics
 from rtctools_interface.optimization.helpers.statistics_mixin import StatisticsMixin
-from rtctools_interface.optimization.read_goals import read_goals
+from rtctools_interface.utils.read_goals_mixin import ReadGoalsMixin
 
 logger = logging.getLogger("rtctools")
 
@@ -21,7 +20,7 @@ def write_performance_metrics(performance_metrics: Dict[str, pd.DataFrame], outp
         performance_metric_table.to_csv(output_path / f"{goal_id}.csv")
 
 
-class GoalGeneratorMixin(StatisticsMixin):
+class GoalGeneratorMixin(ReadGoalsMixin, StatisticsMixin):
     # TODO: remove pylint disable below once we have more public functions.
     # pylint: disable=too-few-public-methods
     """Add path goals as specified in the goal_table.
@@ -34,19 +33,10 @@ class GoalGeneratorMixin(StatisticsMixin):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.goals_to_generate = kwargs.get("goals_to_generate", [])
-        self.read_from = kwargs.get("read_goals_from", "csv_table")
-        if not hasattr(self, "goal_table_file"):
-            self.goal_table_file = os.path.join(self._input_folder, "goal_table.csv")
-
-        self._goal_generator_path_goals = read_goals(
-            self.goal_table_file, path_goal=True, read_from=self.read_from, goals_to_generate=self.goals_to_generate
-        )
-        self._goal_generator_non_path_goals = read_goals(
-            self.goal_table_file, path_goal=False, read_from=self.read_from, goals_to_generate=self.goals_to_generate
-        )
-        self._all_goal_generator_goals = self._goal_generator_path_goals + self._goal_generator_non_path_goals
-
+        if not hasattr(self, "_all_goal_generator_goals"):
+            goals_to_generate = kwargs.get("goals_to_generate", [])
+            read_from = kwargs.get("read_goals_from", "csv_table")
+            self.load_goals(read_from, goals_to_generate)
         if self.calculate_performance_metrics:
             # A dataframe for each goal defined by the goal generator
             self._performance_metrics = {}

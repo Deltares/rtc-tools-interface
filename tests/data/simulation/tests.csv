@@ -1,0 +1,2 @@
+test,model_folder,model_name,model_input_folder,plot_table_file,output_folder
+basic,.,BasicModel,basic,plot_table.csv,basic

@@ -4,7 +4,7 @@ import unittest
 from rtctools_interface.optimization.base_optimization_problem import BaseOptimizationProblem
 from rtctools_interface.optimization.read_goals import read_goals_from_csv
 
-from .get_test import get_test_data
+from tests.utils.get_test import get_test_data
 
 
 class TestPassingGoalsDirectly(unittest.TestCase):
@@ -12,7 +12,7 @@ class TestPassingGoalsDirectly(unittest.TestCase):
 
     def run_test(self, test):
         """Solve an optimization problem."""
-        test_data = get_test_data(test)
+        test_data = get_test_data(test, optimization=True)
 
         goals_to_generate = read_goals_from_csv(test_data["goals_file"])
         problem = BaseOptimizationProblem(

@@ -2,15 +2,15 @@
 import unittest
 
 from rtctools_interface.optimization.base_optimization_problem import BaseOptimizationProblem
+from tests.utils.get_test import get_test_data
 
-from .get_test import get_test_data
 
 
 class TestBaseOptimizationProblem(unittest.TestCase):
     """Test for the base optimization problem class."""
     def run_test(self, test):
         """Solve an optimization problem."""
-        test_data = get_test_data(test)
+        test_data = get_test_data(test, optimization=True)
         problem = BaseOptimizationProblem(
             goal_table_file=test_data["goals_file"],
             model_folder=test_data["model_folder"],

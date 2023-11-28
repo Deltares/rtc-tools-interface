@@ -6,7 +6,7 @@ from rtctools_interface.optimization.base_optimization_problem import (
 )
 from rtctools_interface.optimization.plot_mixin import PlotMixin
 
-from .get_test import get_test_data
+from tests.utils.get_test import get_test_data
 
 
 class BaseOptimizationProblemPlotting(PlotMixin, BaseOptimizationProblem):
@@ -29,7 +29,7 @@ class TestPlotMixin(unittest.TestCase):
 
     def run_test(self, test, plotting_library):
         """Solve an optimization problem."""
-        test_data = get_test_data(test)
+        test_data = get_test_data(test, optimization=True)
         problem = BaseOptimizationProblemPlotting(
             goal_table_file=test_data["goals_file"],
             plot_table_file=test_data["plot_table_file"],

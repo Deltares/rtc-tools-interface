@@ -9,8 +9,8 @@ import matplotlib.ticker as mtick
 import plotly.graph_objects as go
 
 import numpy as np
-from rtctools_interface.optimization.plot_table_schema import PlotTableRow
-from rtctools_interface.optimization.type_definitions import GoalConfig, IntermediateResult, PrioIndependentData
+from rtctools_interface.utils.plot_table_schema import PlotTableRow
+from rtctools_interface.utils.type_definitions import GoalConfig, IntermediateResult, PrioIndependentData
 
 logger = logging.getLogger("rtctools")
 
@@ -101,7 +101,7 @@ class SubplotBase(ABC):
         timeseries_data = self.results[state_name]
         color = generate_unique_color(self.used_colors)
         self.plot_timeseries(label, timeseries_data, color=color, linestyle=linestyle, linewidth=linewidth)
-        if self.results_compare:
+        if self.results_compare and state_name in self.results_compare["timeseries_data"]:
             timeseries_data = self.results_compare["timeseries_data"][state_name]
             label += COMPARISON_RUN_SUFFIX
             self.plot_timeseries(label, timeseries_data, linestyle="dotted", color=color, linewidth=linewidth)

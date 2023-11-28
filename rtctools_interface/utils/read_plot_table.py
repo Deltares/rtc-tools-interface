@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import List, Union
 import pandas as pd
 
-from rtctools_interface.optimization.plot_table_schema import PlotTableRow
+from rtctools_interface.utils.plot_table_schema import PlotTableRow
 
 logger = logging.getLogger("rtctools")
 
@@ -23,7 +23,7 @@ def read_plot_config_from_csv(plot_table_file: Union[Path, str]) -> List[PlotTab
         return parsed_rows
     message = (
         f"No plot table was found at the default location ({plot_table_file.resolve()})."
-        + " Please create one before using the PlotGoalsMixin."
+        + " Please create one before using the PlotMixin."
         + f" It should have the following columns: '{list(PlotTableRow.model_fields.keys())}'"
     )
     raise FileNotFoundError(message)
@@ -45,4 +45,4 @@ def get_plot_config(plot_table_file=None, plot_config_list=None, read_from="csv_
         return read_plot_config_from_csv(plot_table_file)
     if read_from == "passed_list":
         return read_plot_config_from_list(plot_config_list)
-    raise ValueError("PlotGoalsMixin should either read from 'csv_table' or 'passed_list'")
+    raise ValueError("PlotMixin should either read from 'csv_table' or 'passed_list'")

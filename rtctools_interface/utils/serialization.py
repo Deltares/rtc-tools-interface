@@ -6,7 +6,7 @@ from typing import Any
 
 import numpy as np
 import pandas as pd
-from rtctools_interface.optimization.plot_table_schema import PlotTableRow
+from rtctools_interface.utils.plot_table_schema import PlotTableRow
 
 
 def custom_encoder(obj):

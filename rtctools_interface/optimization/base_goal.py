@@ -8,7 +8,7 @@ from rtctools.optimization.optimization_problem import OptimizationProblem
 from rtctools.optimization.timeseries import Timeseries
 
 from rtctools_interface.optimization.goal_table_schema import GOAL_TYPES, TARGET_DATA_TYPES
-from rtctools_interface.optimization.type_definitions import GoalConfig
+from rtctools_interface.utils.type_definitions import GoalConfig
 
 
 logger = logging.getLogger("rtctools")

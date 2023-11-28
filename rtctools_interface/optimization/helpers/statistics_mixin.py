@@ -5,7 +5,7 @@ from typing import Dict, List, Tuple
 
 import numpy as np
 from rtctools_interface.optimization.base_goal import BaseGoal
-from rtctools_interface.optimization.type_definitions import TargetDict
+from rtctools_interface.utils.type_definitions import TargetDict
 
 logger = logging.getLogger("rtctools")
 

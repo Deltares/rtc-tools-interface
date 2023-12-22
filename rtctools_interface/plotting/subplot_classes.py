@@ -135,7 +135,6 @@ class SubplotBase(ABC):
         if self.config.specified_in == "goal_generator" and self.goal:
             self.plot_with_previous(self.goal["state"], self.goal["state"])
         self.plot_additional_variables()
-        self.format_subplot()
         if (
             self.config.specified_in == "goal_generator"
             and self.goal
@@ -146,14 +145,17 @@ class SubplotBase(ABC):
             ]
         ):
             self.add_ranges()
+        self.format_subplot()
 
     def add_ranges(self):
         """Add lines for the lower and upper target."""
         if np.array_equal(self.target_min, self.target_max, equal_nan=True):
             self.plot_dashed_line(self.datetimes, self.target_min, "Target", "r")
         else:
-            self.plot_dashed_line(self.datetimes, self.target_min, "Target min", "r")
-            self.plot_dashed_line(self.datetimes, self.target_max, "Target max", "r")
+            if not (isinstance(self.target_max, float) or np.isnan(self.target_max).any()):
+                self.plot_dashed_line(self.datetimes, self.target_max, "Target max", "r")
+            if not (isinstance(self.target_min, float) or np.isnan(self.target_min).any()):
+                self.plot_dashed_line(self.datetimes, self.target_min, "Target min", "r")
 
     def plot_timeseries(self, label, timeseries_data, color=None, linewidth=None, linestyle=None):
         """Plot a timeseries with the given style.

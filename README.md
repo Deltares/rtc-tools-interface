@@ -53,16 +53,16 @@ and add the `GoalGeneratorMixin` to your optimization problem class. It must be 
 For each goal, this section will specify the equations that rtc-tools will add to the optimization problem. Note that rtc-tools will always _minimize_ the objective function.
 #### minimization_path
 For the minimization_path goal, rtc-tools adds the following equation to the objective function of the specified priority
-$$w\sum_t x_t^r $$
-where $w$ is equal to the `weight` (default is 1), $r$ is equal to the `order` (default is 1), $t$ the timestep and $x$ the selected `state`. No constraints are added for this goal. 
+$$ \min_{x_t} w\sum_t x_t^r $$
+where $w$ is equal to the `weight` (default is 1), $r$ is equal to the `order` (default is 1), $t$ the timestep and $x$ the selected `state`. No constraints are added for this goal.
 
 #### maximization_path
 For the maximization_path goal, rtc-tools adds the following equation to the objective function of the specified priority
-$$w\sum_t (-x_t)^r $$
-where $w$ is equal to the `weight` (default is 1), $r$ is equal to the `order` (default is 1), $t$ the timestep and $x$ the selected `state`. No constraints are added for this goal. 
+$$ \min_{x_t} w\sum_t (-x_t)^r $$
+where $w$ is equal to the `weight` (default is 1), $r$ is equal to the `order` (default is 1), $t$ the timestep and $x$ the selected `state`. No constraints are added for this goal.
 #### range
 For the range goal, rtc-tools adds the following equation to the objective function of the specified priority
-$$w\sum_t \epsilon_t^r $$
+$$ \min_{\epsilon_t} w\sum_t \epsilon_t^r $$
 and the following constraints
 $$  
 \begin{aligned}

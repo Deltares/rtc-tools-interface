@@ -141,7 +141,7 @@ class PlottingBaseMixin(ReadGoalsMixin):
     def pre(self):
         """Tasks before optimizing."""
         super().pre()
-        self.intermediate_results = []
+        self._intermediate_results = []
 
     def collect_timeseries_data(self, all_variables_to_store: List[str]) -> Dict[str, np.ndarray]:
         """Collect the timeseries data for a list of variables."""
@@ -171,7 +171,7 @@ class PlottingBaseMixin(ReadGoalsMixin):
             "save_plot_to": self.save_plot_to,
         }
         plot_data_and_config: PlotDataAndConfig = {
-            "intermediate_results": self.intermediate_results,
+            "intermediate_results": self._intermediate_results,
             "plot_options": plot_options,
             "prio_independent_data": prio_independent_data,
             "config_version": CONFIG_VERSION,

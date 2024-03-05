@@ -1,4 +1,5 @@
 """Mixin to store all required data for plotting. Can also call the plot function."""
+
 import logging
 
 from rtctools_interface.optimization.helpers.statistics_mixin import StatisticsMixin
@@ -20,7 +21,7 @@ class PlotMixin(PlottingBaseMixin, StatisticsMixin):
         """Store priority-dependent results required for plotting."""
         timeseries_data = self.collect_timeseries_data(list(set(self.custom_variables + self.state_variables)))
         to_store = {"timeseries_data": timeseries_data, "priority": priority}
-        self.intermediate_results.append(to_store)
+        self._intermediate_results.append(to_store)
         super().priority_completed(priority)
 
     def post(self):

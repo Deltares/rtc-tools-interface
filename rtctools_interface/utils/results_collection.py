@@ -152,7 +152,7 @@ class PlottingBaseMixin(ReadGoalsMixin):
                 timeseries_data[timeseries_name] = extracted_results[timeseries_name]
             except KeyError:
                 try:
-                    timeseries_data[timeseries_name] = self.get_timeseries(timeseries_name)
+                    timeseries_data[timeseries_name] = self.io.get_timeseries(timeseries_name)[1]
                 except KeyError as exc:
                     raise KeyError("Cannot find timeseries for %s" % timeseries_name) from exc
         return timeseries_data

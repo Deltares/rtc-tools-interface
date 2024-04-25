@@ -1,5 +1,6 @@
 """Test the closed loop runner"""
 import math
+from operator import is_
 import xml.etree.ElementTree as ET
 from unittest import TestCase
 from pathlib import Path
@@ -18,6 +19,8 @@ R_TOL = 1
 def compare_xml_files(output_modelling_period_folder: Path, reference_folder: Path):
     """Compare the timeseries_export.xml files in the output and reference folders."""
     for folder in output_modelling_period_folder.iterdir():
+        if not folder.is_dir():
+            continue
         file_name = "timeseries_export.xml"
         tree_result = ET.parse(folder / file_name)
         tree_ref = ET.parse(reference_folder / folder.name / file_name)
@@ -70,9 +73,12 @@ class TestClosedLoop(TestCase):
         output_modelling_period_folder = base_folder / "output" / "output_modelling_periods"
         self.assertTrue(output_modelling_period_folder.exists(), "Output modelling period folder should be created.")
         self.assertEqual(
-            len(list(output_modelling_period_folder.iterdir())), 3, "Three modelling periods should be created."
+            len([f for f in output_modelling_period_folder.iterdir() if f.is_dir()]),
+            3,
+            "Three modelling periods should be created.",
         )
         for folder in output_modelling_period_folder.iterdir():
-            self.assertTrue((folder / "timeseries_export.xml").exists())
+            if folder.is_dir():
+                self.assertTrue((folder / "timeseries_export.xml").exists())
         reference_folder = base_folder / "output" / "output_modelling_periods_reference"
         compare_xml_files(output_modelling_period_folder, reference_folder)

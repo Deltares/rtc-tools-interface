@@ -51,27 +51,29 @@ def combine_xml_exports(output_base_path, original_input_timeseries_path, write_
             basename="timeseries_export",
             binary=False,
         )
+        all_times = ts_import_orig.times # Workaround to map indices to times, as ts_export does
+        # not contain all times. TODO Check whether the assumption that these times map to 
+        # the correct indices for ts_export always holds.
         for loc_par in dataconfig._DataConfig__location_parameter_ids:
             try:
                 current_values = ts_export.get(loc_par)
                 new_values = ts_export_step.get(loc_par)
-                current_times = ts_export.times
-                new_times = ts_export_step.times
-                try:
-                    start_new_data_index = current_times.index(new_times[0])
-                except ValueError:
-                    if current_times[-1] + ts_export.dt:
-                        start_new_data_index = len(current_times)
-                    else:
-                        raise ValueError(
-                            "Could not match the start data of the timeseries export file "
-                            + "with the end of the previous."
-                        )
-                combined_values = copy.deepcopy(current_values)
-                combined_values[start_new_data_index : start_new_data_index + len(new_values)] = new_values
-                ts_export.set(loc_par, combined_values)
             except KeyError:
-                pass
+                logger.debug("Variable {} not found in output of model horizon: {}".format(loc_par, i))
+            new_times = ts_export_step.times
+            try:
+                start_new_data_index = all_times.index(new_times[0])
+            except ValueError:
+                if all_times[-1] + ts_export.dt == new_times[0]:
+                    start_new_data_index = len(all_times)
+                else:
+                    raise ValueError(
+                        "Could not match the start data of the timeseries export file "
+                        + "with the end of the previous."
+                    )
+            combined_values = copy.deepcopy(current_values)
+            combined_values[start_new_data_index : start_new_data_index + len(new_values)] = new_values
+            ts_export.set(loc_par, combined_values)
         i += 1
     ts_export.write()
 

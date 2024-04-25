@@ -31,3 +31,5 @@ dist
 *.pickle
 *.csv
 *.json
+output/
+input_modelling_periods/

@@ -1,0 +1,262 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TimeSeries xmlns="http://www.wldelft.nl/fews/PI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.wldelft.nl/fews/PI http://fews.wldelft.nl/schemas/version1.0/pi-schemas/pi_timeseries.xsd" version="1.5">
+	<timeZone>-6.0</timeZone>
+	<series>
+		<header>
+			<type>instantaneous</type>
+			<locationId>TroutLake</locationId>
+			<parameterId>Inflow</parameterId>
+			<timeStep unit="second" multiplier="21600"/>
+			<startDate date="2000-01-01" time="00:00:00"/>
+			<endDate date="2000-01-15" time="00:00:00"/>
+			<missVal>-999.0</missVal>
+			<units>CMS</units>
+			<creationDate>2023-09-19</creationDate>
+			<creationTime>11:14:00</creationTime>
+		</header>
+		<event date="2000-01-01" time="00:00:00" value="9.91089645" flag="0"/>
+		<event date="2000-01-01" time="06:00:00" value="9.298373575" flag="0"/>
+		<event date="2000-01-01" time="12:00:00" value="10.53723563" flag="0"/>
+		<event date="2000-01-01" time="18:00:00" value="11.99715857" flag="0"/>
+		<event date="2000-01-02" time="00:00:00" value="7.34566907" flag="0"/>
+		<event date="2000-01-02" time="06:00:00" value="22.35938767" flag="0"/>
+		<event date="2000-01-02" time="12:00:00" value="14.84792293" flag="0"/>
+		<event date="2000-01-02" time="18:00:00" value="9.298373575" flag="0"/>
+		<event date="2000-01-03" time="00:00:00" value="16.05915238" flag="0"/>
+		<event date="2000-01-03" time="06:00:00" value="14.95384794" flag="0"/>
+		<event date="2000-01-03" time="12:00:00" value="14.69594357" flag="0"/>
+		<event date="2000-01-03" time="18:00:00" value="14.95845338" flag="0"/>
+		<event date="2000-01-04" time="00:00:00" value="12.70639559" flag="0"/>
+		<event date="2000-01-04" time="06:00:00" value="11.53200962" flag="0"/>
+		<event date="2000-01-04" time="12:00:00" value="11.65175094" flag="0"/>
+		<event date="2000-01-04" time="18:00:00" value="16.12823391" flag="0"/>
+		<event date="2000-01-05" time="00:00:00" value="40.26071411" flag="0"/>
+		<event date="2000-01-05" time="06:00:00" value="46.26159612" flag="0"/>
+		<event date="2000-01-05" time="12:00:00" value="23.90220845" flag="0"/>
+		<event date="2000-01-05" time="18:00:00" value="60.23" flag="0"/>
+		<event date="2000-01-06" time="00:00:00" value="79.56" flag="0"/>
+		<event date="2000-01-06" time="06:00:00" value="92.34" flag="0"/>
+		<event date="2000-01-06" time="12:00:00" value="182.47" flag="0"/>
+		<event date="2000-01-06" time="18:00:00" value="224.231" flag="0"/>
+		<event date="2000-01-07" time="00:00:00" value="181.08" flag="0"/>
+		<event date="2000-01-07" time="06:00:00" value="158.84" flag="0"/>
+		<event date="2000-01-07" time="12:00:00" value="145.32" flag="0"/>
+		<event date="2000-01-07" time="18:00:00" value="124.67" flag="0"/>
+		<event date="2000-01-08" time="00:00:00" value="99.34" flag="0"/>
+		<event date="2000-01-08" time="06:00:00" value="88.23" flag="0"/>
+		<event date="2000-01-08" time="12:00:00" value="84.45" flag="0"/>
+		<event date="2000-01-08" time="18:00:00" value="64.23" flag="0"/>
+		<event date="2000-01-09" time="00:00:00" value="21.9" flag="0"/>
+		<event date="2000-01-09" time="06:00:00" value="11.23" flag="0"/>
+		<event date="2000-01-09" time="12:00:00" value="8.142409351" flag="0"/>
+		<event date="2000-01-09" time="18:00:00" value="10.53723563" flag="0"/>
+		<event date="2000-01-10" time="00:00:00" value="10.02142689" flag="0"/>
+		<event date="2000-01-10" time="06:00:00" value="5.240985205" flag="0"/>
+		<event date="2000-01-10" time="12:00:00" value="7.787790844" flag="0"/>
+		<event date="2000-01-10" time="18:00:00" value="11.99715857" flag="0"/>
+		<event date="2000-01-11" time="00:00:00" value="9.399693148" flag="0"/>
+		<event date="2000-01-11" time="06:00:00" value="9.791155136" flag="0"/>
+		<event date="2000-01-11" time="12:00:00" value="7.787790844" flag="0"/>
+		<event date="2000-01-11" time="18:00:00" value="9.399693148" flag="0"/>
+		<event date="2000-01-12" time="00:00:00" value="9.791155136" flag="0"/>
+		<event date="2000-01-12" time="06:00:00" value="9.399693148" flag="0"/>
+		<event date="2000-01-12" time="12:00:00" value="9.791155136" flag="0"/>
+		<event date="2000-01-12" time="18:00:00" value="7.787790844" flag="0"/>
+		<event date="2000-01-13" time="00:00:00" value="9.399693148" flag="0"/>
+		<event date="2000-01-13" time="06:00:00" value="8.142409351" flag="0"/>
+		<event date="2000-01-13" time="12:00:00" value="8.142409351" flag="0"/>
+		<event date="2000-01-13" time="18:00:00" value="8.142409351" flag="0"/>
+		<event date="2000-01-14" time="00:00:00" value="8.142409351" flag="0"/>
+		<event date="2000-01-14" time="06:00:00" value="8.142409351" flag="0"/>
+		<event date="2000-01-14" time="12:00:00" value="4.794257995" flag="0"/>
+		<event date="2000-01-14" time="18:00:00" value="4.379768831" flag="0"/>
+		<event date="2000-01-15" time="00:00:00" value="3.242226348" flag="0"/>
+	</series>
+	<series>
+		<header>
+			<type>instantaneous</type>
+			<locationId>Alder</locationId>
+			<parameterId>Inflow</parameterId>
+			<timeStep unit="second" multiplier="21600"/>
+			<startDate date="2000-01-01" time="00:00:00"/>
+			<endDate date="2000-01-15" time="00:00:00"/>
+			<missVal>-999.0</missVal>
+			<units>CMS</units>
+			<creationDate>2023-09-19</creationDate>
+			<creationTime>11:14:00</creationTime>
+		</header>
+		<event date="2000-01-01" time="00:00:00" value="1.441501203" flag="0"/>
+		<event date="2000-01-01" time="06:00:00" value="0.391461988" flag="0"/>
+		<event date="2000-01-01" time="12:00:00" value="0.686209838" flag="0"/>
+		<event date="2000-01-01" time="18:00:00" value="0.842794633" flag="0"/>
+		<event date="2000-01-02" time="00:00:00" value="0.096714138" flag="0"/>
+		<event date="2000-01-02" time="06:00:00" value="1.105304437" flag="0"/>
+		<event date="2000-01-02" time="12:00:00" value="0.165795666" flag="0"/>
+		<event date="2000-01-02" time="18:00:00" value="0.391461988" flag="0"/>
+		<event date="2000-01-03" time="00:00:00" value="1.759276229" flag="0"/>
+		<event date="2000-01-03" time="06:00:00" value="0.667788097" flag="0"/>
+		<event date="2000-01-03" time="12:00:00" value="0.658577227" flag="0"/>
+		<event date="2000-01-03" time="18:00:00" value="1.160569659" flag="0"/>
+		<event date="2000-01-04" time="00:00:00" value="0.971746817" flag="0"/>
+		<event date="2000-01-04" time="06:00:00" value="1.003984863" flag="0"/>
+		<event date="2000-01-04" time="12:00:00" value="1.040828345" flag="0"/>
+		<event date="2000-01-04" time="18:00:00" value="1.257283797" flag="0"/>
+		<event date="2000-01-05" time="00:00:00" value="2.215214309" flag="0"/>
+		<event date="2000-01-05" time="06:00:00" value="4" flag="0"/>
+		<event date="2000-01-05" time="12:00:00" value="7" flag="0"/>
+		<event date="2000-01-05" time="18:00:00" value="10" flag="0"/>
+		<event date="2000-01-06" time="00:00:00" value="28" flag="0"/>
+		<event date="2000-01-06" time="06:00:00" value="21" flag="0"/>
+		<event date="2000-01-06" time="12:00:00" value="20" flag="0"/>
+		<event date="2000-01-06" time="18:00:00" value="12" flag="0"/>
+		<event date="2000-01-07" time="00:00:00" value="8" flag="0"/>
+		<event date="2000-01-07" time="06:00:00" value="7" flag="0"/>
+		<event date="2000-01-07" time="12:00:00" value="6" flag="0"/>
+		<event date="2000-01-07" time="18:00:00" value="2" flag="0"/>
+		<event date="2000-01-08" time="00:00:00" value="2.5" flag="0"/>
+		<event date="2000-01-08" time="06:00:00" value="3" flag="0"/>
+		<event date="2000-01-08" time="12:00:00" value="2" flag="0"/>
+		<event date="2000-01-08" time="18:00:00" value="3" flag="0"/>
+		<event date="2000-01-09" time="00:00:00" value="2.6" flag="0"/>
+		<event date="2000-01-09" time="06:00:00" value="2.5" flag="0"/>
+		<event date="2000-01-09" time="12:00:00" value="0.967141382" flag="0"/>
+		<event date="2000-01-09" time="18:00:00" value="0.686209838" flag="0"/>
+		<event date="2000-01-10" time="00:00:00" value="0.658577227" flag="0"/>
+		<event date="2000-01-10" time="06:00:00" value="0.041448916" flag="0"/>
+		<event date="2000-01-10" time="12:00:00" value="1.040828345" flag="0"/>
+		<event date="2000-01-10" time="18:00:00" value="0.842794633" flag="0"/>
+		<event date="2000-01-11" time="00:00:00" value="0.658577227" flag="0"/>
+		<event date="2000-01-11" time="06:00:00" value="1.003984863" flag="0"/>
+		<event date="2000-01-11" time="12:00:00" value="1.040828345" flag="0"/>
+		<event date="2000-01-11" time="18:00:00" value="0.658577227" flag="0"/>
+		<event date="2000-01-12" time="00:00:00" value="1.003984863" flag="0"/>
+		<event date="2000-01-12" time="06:00:00" value="0.658577227" flag="0"/>
+		<event date="2000-01-12" time="12:00:00" value="1.003984863" flag="0"/>
+		<event date="2000-01-12" time="18:00:00" value="1.040828345" flag="0"/>
+		<event date="2000-01-13" time="00:00:00" value="0.658577227" flag="0"/>
+		<event date="2000-01-13" time="06:00:00" value="0.967141382" flag="0"/>
+		<event date="2000-01-13" time="12:00:00" value="0.967141382" flag="0"/>
+		<event date="2000-01-13" time="18:00:00" value="0.658577227" flag="0"/>
+		<event date="2000-01-14" time="00:00:00" value="0.967141382" flag="0"/>
+		<event date="2000-01-14" time="06:00:00" value="0.967141382" flag="0"/>
+		<event date="2000-01-14" time="12:00:00" value="0.658577227" flag="0"/>
+		<event date="2000-01-14" time="18:00:00" value="0.101319573" flag="0"/>
+		<event date="2000-01-15" time="00:00:00" value="0.276326109" flag="0"/>
+	</series>
+	<series>
+		<header>
+			<type>instantaneous</type>
+			<locationId>TroutLake</locationId>
+			<parameterId>V</parameterId>
+			<timeStep unit="second" multiplier="21600"/>
+			<startDate date="2000-01-01" time="00:00:00"/>
+			<endDate date="2000-01-15" time="00:00:00"/>
+			<missVal>-999.0</missVal>
+			<units>CMS</units>
+			<creationDate>2023-09-19</creationDate>
+			<creationTime>11:14:00</creationTime>
+		</header>
+		<event date="2000-01-01" time="00:00:00" value="686740918.8" flag="0"/>
+	</series>
+	<series>
+		<header>
+			<type>instantaneous</type>
+			<locationId>TroutLake</locationId>
+			<parameterId>Q_spill</parameterId>
+			<timeStep unit="second" multiplier="21600"/>
+			<startDate date="2000-01-01" time="00:00:00"/>
+			<endDate date="2000-01-15" time="00:00:00"/>
+			<missVal>-999.0</missVal>
+			<units>CMS</units>
+			<creationDate>2023-09-19</creationDate>
+			<creationTime>11:14:00</creationTime>
+		</header>
+		<event date="2000-01-01" time="00:00:00" value="0.0" flag="0"/>
+	</series>
+	<series>
+		<header>
+			<type>instantaneous</type>
+			<locationId>TroutLake</locationId>
+			<parameterId>Q_turbine</parameterId>
+			<timeStep unit="second" multiplier="21600"/>
+			<startDate date="2000-01-01" time="00:00:00"/>
+			<endDate date="2000-01-15" time="00:00:00"/>
+			<missVal>-999.0</missVal>
+			<units>CMS</units>
+			<creationDate>2023-09-19</creationDate>
+			<creationTime>11:14:00</creationTime>
+		</header>
+		<event date="2000-01-01" time="00:00:00" value="10.5" flag="0"/>
+	</series>
+	<series>
+		<header>
+			<type>instantaneous</type>
+			<locationId>TroutLake</locationId>
+			<parameterId>Q_release_user</parameterId>
+			<timeStep unit="second" multiplier="21600"/>
+			<startDate date="2000-01-01" time="00:00:00"/>
+			<endDate date="2000-01-15" time="00:00:00"/>
+			<missVal>-999.0</missVal>
+			<units>CMS</units>
+			<creationDate>2023-09-19</creationDate>
+			<creationTime>11:14:00</creationTime>
+		</header>
+		<event date="2000-01-01" time="00:00:00" value="9.91089645" flag="0"/>
+		<event date="2000-01-01" time="06:00:00" value="9.298373575" flag="0"/>
+		<event date="2000-01-01" time="12:00:00" value="10.53723563" flag="0"/>
+		<event date="2000-01-01" time="18:00:00" value="11.99715857" flag="0"/>
+		<event date="2000-01-02" time="00:00:00" value="7.34566907" flag="0"/>
+		<event date="2000-01-02" time="06:00:00" value="22.35938767" flag="0"/>
+		<event date="2000-01-02" time="12:00:00" value="14.84792293" flag="0"/>
+		<event date="2000-01-02" time="18:00:00" value="9.298373575" flag="0"/>
+		<event date="2000-01-03" time="00:00:00" value="16.05915238" flag="0"/>
+		<event date="2000-01-03" time="06:00:00" value="14.95384794" flag="0"/>
+		<event date="2000-01-03" time="12:00:00" value="14.69594357" flag="0"/>
+		<event date="2000-01-03" time="18:00:00" value="14.95845338" flag="0"/>
+		<event date="2000-01-04" time="00:00:00" value="12.70639559" flag="0"/>
+		<event date="2000-01-04" time="06:00:00" value="11.53200962" flag="0"/>
+		<event date="2000-01-04" time="12:00:00" value="11.65175094" flag="0"/>
+		<event date="2000-01-04" time="18:00:00" value="16.12823391" flag="0"/>
+		<event date="2000-01-05" time="00:00:00" value="23" flag="0"/>
+		<event date="2000-01-05" time="06:00:00" value="23" flag="0"/>
+		<event date="2000-01-05" time="12:00:00" value="23" flag="0"/>
+		<event date="2000-01-05" time="18:00:00" value="23" flag="0"/>
+		<event date="2000-01-06" time="00:00:00" value="23" flag="0"/>
+		<event date="2000-01-06" time="06:00:00" value="23" flag="0"/>
+		<event date="2000-01-06" time="12:00:00" value="23" flag="0"/>
+		<event date="2000-01-06" time="18:00:00" value="23" flag="0"/>
+		<event date="2000-01-07" time="00:00:00" value="23" flag="0"/>
+		<event date="2000-01-07" time="06:00:00" value="23" flag="0"/>
+		<event date="2000-01-07" time="12:00:00" value="23" flag="0"/>
+		<event date="2000-01-07" time="18:00:00" value="23" flag="0"/>
+		<event date="2000-01-08" time="00:00:00" value="23" flag="0"/>
+		<event date="2000-01-08" time="06:00:00" value="23" flag="0"/>
+		<event date="2000-01-08" time="12:00:00" value="23" flag="0"/>
+		<event date="2000-01-08" time="18:00:00" value="23" flag="0"/>
+		<event date="2000-01-09" time="00:00:00" value="21.9" flag="0"/>
+		<event date="2000-01-09" time="06:00:00" value="11.23" flag="0"/>
+		<event date="2000-01-09" time="12:00:00" value="8.142409351" flag="0"/>
+		<event date="2000-01-09" time="18:00:00" value="10.53723563" flag="0"/>
+		<event date="2000-01-10" time="00:00:00" value="10.02142689" flag="0"/>
+		<event date="2000-01-10" time="06:00:00" value="5.240985205" flag="0"/>
+		<event date="2000-01-10" time="12:00:00" value="7.787790844" flag="0"/>
+		<event date="2000-01-10" time="18:00:00" value="11.99715857" flag="0"/>
+		<event date="2000-01-11" time="00:00:00" value="9.399693148" flag="0"/>
+		<event date="2000-01-11" time="06:00:00" value="9.791155136" flag="0"/>
+		<event date="2000-01-11" time="12:00:00" value="7.787790844" flag="0"/>
+		<event date="2000-01-11" time="18:00:00" value="9.399693148" flag="0"/>
+		<event date="2000-01-12" time="00:00:00" value="9.791155136" flag="0"/>
+		<event date="2000-01-12" time="06:00:00" value="9.399693148" flag="0"/>
+		<event date="2000-01-12" time="12:00:00" value="9.791155136" flag="0"/>
+		<event date="2000-01-12" time="18:00:00" value="7.787790844" flag="0"/>
+		<event date="2000-01-13" time="00:00:00" value="9.399693148" flag="0"/>
+		<event date="2000-01-13" time="06:00:00" value="8.142409351" flag="0"/>
+		<event date="2000-01-13" time="12:00:00" value="8.142409351" flag="0"/>
+		<event date="2000-01-13" time="18:00:00" value="8.142409351" flag="0"/>
+		<event date="2000-01-14" time="00:00:00" value="8.142409351" flag="0"/>
+		<event date="2000-01-14" time="06:00:00" value="8.142409351" flag="0"/>
+		<event date="2000-01-14" time="12:00:00" value="4.794257995" flag="0"/>
+		<event date="2000-01-14" time="18:00:00" value="4.379768831" flag="0"/>
+		<event date="2000-01-15" time="00:00:00" value="3.242226348" flag="0"/>
+	</series>
+</TimeSeries>

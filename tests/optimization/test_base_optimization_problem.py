@@ -5,9 +5,9 @@ from rtctools_interface.optimization.base_optimization_problem import BaseOptimi
 from tests.utils.get_test import get_test_data
 
 
-
 class TestBaseOptimizationProblem(unittest.TestCase):
     """Test for the base optimization problem class."""
+
     def run_test(self, test):
         """Solve an optimization problem."""
         test_data = get_test_data(test, optimization=True)

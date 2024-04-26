@@ -148,6 +148,6 @@ def run_optimization_problem_closed_loop(
 
     logger.info("Finished all optimization runs.")
     if issubclass(optimization_problem_class, PIMixin):
-        combine_xml_exports(modelling_periods_output_folder, original_input_folder)
+        combine_xml_exports(modelling_periods_output_folder, original_input_folder, write_csv_out=True)
     else:
         logger.info("Combining CSV exports is not yet implemented.")

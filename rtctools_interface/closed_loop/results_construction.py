@@ -2,29 +2,11 @@ import copy
 import logging
 import os
 from pathlib import Path
-import numpy as np
+import pandas as pd
 from rtctools.data import rtc
 from rtctools.data import pi
-from rtctools.data.csv import save as csv_save
 
 logger = logging.getLogger("rtctools")
-
-
-def write_csv(output_variables, times, results, output_folder):
-    names = ["time"] + output_variables
-    formats = ["O"] + (len(names) - 1) * ["f8"]
-    dtype = dict(names=names, formats=formats)
-    data = np.zeros(len(times), dtype=dtype)
-    data["time"] = times
-    for output_variable in output_variables:
-        try:
-            values = results[output_variable]
-        except Exception as e:
-            logger.error("\nException {} thrown when trying to write csv file".format(e))
-            values = np.full_like(times, -999)
-        data[output_variable] = values
-    fname = os.path.join(output_folder, "timeseries_export.csv")
-    csv_save(fname, data, delimiter=",", with_time=True)
 
 
 def combine_xml_exports(output_base_path, original_input_timeseries_path, write_csv_out=False):
@@ -77,6 +59,17 @@ def combine_xml_exports(output_base_path, original_input_timeseries_path, write_
         i += 1
     ts_export.write()
 
+    if write_csv_out:
+        data = pd.DataFrame()
+        data["date"] = all_times
+        for timeseries_id in dataconfig._DataConfig__location_parameter_ids:
+            try:
+                values = ts_export.get(timeseries_id)
+            except KeyError:
+                logger.debug("Variable {} not found in output of model horizon: {}".format(timeseries_id, i))
+            data[timeseries_id] = values
+        data.round(5).to_csv(output_base_path.parent / "timeseries_export.csv", index=False)
+
 
 if __name__ == "__main__":
     closed_loop_test_folder = Path(__file__).parents[2] / "tests" / "closed_loop"
@@ -84,4 +77,4 @@ if __name__ == "__main__":
         r"test_models\goal_programming_xml\output\output_modelling_periods_reference"
     )
     original_input_timeseries_path = closed_loop_test_folder / Path(r"test_models\goal_programming_xml\input")
-    combine_xml_exports(output_base_path, original_input_timeseries_path)
+    combine_xml_exports(output_base_path, original_input_timeseries_path, True)

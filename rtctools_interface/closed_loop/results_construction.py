@@ -40,7 +40,7 @@ def combine_xml_exports(output_base_path, original_input_timeseries_path, write_
     ts_export = pi.Timeseries(
         data_config=dataconfig, folder=output_base_path / "period_0", basename="timeseries_export", binary=False
     )
-    ts_export._Timeseries__path_xml = os.path.join(output_base_path, "timeseries_export.xml")
+    ts_export._Timeseries__path_xml = os.path.join(output_base_path.parent, "timeseries_export.xml")
     ts_export.resize(orig_start_datetime, orig_end_datetime)
 
     i = 0

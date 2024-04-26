@@ -94,6 +94,8 @@ def run_optimization_problem_closed_loop(
     modelling_period_input_folder.mkdir(exist_ok=True)
 
     modelling_periods_output_folder = original_output_folder / "output_modelling_periods"
+    if modelling_periods_output_folder.exists():
+        shutil.rmtree(modelling_periods_output_folder)
     modelling_periods_output_folder.mkdir(exist_ok=True)
 
     original_date_range = original_import.get_datetime_range()

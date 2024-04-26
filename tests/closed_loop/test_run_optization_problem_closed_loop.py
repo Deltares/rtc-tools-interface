@@ -1,6 +1,5 @@
 """Test the closed loop runner"""
 import math
-from operator import is_
 import xml.etree.ElementTree as ET
 from unittest import TestCase
 from pathlib import Path

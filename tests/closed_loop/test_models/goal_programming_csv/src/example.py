@@ -1,4 +1,5 @@
-""" This example model is a modified version of the goal_programming example model of rtc-tools: https://gitlab.com/deltares/rtc-tools"""
+""" This example model is a modified version of the goal_programming example model of
+rtc-tools: https://gitlab.com/deltares/rtc-tools"""
 import numpy as np
 from rtctools.optimization.collocated_integrated_optimization_problem import (
     CollocatedIntegratedOptimizationProblem,

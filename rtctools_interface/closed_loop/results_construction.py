@@ -51,8 +51,8 @@ def combine_xml_exports(output_base_path, original_input_timeseries_path, write_
             basename="timeseries_export",
             binary=False,
         )
-        all_times = ts_import_orig.times # Workaround to map indices to times, as ts_export does
-        # not contain all times. TODO Check whether the assumption that these times map to 
+        all_times = ts_import_orig.times  # Workaround to map indices to times, as ts_export does
+        # not contain all times. TODO Check whether the assumption that these times map to
         # the correct indices for ts_export always holds.
         for loc_par in dataconfig._DataConfig__location_parameter_ids:
             try:
@@ -72,7 +72,7 @@ def combine_xml_exports(output_base_path, original_input_timeseries_path, write_
                         + "with the end of the previous."
                     )
             combined_values = copy.deepcopy(current_values)
-            combined_values[start_new_data_index : start_new_data_index + len(new_values)] = new_values
+            combined_values[start_new_data_index : start_new_data_index + len(new_values)] = new_values  # noqa
             ts_export.set(loc_par, combined_values)
         i += 1
     ts_export.write()

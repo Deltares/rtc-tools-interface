@@ -1,6 +1,9 @@
 """Mixin to store all required data for plotting. Can also call the plot function."""
 
 import logging
+from typing import Dict, List
+
+import numpy as np
 
 from rtctools_interface.plotting.plot_tools import create_plot_final_results
 from rtctools_interface.utils.results_collection import PlottingBaseMixin
@@ -14,6 +17,23 @@ class PlotMixin(PlottingBaseMixin):
     """
 
     optimization_problem = False
+    _manual_extracted_states: Dict[str, list] = {}
+
+    def manual_extraction_from_state_vector(self):
+        for variable in self.custom_variables:
+            try:
+                self._manual_extracted_states[variable].append(self.get_var(variable))
+            except KeyError:
+                logger.debug("Variable {} not found in output of model.".format(variable))
+
+    def initialize(self):
+        super().initialize()
+        self._manual_extracted_states = {variable: [] for variable in self.custom_variables}
+        self.manual_extraction_from_state_vector()
+
+    def update(self, dt):
+        super().update(dt)
+        self.manual_extraction_from_state_vector()
 
     def post(self):
         """Tasks after optimizing."""
@@ -26,3 +46,6 @@ class PlotMixin(PlottingBaseMixin):
 
         if self.plot_final_results:
             create_plot_final_results(current_run, self._previous_run, plotting_library=self.plotting_library)
+
+    def collect_timeseries_data(self, all_variables_to_store: List[str]) -> Dict[str, np.ndarray]:
+        return {variable: np.array(self._manual_extracted_states[variable]) for variable in all_variables_to_store}

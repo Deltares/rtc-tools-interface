@@ -163,4 +163,4 @@ The table could thus look like:
 |  | Volume (\$m^3\$)  |                |                  | electricity_cost | "Goal for minimizing electricity cost, at priority 10" | python
 
 
-After running the model, in your output folder the folder `goal_figures` containing the figures is created.
+After running the model, in your output folder the folder `figures` containing the figures is created.

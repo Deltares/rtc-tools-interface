@@ -40,7 +40,7 @@ def get_subplot_axis(i_plot, n_rows, n_cols, axs):
 
 def get_file_write_path(output_folder: Union[str, Path], file_name="figure"):
     """Get path to to file."""
-    new_output_folder = Path(output_folder) / "goal_figures"
+    new_output_folder = Path(output_folder) / "figures"
     os.makedirs(new_output_folder, exist_ok=True)
     return os.path.join(new_output_folder, file_name)
 

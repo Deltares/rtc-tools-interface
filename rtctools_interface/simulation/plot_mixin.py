@@ -26,8 +26,8 @@ class PlotMixin(PlottingBaseMixin):
             except KeyError:
                 logger.debug("Variable {} not found in output of model.".format(variable))
 
-    def initialize(self):
-        super().initialize()
+    def initialize(self, *args, **kwargs):
+        super().initialize(*args, **kwargs)
         self._manual_extracted_states = {variable: [] for variable in self.custom_variables}
         self.manual_extraction_from_state_vector()
 

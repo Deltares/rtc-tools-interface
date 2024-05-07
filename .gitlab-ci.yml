@@ -14,8 +14,7 @@ flake8:
     - pip install --upgrade flake8==5
     - flake8 --exclude=_version.py rtctools_interface  
   tags:
-    - docker
-    - linux
+    - gitlab-org-docker
 
 # code quality
 pylint:
@@ -25,8 +24,7 @@ pylint:
     - pip install pylint
     - pylint rtctools_interface/optimization tests
   tags:
-    - docker
-    - linux
+    - gitlab-org-docker
 
 # test
 test39:
@@ -36,8 +34,7 @@ test39:
     - pip install pytest
     - pytest tests 
   tags:
-    - docker
-    - linux
+    - gitlab-org-docker
 
 build:
   stage: build
@@ -48,7 +45,7 @@ build:
       - dist/
     expire_in: 1 week
   tags:
-    - docker
+    - gitlab-org-docker
 
 deploy:
   stage: deploy

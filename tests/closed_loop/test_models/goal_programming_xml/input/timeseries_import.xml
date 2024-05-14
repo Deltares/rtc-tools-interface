@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TimeSeries xmlns="http://www.wldelft.nl/fews/PI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.wldelft.nl/fews/PI http://fews.wldelft.nl/schemas/version1.0/pi-schemas/pi_timeseries.xsd" version="1.5">
+    <timeZone>-6.0</timeZone>
+    <series>
+        <header>
+            <type>instantaneous</type>
+            <locationId>H_sea</locationId>
+            <parameterId>par_0</parameterId>
+            <timeStep unit="second" multiplier="28800"/>
+            <startDate date="2024-05-01" time="00:00:00"/>
+            <endDate date="2024-05-07" time="16:00:00"/>
+            <missVal>-999.0</missVal>
+            <units>test</units>
+            <creationDate>2024-01-01</creationDate>
+            <creationTime>11:00:00</creationTime>
+        </header>
+        <event date="2024-05-01" time="00:00:00" value="0.0" flag="0"/>
+        <event date="2024-05-01" time="08:00:00" value="0.1" flag="0"/>
+        <event date="2024-05-01" time="16:00:00" value="0.2" flag="0"/>
+        <event date="2024-05-02" time="00:00:00" value="0.3" flag="0"/>
+        <event date="2024-05-02" time="08:00:00" value="0.4" flag="0"/>
+        <event date="2024-05-02" time="16:00:00" value="0.5" flag="0"/>
+        <event date="2024-05-03" time="00:00:00" value="0.6" flag="0"/>
+        <event date="2024-05-03" time="08:00:00" value="0.7" flag="0"/>
+        <event date="2024-05-03" time="16:00:00" value="0.8" flag="0"/>
+        <event date="2024-05-04" time="00:00:00" value="0.9" flag="0"/>
+        <event date="2024-05-04" time="08:00:00" value="1.0" flag="0"/>
+        <event date="2024-05-04" time="16:00:00" value="0.9" flag="0"/>
+        <event date="2024-05-05" time="00:00:00" value="0.8" flag="0"/>
+        <event date="2024-05-05" time="08:00:00" value="0.7" flag="0"/>
+        <event date="2024-05-05" time="16:00:00" value="0.6" flag="0"/>
+        <event date="2024-05-06" time="00:00:00" value="0.5" flag="0"/>
+        <event date="2024-05-06" time="08:00:00" value="0.4" flag="0"/>
+        <event date="2024-05-06" time="16:00:00" value="0.3" flag="0"/>
+        <event date="2024-05-07" time="00:00:00" value="0.2" flag="0"/>
+        <event date="2024-05-07" time="08:00:00" value="0.1" flag="0"/>
+        <event date="2024-05-07" time="16:00:00" value="0.0" flag="0"/>
+    </series>
+    <series>
+        <header>
+            <type>instantaneous</type>
+            <locationId>Q_in</locationId>
+            <parameterId>par_0</parameterId>
+            <timeStep unit="second" multiplier="28800"/>
+            <startDate date="2024-05-01" time="00:00:00"/>
+            <endDate date="2024-05-07" time="16:00:00"/>
+            <missVal>-999.0</missVal>
+            <units>test</units>
+            <creationDate>2024-01-01</creationDate>
+            <creationTime>11:00:00</creationTime>
+        </header>
+        <event date="2024-05-01" time="00:00:00" value="5.0" flag="0"/>
+        <event date="2024-05-01" time="08:00:00" value="5.0" flag="0"/>
+        <event date="2024-05-01" time="16:00:00" value="5.0" flag="0"/>
+        <event date="2024-05-02" time="00:00:00" value="5.0" flag="0"/>
+        <event date="2024-05-02" time="08:00:00" value="5.0" flag="0"/>
+        <event date="2024-05-02" time="16:00:00" value="5.0" flag="0"/>
+        <event date="2024-05-03" time="00:00:00" value="5.0" flag="0"/>
+        <event date="2024-05-03" time="08:00:00" value="5.0" flag="0"/>
+        <event date="2024-05-03" time="16:00:00" value="5.0" flag="0"/>
+        <event date="2024-05-04" time="00:00:00" value="5.0" flag="0"/>
+        <event date="2024-05-04" time="08:00:00" value="5.0" flag="0"/>
+        <event date="2024-05-04" time="16:00:00" value="5.0" flag="0"/>
+        <event date="2024-05-05" time="00:00:00" value="5.0" flag="0"/>
+        <event date="2024-05-05" time="08:00:00" value="5.0" flag="0"/>
+        <event date="2024-05-05" time="16:00:00" value="5.0" flag="0"/>
+        <event date="2024-05-06" time="00:00:00" value="5.0" flag="0"/>
+        <event date="2024-05-06" time="08:00:00" value="5.0" flag="0"/>
+        <event date="2024-05-06" time="16:00:00" value="5.0" flag="0"/>
+        <event date="2024-05-07" time="00:00:00" value="5.0" flag="0"/>
+        <event date="2024-05-07" time="08:00:00" value="5.0" flag="0"/>
+        <event date="2024-05-07" time="16:00:00" value="5.0" flag="0"/>
+    </series>
+    <series>
+        <header>
+            <type>instantaneous</type>
+            <locationId>storage_level</locationId>
+            <parameterId>par_0</parameterId>
+            <timeStep unit="second" multiplier="28800"/>
+            <startDate date="2024-05-01" time="00:00:00"/>
+            <endDate date="2024-05-07" time="16:00:00"/>
+            <missVal>-999.0</missVal>
+            <units>test</units>
+            <creationDate>2024-01-01</creationDate>
+            <creationTime>11:00:00</creationTime>
+        </header>
+        <event date="2024-05-01" time="00:00:00" value="0.4" />
+    </series>
+    <series>
+        <header>
+            <type>instantaneous</type>
+            <locationId>Q_orifice</locationId>
+            <parameterId>par_0</parameterId>
+            <timeStep unit="second" multiplier="28800"/>
+            <startDate date="2024-05-01" time="00:00:00"/>
+            <endDate date="2024-05-07" time="16:00:00"/>
+            <missVal>-999.0</missVal>
+            <units>test</units>
+            <creationDate>2024-01-01</creationDate>
+            <creationTime>11:00:00</creationTime>
+        </header>
+        <event date="2024-05-01" time="00:00:00" value="0" />
+    </series>
+    <series>
+        <header>
+            <type>instantaneous</type>
+            <locationId>Q_pump</locationId>
+            <parameterId>Q_pump</parameterId>
+            <timeStep unit="second" multiplier="28800"/>
+            <startDate date="2024-05-01" time="00:00:00"/>
+            <endDate date="2024-05-07" time="16:00:00"/>
+            <missVal>-999.0</missVal>
+            <units>test</units>
+            <creationDate>2024-01-01</creationDate>
+            <creationTime>11:00:00</creationTime>
+        </header>
+        <event date="2024-05-01" time="00:00:00" value="0" />
+    </series>
+</TimeSeries>

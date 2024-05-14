@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rtcDataConfig xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:rtc="http://www.wldelft.nl/fews" xmlns="http://www.wldelft.nl/fews" xsi:schemaLocation="http://www.wldelft.nl/fews ../xsd/rtcDataConfig.xsd">
+	<timeSeries id="H_sea">
+		<PITimeSeries>
+			<locationId>H_sea</locationId>
+			<parameterId>par_0</parameterId>
+		</PITimeSeries>
+	</timeSeries>
+	<timeSeries id="Q_in">
+		<PITimeSeries>
+			<locationId>Q_in</locationId>
+			<parameterId>par_0</parameterId>
+		</PITimeSeries>
+	</timeSeries>
+	<timeSeries id="Q_orifice">
+		<PITimeSeries>
+			<locationId>Q_orifice</locationId>
+			<parameterId>par_0</parameterId>
+		</PITimeSeries>
+	</timeSeries>
+	<timeSeries id="Q_pump">
+		<PITimeSeries>
+			<locationId>Q_pump</locationId>
+			<parameterId>par_0</parameterId>
+		</PITimeSeries>
+	</timeSeries>
+	<timeSeries id="is_downhill">
+		<PITimeSeries>
+			<locationId>is_downhill</locationId>
+			<parameterId>par_0</parameterId>
+		</PITimeSeries>
+	</timeSeries>
+	<timeSeries id="sea_level">
+		<PITimeSeries>
+			<locationId>sea_level</locationId>
+			<parameterId>par_0</parameterId>
+		</PITimeSeries>
+	</timeSeries>
+	<timeSeries id="storage_level">
+		<PITimeSeries>
+			<locationId>storage_level</locationId>
+			<parameterId>par_0</parameterId>
+		</PITimeSeries>
+	</timeSeries>
+</rtcDataConfig>

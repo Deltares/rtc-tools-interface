@@ -53,7 +53,8 @@ class StatisticsMixin:
                 target_max = goal.target_max
             return target_min, target_max
 
-        if goal.goal_type in ["range", "range_rate_of_change"]:
+        supported_goal_types = ["range", "range_rate_of_change"]
+        if goal.goal_type in supported_goal_types:
             if goal.target_data_type == "parameter":
                 target_min, target_max = get_parameter_ranges(goal)
             elif goal.target_data_type == "value":
@@ -64,5 +65,9 @@ class StatisticsMixin:
                 message = "Target type {} not known for goal {}.".format(goal.target_data_type, goal.goal_id)
                 logger.error(message)
                 raise ValueError(message)
-            target_dict: TargetDict = {"target_min": target_min, "target_max": target_max}
+        else:
+            message = "Goal type {} not supported for target collection.".format(goal.goal_type)
+            logger.error(message)
+            raise ValueError(message)
+        target_dict: TargetDict = {"target_min": target_min, "target_max": target_max}
         return target_dict

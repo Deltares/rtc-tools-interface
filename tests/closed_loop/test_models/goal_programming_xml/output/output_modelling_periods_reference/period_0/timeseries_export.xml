@@ -1,0 +1,147 @@
+<pi:TimeSeries xmlns:pi="http://www.wldelft.nl/fews/PI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.2" xsi:schemaLocation="http://www.wldelft.nl/fews/PI http://fews.wldelft.nl/schemas/version1.0/pi-schemas/pi_timeseries.xsd">
+  <pi:timeZone>-6.0</pi:timeZone>
+  <pi:series>
+    <pi:header>
+      <pi:type>instantaneous</pi:type>
+      <pi:locationId>H_sea</pi:locationId>
+      <pi:parameterId>par_0</pi:parameterId>
+      <pi:timeStep unit="second" multiplier="28800" />
+      <pi:startDate date="2024-05-01" time="00:00:00" />
+      <pi:endDate date="2024-05-03" time="16:00:00" />
+      <pi:missVal>-999</pi:missVal>
+      <pi:stationName>H_sea</pi:stationName>
+      <pi:units>test</pi:units>
+      <pi:creationDate>2024-04-25</pi:creationDate>
+      <pi:creationTime>11:33:50</pi:creationTime>
+      </pi:header>
+    <pi:event date="2024-05-01" time="00:00:00" value="0.0" />
+    <pi:event date="2024-05-01" time="08:00:00" value="0.1" />
+    <pi:event date="2024-05-01" time="16:00:00" value="0.2" />
+    <pi:event date="2024-05-02" time="00:00:00" value="0.3" />
+    <pi:event date="2024-05-02" time="08:00:00" value="0.4" />
+    <pi:event date="2024-05-02" time="16:00:00" value="0.5" />
+    <pi:event date="2024-05-03" time="00:00:00" value="0.6" />
+    <pi:event date="2024-05-03" time="08:00:00" value="0.7" />
+    <pi:event date="2024-05-03" time="16:00:00" value="0.8" />
+    </pi:series>
+  <pi:series>
+    <pi:header>
+      <pi:type>instantaneous</pi:type>
+      <pi:locationId>Q_orifice</pi:locationId>
+      <pi:parameterId>par_0</pi:parameterId>
+      <pi:timeStep unit="second" multiplier="28800" />
+      <pi:startDate date="2024-05-01" time="00:00:00" />
+      <pi:endDate date="2024-05-03" time="16:00:00" />
+      <pi:missVal>-999</pi:missVal>
+      <pi:stationName>Q_orifice</pi:stationName>
+      <pi:units>test</pi:units>
+      <pi:creationDate>2024-04-25</pi:creationDate>
+      <pi:creationTime>11:33:50</pi:creationTime>
+      </pi:header>
+    <pi:event date="2024-05-01" time="00:00:00" value="0.0" />
+    <pi:event date="2024-05-01" time="08:00:00" value="3.9148583836497317" />
+    <pi:event date="2024-05-01" time="16:00:00" value="5.044141151299656" />
+    <pi:event date="2024-05-02" time="00:00:00" value="3.975639016326031" />
+    <pi:event date="2024-05-02" time="08:00:00" value="2.1251263854704803" />
+    <pi:event date="2024-05-02" time="16:00:00" value="9.670840938715713e-08" />
+    <pi:event date="2024-05-03" time="00:00:00" value="9.669629030690558e-08" />
+    <pi:event date="2024-05-03" time="08:00:00" value="9.67083336516192e-08" />
+    <pi:event date="2024-05-03" time="16:00:00" value="9.66648539877212e-08" />
+    </pi:series>
+  <pi:series>
+    <pi:header>
+      <pi:type>instantaneous</pi:type>
+      <pi:locationId>Q_pump</pi:locationId>
+      <pi:parameterId>par_0</pi:parameterId>
+      <pi:timeStep unit="second" multiplier="28800" />
+      <pi:startDate date="2024-05-01" time="00:00:00" />
+      <pi:endDate date="2024-05-03" time="16:00:00" />
+      <pi:missVal>-999</pi:missVal>
+      <pi:stationName>Q_pump</pi:stationName>
+      <pi:units>unit_unknown</pi:units>
+      <pi:creationDate>2024-04-25</pi:creationDate>
+      <pi:creationTime>11:33:50</pi:creationTime>
+      </pi:header>
+    <pi:event date="2024-05-01" time="00:00:00" value="0.0" />
+    <pi:event date="2024-05-01" time="08:00:00" value="0.0" />
+    <pi:event date="2024-05-01" time="16:00:00" value="0.0" />
+    <pi:event date="2024-05-02" time="00:00:00" value="0.6763912419438717" />
+    <pi:event date="2024-05-02" time="08:00:00" value="2.874856212620524" />
+    <pi:event date="2024-05-02" time="16:00:00" value="5.1829693195231865" />
+    <pi:event date="2024-05-03" time="00:00:00" value="4.996863175637374" />
+    <pi:event date="2024-05-03" time="08:00:00" value="4.820220131980116" />
+    <pi:event date="2024-05-03" time="16:00:00" value="4.999972022673866" />
+    </pi:series>
+  <pi:series>
+    <pi:header>
+      <pi:type>instantaneous</pi:type>
+      <pi:locationId>is_downhill</pi:locationId>
+      <pi:parameterId>par_0</pi:parameterId>
+      <pi:timeStep unit="second" multiplier="28800" />
+      <pi:startDate date="2024-05-01" time="00:00:00" />
+      <pi:endDate date="2024-05-03" time="16:00:00" />
+      <pi:missVal>-999</pi:missVal>
+      <pi:stationName>is_downhill</pi:stationName>
+      <pi:units>unit_unknown</pi:units>
+      <pi:creationDate>2024-04-25</pi:creationDate>
+      <pi:creationTime>11:33:50</pi:creationTime>
+      </pi:header>
+    <pi:event date="2024-05-01" time="00:00:00" value="1.0" />
+    <pi:event date="2024-05-01" time="08:00:00" value="1.0" />
+    <pi:event date="2024-05-01" time="16:00:00" value="1.0" />
+    <pi:event date="2024-05-02" time="00:00:00" value="1.0" />
+    <pi:event date="2024-05-02" time="08:00:00" value="1.0" />
+    <pi:event date="2024-05-02" time="16:00:00" value="0.0" />
+    <pi:event date="2024-05-03" time="00:00:00" value="0.0" />
+    <pi:event date="2024-05-03" time="08:00:00" value="0.0" />
+    <pi:event date="2024-05-03" time="16:00:00" value="0.0" />
+    </pi:series>
+  <pi:series>
+    <pi:header>
+      <pi:type>instantaneous</pi:type>
+      <pi:locationId>sea_level</pi:locationId>
+      <pi:parameterId>par_0</pi:parameterId>
+      <pi:timeStep unit="second" multiplier="28800" />
+      <pi:startDate date="2024-05-01" time="00:00:00" />
+      <pi:endDate date="2024-05-03" time="16:00:00" />
+      <pi:missVal>-999</pi:missVal>
+      <pi:stationName>sea_level</pi:stationName>
+      <pi:units>unit_unknown</pi:units>
+      <pi:creationDate>2024-04-25</pi:creationDate>
+      <pi:creationTime>11:33:50</pi:creationTime>
+      </pi:header>
+    <pi:event date="2024-05-01" time="00:00:00" value="0.0" />
+    <pi:event date="2024-05-01" time="08:00:00" value="0.1" />
+    <pi:event date="2024-05-01" time="16:00:00" value="0.2" />
+    <pi:event date="2024-05-02" time="00:00:00" value="0.3" />
+    <pi:event date="2024-05-02" time="08:00:00" value="0.4" />
+    <pi:event date="2024-05-02" time="16:00:00" value="0.5" />
+    <pi:event date="2024-05-03" time="00:00:00" value="0.6" />
+    <pi:event date="2024-05-03" time="08:00:00" value="0.7" />
+    <pi:event date="2024-05-03" time="16:00:00" value="0.8" />
+    </pi:series>
+  <pi:series>
+    <pi:header>
+      <pi:type>instantaneous</pi:type>
+      <pi:locationId>storage_level</pi:locationId>
+      <pi:parameterId>par_0</pi:parameterId>
+      <pi:timeStep unit="second" multiplier="28800" />
+      <pi:startDate date="2024-05-01" time="00:00:00" />
+      <pi:endDate date="2024-05-03" time="16:00:00" />
+      <pi:missVal>-999</pi:missVal>
+      <pi:stationName>storage_level</pi:stationName>
+      <pi:units>test</pi:units>
+      <pi:creationDate>2024-04-25</pi:creationDate>
+      <pi:creationTime>11:33:50</pi:creationTime>
+      </pi:header>
+    <pi:event date="2024-05-01" time="00:00:00" value="0.4" />
+    <pi:event date="2024-05-01" time="08:00:00" value="0.4312520787945451" />
+    <pi:event date="2024-05-01" time="16:00:00" value="0.4299808138807992" />
+    <pi:event date="2024-05-02" time="00:00:00" value="0.44000234252385634" />
+    <pi:event date="2024-05-02" time="08:00:00" value="0.4400028435848811" />
+    <pi:event date="2024-05-02" time="16:00:00" value="0.4347333244308024" />
+    <pi:event date="2024-05-03" time="00:00:00" value="0.4348236621894044" />
+    <pi:event date="2024-05-03" time="08:00:00" value="0.44000131950050564" />
+    <pi:event date="2024-05-03" time="16:00:00" value="0.440002122696916" />
+    </pi:series>
+  </pi:TimeSeries>

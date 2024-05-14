@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- edited with XMLSpy v2014 rel. 2 sp1 (http://www.altova.com) by Afdeling ICT (Stichting Deltares) -->
+<rtcDataConfig xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:rtc="http://www.wldelft.nl/fews" xmlns="http://www.wldelft.nl/fews" xsi:schemaLocation="http://www.wldelft.nl/fews ../xsd/rtcDataConfig.xsd">
+	<timeSeries id="TroutLake_Inflow">
+		<PITimeSeries>
+			<locationId>TroutLake</locationId>
+			<parameterId>Inflow</parameterId>
+		</PITimeSeries>
+	</timeSeries>
+	<timeSeries id="Alder_Inflow">
+		<PITimeSeries>
+			<locationId>Alder</locationId>
+			<parameterId>Inflow</parameterId>
+		</PITimeSeries>
+	</timeSeries>
+	<timeSeries id="TroutLake_V">
+		<PITimeSeries>
+			<locationId>TroutLake</locationId>
+			<parameterId>Volume</parameterId>
+		</PITimeSeries>
+	</timeSeries>
+	<timeSeries id="Q_release_user">
+		<PITimeSeries>
+			<locationId>TroutLake</locationId>
+			<parameterId>Q_release_user</parameterId>
+		</PITimeSeries>
+	</timeSeries>
+	<timeSeries id="RiverCity_Q">
+		<PITimeSeries>
+			<locationId>RiverCity</locationId>
+			<parameterId>Q</parameterId>
+		</PITimeSeries>
+	</timeSeries>
+	<timeSeries id="TroutLake_Q_out">
+		<PITimeSeries>
+			<locationId>TroutLake</locationId>
+			<parameterId>Q_out</parameterId>
+		</PITimeSeries>
+	</timeSeries>
+	<timeSeries id="TroutLake_Q_spill">
+		<PITimeSeries>
+			<locationId>TroutLake</locationId>
+			<parameterId>Q_spill</parameterId>
+		</PITimeSeries>
+	</timeSeries>
+	<timeSeries id="TroutLake_Q_turbine">
+		<PITimeSeries>
+			<locationId>TroutLake</locationId>
+			<parameterId>Q_turbine</parameterId>
+		</PITimeSeries>
+	</timeSeries>
+</rtcDataConfig>

@@ -25,12 +25,16 @@ def get_mean_absolute_percentual_difference(timeseries: np.ndarray) -> float:
     nonzero_indices = np.nonzero(timeseries)
     timeseries = timeseries[nonzero_indices]
     differences = np.diff(timeseries)
+    if len(timeseries) <= 1:
+        return 0
     mapd = np.mean(np.abs(differences / timeseries[:-1]))
     return mapd
 
 
 def get_absolute_sum_difference(timeseries: np.ndarray) -> float:
     """Calculate the mean of absolute first-order difference."""
+    if len(timeseries) <= 1:
+        return 0
     mad = np.mean(np.abs(np.diff(timeseries)))
     return mad
 

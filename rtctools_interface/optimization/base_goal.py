@@ -124,10 +124,9 @@ class BaseGoal(Goal):
     ):
         """Set function bounds either by user specified value or calculated"""
         state_range = self._get_state_range(optimization_problem, self.state)
-        if (
-            (~np.isfinite(function_min) & ~np.isfinite(state_range[0])).any() or
-            (~np.isfinite(function_max) & ~np.isfinite(state_range[1])).any()
-        ):
+        if (~np.isfinite(function_min) & ~np.isfinite(state_range[0])).any() or (
+            ~np.isfinite(function_max) & ~np.isfinite(state_range[1])
+        ).any():
             raise ValueError(
                 f"The upper/lower bound for state {self.state} for goal with id={self.goal_id} is not specified"
                 + " so the function range should be specified!"
@@ -216,8 +215,8 @@ class BaseGoal(Goal):
             "goal_id": self.goal_id,
             "state": self.state,
             "goal_type": self.goal_type,
-            "function_min": self.function_range[0] if np.isfinite(self.function_range[0]) else None,
-            "function_max": self.function_range[1] if np.isfinite(self.function_range[1]) else None,
+            "function_min": self.function_range[0] if np.any(np.isfinite(self.function_range[0])) else None,
+            "function_max": self.function_range[1] if np.any(np.isfinite(self.function_range[1])) else None,
             "function_nominal": self.function_nominal if np.isfinite(self.function_nominal) else None,
             "target_min_series": None,
             "target_max_series": None,

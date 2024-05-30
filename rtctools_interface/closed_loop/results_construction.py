@@ -42,6 +42,7 @@ def combine_xml_exports(output_base_path, original_input_timeseries_path, write_
                 new_values = ts_export_step.get(loc_par)
             except KeyError:
                 logger.debug("Variable {} not found in output of model horizon: {}".format(loc_par, i))
+                continue
             new_times = ts_export_step.times
             try:
                 start_new_data_index = all_times.index(new_times[0])
@@ -67,6 +68,7 @@ def combine_xml_exports(output_base_path, original_input_timeseries_path, write_
                 values = ts_export.get(timeseries_id)
             except KeyError:
                 logger.debug("Variable {} not found in output of model horizon: {}".format(timeseries_id, i))
+                continue
             data[timeseries_id] = values
         data.round(5).to_csv(output_base_path.parent / "timeseries_export.csv", index=False)
 

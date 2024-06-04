@@ -217,7 +217,7 @@ class BaseGoal(Goal):
             "goal_type": self.goal_type,
             "function_min": self.function_range[0] if np.any(np.isfinite(self.function_range[0])) else None,
             "function_max": self.function_range[1] if np.any(np.isfinite(self.function_range[1])) else None,
-            "function_nominal": self.function_nominal if np.isfinite(self.function_nominal) else None,
+            "function_nominal": self.function_nominal if np.any(np.isfinite(self.function_nominal)) else None,
             "target_min_series": None,
             "target_max_series": None,
             "target_min": self.target_min,

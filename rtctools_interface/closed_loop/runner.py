@@ -5,6 +5,7 @@ from pathlib import Path
 import shutil
 import sys
 from typing import List, Optional
+from rtctools.data.pi import DiagHandler
 from rtctools.optimization.pi_mixin import PIMixin
 from rtctools.optimization.csv_mixin import CSVMixin
 from rtctools.util import run_optimization_problem, _resolve_folder
@@ -79,6 +80,17 @@ def run_optimization_problem_closed_loop(
     original_input_folder = Path(_resolve_folder(kwargs, base_folder, "input_folder", "input"))
     original_output_folder = Path(_resolve_folder(kwargs, base_folder, "output_folder", "output"))
     original_output_folder.mkdir(exist_ok=True)
+
+    # Set logging handlers.
+    if not logger.hasHandlers():
+        handler = logging.StreamHandler()
+        formatter = logging.Formatter("%(asctime)s %(levelname)s %(message)s")
+        handler.setFormatter(formatter)
+        logger.addHandler(handler)
+    if issubclass(optimization_problem_class, PIMixin):
+        if not any((isinstance(h, DiagHandler) for h in logger.handlers)):
+            diag_handler = DiagHandler(original_output_folder)
+            logger.addHandler(diag_handler)
 
     if issubclass(optimization_problem_class, PIMixin):
         original_import = XMLTimeSeriesFile(original_input_folder)

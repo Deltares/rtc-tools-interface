@@ -81,7 +81,7 @@ def get_plot_variables(plot_config: list[PlotTableRow]) -> List[str]:
     variables_with_previous_result = [
         var for subplot_config in plot_config for var in subplot_config.variables_with_previous_result
     ]
-    return variables_style_1 + variables_style_2 + variables_with_previous_result
+    return list(set(variables_style_1 + variables_style_2 + variables_with_previous_result))
 
 
 def filter_plot_config(plot_config: list[PlotTableRow], all_goal_generator_goals) -> list[PlotTableRow]:

@@ -105,7 +105,7 @@
         <header>
             <type>instantaneous</type>
             <locationId>Q_pump</locationId>
-            <parameterId>Q_pump</parameterId>
+            <parameterId>par_0</parameterId>
             <timeStep unit="second" multiplier="28800"/>
             <startDate date="2024-05-01" time="00:00:00"/>
             <endDate date="2024-05-07" time="16:00:00"/>

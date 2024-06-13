@@ -9,7 +9,8 @@ from rtctools.data.pi import DiagHandler
 from rtctools.optimization.pi_mixin import PIMixin
 from rtctools.optimization.csv_mixin import CSVMixin
 from rtctools.util import run_optimization_problem, _resolve_folder
-from rtctools_interface.closed_loop.closed_loop_dates import read_closed_loop_dates
+from rtctools_interface.closed_loop.config import ClosedLoopConfig
+import rtctools_interface.closed_loop.optimization_ranges as opt_ranges
 from rtctools_interface.closed_loop.results_construction import combine_csv_exports, combine_xml_exports
 from rtctools_interface.closed_loop.time_series_handler import XMLTimeSeriesFile, CSVTimeSeriesFile, TimeSeriesHandler
 import logging
@@ -53,11 +54,35 @@ def write_input_folder(
     timeseries_import.write(modelling_period_input_folder_i)
 
 
+def _get_optimization_ranges(
+    config: ClosedLoopConfig,
+    input_timeseries: TimeSeriesHandler,
+) -> list[tuple[datetime.datetime, datetime.datetime]]:
+    """Return a list of optimization periods."""
+    if config.file is not None:
+        datetime_range = input_timeseries.get_datetime_range()
+        optimization_ranges = opt_ranges.get_optimization_ranges_from_file(
+            config.file, datetime_range
+        )
+    elif config.optimization_period is not None:
+        datetimes = input_timeseries.get_datetimes()
+        optimization_ranges = opt_ranges.get_optimization_ranges(
+            model_times=datetimes,
+            start_time=datetimes[0],
+            forecast_timestep=config.forecast_timestep,
+            optimization_period=config.optimization_period,
+        )
+    if config.round_to_dates:
+        optimization_ranges = opt_ranges.round_datetime_ranges_to_days(optimization_ranges)
+    return optimization_ranges
+
+
 def run_optimization_problem_closed_loop(
     optimization_problem_class,
     base_folder="..",
     log_level=logging.INFO,
     profile=False,
+    config: ClosedLoopConfig = None,
     **kwargs,
 ):
     """Runs an optimization problem in closed loop mode.
@@ -112,24 +137,15 @@ def run_optimization_problem_closed_loop(
         shutil.rmtree(modelling_periods_output_folder)
     modelling_periods_output_folder.mkdir(exist_ok=True)
 
-    original_date_range = original_import.get_datetime_range()
-    closed_loop_dates = read_closed_loop_dates(original_input_folder / "closed_loop_dates.csv")
-    assert (
-        min(closed_loop_dates["start_date"]).date() == original_date_range[0].date()
-    ), "The start day of the first optimization run is not equal to the start day of the timeseries import."
-    assert (
-        max(closed_loop_dates["end_date"]).date() <= original_date_range[1].date()
-    ), "The end date of one or more optimization runs is later than the end date of the timeseries import."
-
+    if config is None:
+        config = ClosedLoopConfig(original_input_folder / "closed_loop_dates.csv")
+    optimization_ranges = _get_optimization_ranges(config, original_import)
     results_previous_run = None
     previous_run_datetimes = None
-    for i, date_range in closed_loop_dates.iterrows():
+    for i, (start_time, end_time) in enumerate(optimization_ranges):
         timeseries_import = copy.deepcopy(original_import)
 
-        timeseries_import.select_time_range(
-            start_date=date_range["start_date"],
-            end_date=date_range["end_date"] + datetime.timedelta(days=1) - datetime.timedelta(seconds=1),
-        )
+        timeseries_import.select_time_range(start_date=start_time, end_date=end_time)
 
         set_initial_values_from_previous_run(results_previous_run, timeseries_import, previous_run_datetimes)
 

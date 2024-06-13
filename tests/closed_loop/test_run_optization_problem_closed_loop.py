@@ -1,9 +1,13 @@
 """Test the closed loop runner"""
 import math
 import xml.etree.ElementTree as ET
-from unittest import TestCase
+from datetime import timedelta
 from pathlib import Path
+from unittest import TestCase
+
 import pandas as pd
+
+from rtctools_interface.closed_loop.config import ClosedLoopConfig
 from rtctools_interface.closed_loop.runner import run_optimization_problem_closed_loop
 from .test_models.goal_programming_xml.src.example import Example as ExampleXml
 from .test_models.goal_programming_csv.src.example import Example as ExampleCsv
@@ -47,52 +51,130 @@ class TestClosedLoop(TestCase):
     Class for testing closed loop runner.
     """
 
-    def test_running_closed_loop_csv(self):
-        """
-        Check if test model runs without problems and generates same results.
-        """
-        base_folder = Path(__file__).parent / "test_models" / "goal_programming_csv"
-        run_optimization_problem_closed_loop(ExampleCsv, base_folder=base_folder)
-
-        output_modelling_period_folder = base_folder / "output" / "output_modelling_periods"
-        self.assertTrue(output_modelling_period_folder.exists(), "Output modelling period folder should be created.")
-        self.assertEqual(
-            len(list(output_modelling_period_folder.iterdir())), 3, "Three modelling periods should be created."
+    def compare_csv_files(self, output_folder: Path, reference_folder: Path, n_periods: int):
+        """Compare the csv files in output and reference subfolders."""
+        self.assertTrue(
+            output_folder.exists(),
+            "Output modelling period folder should be created."
         )
-        for folder in output_modelling_period_folder.iterdir():
+        self.assertEqual(
+            len(list(output_folder.iterdir())),
+            n_periods,
+            f"Error: {n_periods} modelling periods should be created."
+        )
+        for folder in output_folder.iterdir():
             self.assertTrue((folder / "timeseries_export.csv").exists())
-        reference_folder = base_folder / "output" / "output_modelling_periods_reference"
-        for folder in output_modelling_period_folder.iterdir():
+        for folder in output_folder.iterdir():
             reference_folder_i = reference_folder / folder.name
             for file in folder.iterdir():
                 df_result = pd.read_csv(file)
                 df_ref = pd.read_csv(reference_folder_i / file.name)
                 pd.testing.assert_frame_equal(df_result, df_ref, atol=A_TOL, rtol=R_TOL)
-        # Also compare the combined timeseries_export.csv
-        df_result = pd.read_csv(base_folder / "output" / "timeseries_export.csv")
-        df_ref = pd.read_csv(base_folder / "output" / "timeseries_export_reference.csv")
+
+    def compare_csv_file(self, output_file: Path, reference_file: Path):
+        """Compare the main csv output file in output and reference folder."""
+        df_result = pd.read_csv(output_file)
+        df_ref = pd.read_csv(reference_file)
         pd.testing.assert_frame_equal(df_result, df_ref, atol=A_TOL, rtol=R_TOL)
+
+    def compare_xml_files(self, output_folder: Path, reference_folder: Path, n_periods: int):
+        """Compare the xml files in output and reference subfolders."""
+        self.assertTrue(
+            output_folder.exists(),
+            "Output modelling period folder should be created."
+        )
+        self.assertEqual(
+            len([f for f in output_folder.iterdir() if f.is_dir()]),
+            n_periods,
+            f"Error: {n_periods} modelling periods should be created.",
+        )
+        for folder in output_folder.iterdir():
+            if folder.is_dir():
+                self.assertTrue((folder / "timeseries_export.xml").exists())
+        compare_xml_files(output_folder, reference_folder)
+
+    def compare_xml_file(self, output_file: Path, reference_file: Path):
+        """Compare the main xml output file in output and reference folder."""
+        compare_xml_file(output_file, reference_file)
+
+    def test_running_closed_loop_csv(self):
+        """
+        Check if test model runs without problems and generates same results.
+        """
+        base_folder = Path(__file__).parent / "test_models" / "goal_programming_csv"
+        config = ClosedLoopConfig(
+            file=base_folder / "input" / "closed_loop_dates.csv",
+            round_to_dates=True
+        )
+        run_optimization_problem_closed_loop(ExampleCsv, base_folder=base_folder, config=config)
+        self.compare_csv_files(
+            output_folder=base_folder / "output" / "output_modelling_periods",
+            reference_folder=base_folder / "output" / "output_modelling_periods_reference",
+            n_periods=3
+        )
+        self.compare_csv_file(
+            output_file=base_folder / "output" / "timeseries_export.csv",
+            reference_file=base_folder / "output" / "timeseries_export_reference.csv"
+        )
+
+    def test_running_closed_loop_csv_fixed_periods(self):
+        """
+        Check if test model runs for fixed optimization periods.
+        """
+        base_folder = Path(__file__).parent / "test_models" / "goal_programming_csv"
+        output_folder = "output_fixed_periods"
+        config = ClosedLoopConfig.from_fixed_periods(
+            optimization_period=timedelta(days=3),
+            forecast_timestep=timedelta(days=2)
+        )
+        run_optimization_problem_closed_loop(
+            ExampleCsv,
+            base_folder=base_folder,
+            config=config,
+            output_folder=output_folder
+        )
+        self.compare_csv_file(
+            output_file=base_folder / output_folder / "timeseries_export.csv",
+            reference_file=base_folder / "output" / "timeseries_export_reference.csv"
+        )
 
     def test_running_closed_loop_xml(self):
         """
         Check if test model runs without problems and generates same results.
         """
         base_folder = Path(__file__).parent / "test_models" / "goal_programming_xml"
-        run_optimization_problem_closed_loop(ExampleXml, base_folder=base_folder)
-
-        output_modelling_period_folder = base_folder / "output" / "output_modelling_periods"
-        self.assertTrue(output_modelling_period_folder.exists(), "Output modelling period folder should be created.")
-        self.assertEqual(
-            len([f for f in output_modelling_period_folder.iterdir() if f.is_dir()]),
-            3,
-            "Three modelling periods should be created.",
+        config = ClosedLoopConfig(
+            file=base_folder / "input" / "closed_loop_dates.csv",
+            round_to_dates=True
         )
-        for folder in output_modelling_period_folder.iterdir():
-            if folder.is_dir():
-                self.assertTrue((folder / "timeseries_export.xml").exists())
-        reference_folder = base_folder / "output" / "output_modelling_periods_reference"
-        compare_xml_files(output_modelling_period_folder, reference_folder)
-        # Also compare the combined timeseries_export
-        compare_xml_file(
-            base_folder / "output" / "timeseries_export.xml", base_folder / "output" / "timeseries_export_reference.xml"
+        run_optimization_problem_closed_loop(ExampleXml, base_folder=base_folder, config=config)
+        self.compare_xml_files(
+            output_folder=base_folder / "output" / "output_modelling_periods",
+            reference_folder=base_folder / "output" / "output_modelling_periods_reference",
+            n_periods=3
+        )
+        self.compare_xml_file(
+            output_file=base_folder / "output" / "timeseries_export.xml",
+            reference_file=base_folder / "output" / "timeseries_export_reference.xml"
+        )
+
+    def test_running_closed_loop_xml_fixed_periods(self):
+        """
+        Check if test model runs for fixed optimization periods.
+        """
+        base_folder = Path(__file__).parent / "test_models" / "goal_programming_xml"
+        output_folder = "output_fixed_periods"
+        config = ClosedLoopConfig.from_fixed_periods(
+            optimization_period=timedelta(days=3),
+            forecast_timestep=timedelta(days=2)
+        )
+        run_optimization_problem_closed_loop(
+            ExampleXml,
+            base_folder=base_folder,
+            config=config,
+            output_folder=output_folder
+        )
+        self.compare_xml_file(
+            output_file=base_folder / output_folder / "timeseries_export.xml",
+            reference_file=base_folder / "output" / "timeseries_export_reference.xml"
         )

@@ -43,6 +43,10 @@ class TimeSeriesHandler(ABC):
         """Get the timestep of the timeseries data."""
 
     @abstractmethod
+    def get_datetimes(self) -> List[datetime.datetime]:
+        """Get the dates of the timeseries."""
+
+    @abstractmethod
     def get_datetime_range(self) -> Tuple[datetime.datetime, datetime.datetime]:
         """Get the date range of the timeseries data (min, max)."""
 
@@ -123,6 +127,9 @@ class CSVTimeSeriesFile(TimeSeriesHandler):
 
     def get_timestep(self):
         return self.data[self.date_col].diff().min()
+
+    def get_datetimes(self):
+        return self.data[self.date_col].to_list()
 
     def get_datetime_range(self):
         return self.data[self.date_col].min(), self.data[self.date_col].max()
@@ -322,6 +329,18 @@ class XMLTimeSeriesFile(TimeSeriesHandler):
             qualifier_ids,
         ) = self.get_external_id_from_series(series)
         return self.get_single_date_range(location_id, parameter_id, qualifier_ids)
+
+    def get_datetimes(self):
+        """Get the dates of all timeseries data."""
+        datetimes = set()
+        for series in self.root.findall("pi:series", ns):
+            events = series.findall("pi:event", ns)
+            for event in events:
+                event_datetime = self.__parse_date_time(event)
+                datetimes.add(event_datetime)
+        datetimes = list(datetimes)
+        datetimes.sort()
+        return datetimes
 
     def get_datetime_range(self):
         """Get the date range of the timeseries data, minimum and maximum over all series"""

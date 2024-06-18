@@ -172,30 +172,72 @@ The table could thus look like:
 After running the model, in your output folder the folder `figures` containing the figures is created.
 
 ## Closed loop runner
-To run a closed loop experiment one can use the `run_optimization_problem_closed_loop` function from `run_closed_loop`.
-This function is a drop-in replacement for the `run_optimization_problem` of rtc-tools. The user only needs to specify the `closed_loop_dates.csv` in the input folder of the optimization problem.
+
+To run a closed loop experiment
+one can use the `run_optimization_problem_closed_loop` function
+from `rtctools_interface.closed_loop.runner`.
+This function is a drop-in replacement for the `run_optimization_problem` of rtc-tools.
+The user needs to specify a `ClosedLoopConfig` configuration
+from `rtctools_interface.closed_loop.config`
+to specify the time ranges for which to subsequentially solve the optimization problem.
 
 ### Setup
-Import `run_optimization_problem_closed_loop` with:
-```python
-from rtctools_interface import run_optimization_problem_closed_loop
-```
-Add a table named `closed_loop_dates.csv` to the input folder of your optimization problem. The table should contain two columns: `start_date` and `end_date`.
-Each row of the table corresponds to one modelling period. 
 
-Example table `closed_loop_dates.csv`:
+Import `ClosedLoopConfig` and `run_optimization_problem_closed_loop` with:
+
+```python
+from rtctools_interface.closed_loop.config import ClosedLoopConfig
+from rtctools_interface.closed_loop.runner import run_optimization_problem_closed_loop
+```
+
+A `ClosedLoopConfig` configuration can be created from a csv file or
+from a given forecast timestep (time between each time range)
+and optimization period (duration of each time range).
+An option `round_to_dates` can be used to round the start and end time of each range to a date,
+i.e. the start time is rounded to the start of the day
+and the end time is rounded to the end of a day.
+Examples of creating a configuration are given below.
+
+```python
+from datetime import timedelta
+
+from rtctools_interface.closed_loop.config import ClosedLoopConfig
+
+config_from_file = ClosedLoopConfig(
+    file="path/to/closed_loop_dates.csv",
+    round_to_dates=True
+)
+
+config_from_fixed_periods = ClosedLoopConfig.from_fixed_periods(
+    optimization_period=timedelta(days=3),
+    forecast_timestep=timedelta(days=2)
+)
+```
+
+The CSV file `closed_loop_dates.csv` has two columns `start_date` and `end_date`
+and looks as follows.
+
 ```
 start_date, end_date
 2024-05-19, 2024-05-23
 2024-05-23, 2024-05-25
 ```
-With this table rtc-tools will run two optimization problems (modelling periods): one with the data from 2024-05-19 upto and including 2024-05-23 and one from 2024-05-23 upto and including 2024-05-25. 
-The `run_optimization_problem_closed_loop` will automatically set the final results from the previous as initial conditions of the next run. Note that this happens for:
-- All variables available at the first time step in original timeseries_import, but not available at any timestep in the modelling period.
+
+The `run_optimization_problem_closed_loop` will solve the optimization problem
+for each time range subseqentually.
+It will use the final results from the previous run to set the initial values of the next run.
+Note that this happens for:
+
+- All variables available at the first time step in original timeseries_import,
+    but not available at any timestep in the modelling period.
 - All variables in the `initial_state.csv` (if the csv_mixin is used).
 
 ### Notes
-- The first start_date in your `closed_loop_dates.csv` should be equal to the start_date of your timeseries_import.
-- The different horizons should overlap with at least one day (to allow retrieving and setting initial values). An overlap of more days is allowed.
-- Currently only a single timestep is copied as an initial value.
-- The closed_loop runner only works in combination with the CSVMixin or the PIMixin. The CDFMixin is not supported.
+
+- The start time of the first time range should coincide
+    with the start time of the input timeseries.
+- The start time of the next time range should be less or equal
+    to the end time of the current time range.
+- Currently, only the initial values of the first time step in a given time range are set.
+- The closed_loop runner only works in combination with the CSVMixin or the PIMixin.
+    The CDFMixin is not supported.

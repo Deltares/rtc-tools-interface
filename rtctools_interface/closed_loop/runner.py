@@ -72,6 +72,10 @@ def _get_optimization_ranges(
             forecast_timestep=config.forecast_timestep,
             optimization_period=config.optimization_period,
         )
+    else:
+        raise ValueError(
+            "The closed-loop configuration should have either a file or optimization_period set."
+        )
     if config.round_to_dates:
         optimization_ranges = opt_ranges.round_datetime_ranges_to_days(optimization_ranges)
     return optimization_ranges
@@ -85,19 +89,14 @@ def run_optimization_problem_closed_loop(
     config: ClosedLoopConfig = None,
     **kwargs,
 ):
-    """Runs an optimization problem in closed loop mode.
-    This function is a drop-in replacement for the run_optimization_problem of rtc-tools. The user
-    needs to specify a closed_loop_dates.csv in the input folder of the optimization problem. This
-    CSV file should contain two columns: start_date and end_date, each row corresponding to one
-    modelling period. The function will run optimization problems for each modelling period specified
-    in the CSV file, setting the final results from the previous run as initial conditions for the next.
-    See the readme.md for more details.
+    """
+    Runs an optimization problem in closed loop mode.
 
-    Notes:
-        - The first start_date in your closed_loop_dates.csv should be equal to the start_date of
-          your timeseries_import.
-        - The different horizons should overlap with at least one day to allow retrieving and setting
-          initial values. More days of overlap are allowed.
+    This function is a drop-in replacement for the run_optimization_problem of rtc-tools.
+    The user needs to specify a closed-loop configuration that describes the time ranges
+    for which to subsequentially solve the optimization problem.
+    The results from the previous run will be used to set the initial values of the next run.
+    See README.md for more details.
     """
     base_folder = Path(base_folder)
     if not os.path.isabs(base_folder):

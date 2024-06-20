@@ -76,6 +76,8 @@ class CSVTimeSeriesFile(TimeSeriesHandler):
         self.data = pd.DataFrame()
         self.input_folder = input_folder
         self.csv_delimiter = csv_delimiter
+        self.data_col = None
+        self.initial_state = None
         self.read(timeseries_import_basename, initial_state_base_name)
 
     def read(self, file_name: str, initial_state_base_name=None):
@@ -172,6 +174,10 @@ class XMLTimeSeriesFile(TimeSeriesHandler):
         self.input_folder = input_folder
         self.pi_binary_timeseries = False
         self.pi_validate_timeseries = True
+        self.data_config = None
+        self.pi_timeseries = None
+        self.root = None
+        self.forecast_date_in_header = None
         self.read(timeseries_import_basename)
 
     def read(self, file_name: str):

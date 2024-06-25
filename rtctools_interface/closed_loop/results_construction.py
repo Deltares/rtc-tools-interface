@@ -10,6 +10,18 @@ from rtctools.data import pi
 logger = logging.getLogger("rtctools")
 
 
+def _get_variables_from_pi(data_config: rtc.DataConfig, timeseries: pi.Timeseries):
+    """Get all variables of a PI timeseries that are in the data configuration."""
+    variables = []
+    for var, _ in timeseries.items():
+        try:
+            data_config.pi_variable_ids(var)
+            variables.append(var)
+        except KeyError:
+            pass
+    return variables
+
+
 def combine_xml_exports(output_base_path: Path, original_input_timeseries_path: Path, write_csv_out: bool = False):
     """Combine the xml exports of multiple periods into a single xml file."""
     logger.info("Combining XML exports.")
@@ -24,8 +36,9 @@ def combine_xml_exports(output_base_path: Path, original_input_timeseries_path: 
     ts_export = pi.Timeseries(
         data_config=dataconfig, folder=output_base_path / "period_0", basename="timeseries_export", binary=False
     )  # Use the first timeseries export as a starting point for the combined timeseries export.
-    ts_export._Timeseries__path_xml = os.path.join(output_base_path.parent, "timeseries_export.xml")
     ts_export.resize(orig_start_datetime, orig_end_datetime)
+
+    variables = _get_variables_from_pi(data_config=dataconfig, timeseries=ts_export)
 
     i = 0
     while os.path.isfile(os.path.join(output_base_path, f"period_{i}", "timeseries_export.xml")):
@@ -38,7 +51,7 @@ def combine_xml_exports(output_base_path: Path, original_input_timeseries_path: 
         all_times = ts_import_orig.times  # Workaround to map indices to times, as ts_export does
         # not contain all times. TODO Check whether the assumption that these times map to
         # the correct indices for ts_export always holds.
-        for loc_par in dataconfig._DataConfig__location_parameter_ids:
+        for loc_par in variables:
             try:
                 current_values = ts_export.get(loc_par)
                 new_values = ts_export_step.get(loc_par)
@@ -60,12 +73,12 @@ def combine_xml_exports(output_base_path: Path, original_input_timeseries_path: 
             combined_values[start_new_data_index : start_new_data_index + len(new_values)] = new_values  # noqa
             ts_export.set(loc_par, combined_values)
         i += 1
-    ts_export.write()
+    ts_export.write(output_folder=output_base_path.parent, output_filename="timeseries_export")
 
     if write_csv_out:
         data = pd.DataFrame()
         data["date"] = all_times
-        for timeseries_id in dataconfig._DataConfig__location_parameter_ids:
+        for timeseries_id in variables:
             try:
                 values = ts_export.get(timeseries_id)
             except KeyError:

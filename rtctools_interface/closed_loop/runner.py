@@ -119,7 +119,6 @@ def run_optimization_problem_closed_loop(
 
     if issubclass(optimization_problem_class, PIMixin):
         original_import = XMLTimeSeriesFile(original_input_folder)
-        original_import.set_reference_data(copy.deepcopy(original_import))
     elif issubclass(optimization_problem_class, CSVMixin):
         original_import = CSVTimeSeriesFile(original_input_folder)
     else:

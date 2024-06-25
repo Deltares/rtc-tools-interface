@@ -1,11 +1,13 @@
-import copy
+import bisect
 import datetime
 import logging
 from abc import ABC, abstractmethod
-import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing import List, Optional, Tuple
+
 import pandas as pd
+import numpy as np
+
 from rtctools.data import pi
 from rtctools.data import rtc
 from rtctools.data import csv
@@ -33,10 +35,6 @@ class TimeSeriesHandler(ABC):
     @abstractmethod
     def write(self, file_path: Path) -> None:
         """Write the timeseries data to a file."""
-
-    def set_reference_data(self, reference_data: "TimeSeriesHandler"):
-        """Set the reference TimeSeriesHandler. Only relevant for XMLTimeSeriesFile.
-        Required when setting initial values for variables that are not in the modelling period data range."""
 
     @abstractmethod
     def get_timestep(self) -> datetime.timedelta:
@@ -160,12 +158,6 @@ class CSVTimeSeriesFile(TimeSeriesHandler):
 class XMLTimeSeriesFile(TimeSeriesHandler):
     """ "Timeseries handler for xml files"""
 
-    # Whether the timeseries data has a forecast date in the header.
-    forecast_date_in_header = False
-
-    def __parse_date_time(self, el):
-        return datetime.datetime.strptime(el.get("date") + " " + el.get("time"), "%Y-%m-%d %H:%M:%S")
-
     def __init__(
         self,
         input_folder: Path,
@@ -176,8 +168,6 @@ class XMLTimeSeriesFile(TimeSeriesHandler):
         self.pi_validate_timeseries = True
         self.data_config = None
         self.pi_timeseries = None
-        self.root = None
-        self.forecast_date_in_header = None
         self.read(timeseries_import_basename)
 
     def read(self, file_name: str):
@@ -191,265 +181,54 @@ class XMLTimeSeriesFile(TimeSeriesHandler):
             binary=self.pi_binary_timeseries,
             pi_validate_times=self.pi_validate_timeseries,
         )
-        tree = self.pi_timeseries._Timeseries__tree
-        self.root = tree.getroot()
-        if self.root is None:
-            raise ValueError("No data to read.")
-        self.set_forecast_date()
-
-    def set_forecast_date(self):
-        """Set the internal attribute `forecast_date` of the timeseries data.
-
-        The forecast date is set to the first event date of the first series
-        if no forecast date is present in the header."""
-        first_series = self.root.find("pi:series", ns)
-        first_header = first_series.find("pi:header", ns)
-        forecast_date_element = first_header.find("pi:forecastDate", ns)
-        if forecast_date_element is not None:
-            self.forecast_date = self.__parse_date_time(forecast_date_element)
-            self.forecast_date_in_header = True
-        else:
-            first_event = first_series.find("pi:event", ns)
-            self.forecast_date = self.__parse_date_time(first_event)
-            self.forecast_date_in_header = False
+        self.forecast_date = self.pi_timeseries.forecast_datetime
 
     def is_set(self, internal_id):
         """Check whether the variable exists in the timeseries data and whether it has a value at at least
         one of time steps."""
-        location_id, parameter_id, qualifier_id = self.get_external_id_from_internal_id(internal_id)
-        for series in self.root.findall("pi:series", ns):
-            if (
-                location_id,
-                parameter_id,
-                qualifier_id,
-            ) == self.get_external_id_from_series(series):
-                events = series.findall("pi:event", ns)
-                for event in events:
-                    if event.get("value") is not None:
-                        return True
-        return False
+        try:
+            var: np.ndarray = self.pi_timeseries.get(variable=internal_id)
+            return not np.isnan(var).all()
+        except KeyError:
+            return False
 
-    def get_internal_id(self, series):
-        """Get the internal id of a series element."""
-        pi_header = series.find("pi:header", ns)
-        return self.data_config.variable(pi_header)
-
-    def get_external_id_from_internal_id(self, internal_id):
-        """Get the external id of a series element. Returns a tuple with three elements: location, parameter
-        and qualifier ID's."""
-        return self.data_config.pi_variable_ids(internal_id)
+    def _is_in_dataconfig(self, internal_id):
+        """Check if an internal id is in the data configuration."""
+        try:
+            self.data_config.pi_variable_ids(internal_id)
+            return True
+        except KeyError:
+            return False
 
     def get_all_internal_ids(self):
         """Get all internal id's of the timeseries data. Only returns the id's that are also in the dataconfig."""
-        all_ids = [self.get_internal_id(series) for series in self.root.findall("pi:series", ns)]
-        return [id for id in all_ids if ":" not in id]  # Variables that contain ":"  are not in the dataconfig.
-
-    def set_new_forecast_date(self, forecast_date: datetime.datetime):
-        for series in self.root.findall("pi:series", ns):
-            header = series.find("pi:header", ns)
-            start_date, end_date = self.get_single_date_range_from_series(series)
-            if start_date <= forecast_date <= end_date:
-                header.find("pi:forecastDate", ns).attrib = {
-                    "date": forecast_date.strftime("%Y-%m-%d"),
-                    "time": forecast_date.strftime("%H:%M:%S"),
-                }
-            else:
-                raise ValueError("Forecast date is not within the date range of the timeseries data.")
+        all_ids = [var for var, _ in self.pi_timeseries.items() if self._is_in_dataconfig(var)]
+        return all_ids
 
     def select_time_range(self, start_date: datetime.datetime, end_date: datetime.datetime):
-        assert isinstance(start_date, datetime.datetime) and isinstance(
-            end_date, datetime.datetime
-        ), "Dates must be datetime objects"
-        for series in self.root.findall("pi:series", ns):
-            new_start_date, new_end_date = datetime.datetime.max, datetime.datetime.min
-            events = series.findall("pi:event", ns)
-            for event in events:
-                event_datetime = self.__parse_date_time(event)
-                if event_datetime < start_date or event_datetime > end_date:
-                    series.remove(event)
-                    continue
-                if event_datetime < new_start_date:
-                    new_start_date = event_datetime
-                if event_datetime > new_end_date:
-                    new_end_date = event_datetime
-            start_date_attrib = {
-                "date": new_start_date.strftime("%Y-%m-%d"),
-                "time": new_start_date.strftime("%H:%M:%S"),
-            }
-            end_date_attrib = {
-                "date": new_end_date.strftime("%Y-%m-%d"),
-                "time": new_end_date.strftime("%H:%M:%S"),
-            }
-            series.find("pi:header", ns).find("pi:startDate", ns).attrib = start_date_attrib
-            series.find("pi:header", ns).find("pi:endDate", ns).attrib = end_date_attrib
-            if self.forecast_date_in_header:
-                series.find("pi:header", ns).find("pi:forecastDate", ns).attrib = start_date_attrib
-            if not series.findall("pi:event", ns):
-                self.root.remove(series)
-                logger.warning("Removed series with no events.")
-            self.set_forecast_date()
+        times = self.pi_timeseries.times
+        i_start = bisect.bisect_left(times, start_date)
+        i_end = bisect.bisect_right(times, end_date) - 1
+        self.pi_timeseries.resize(start_datetime=times[i_start], end_datetime=times[i_end])
+        self.pi_timeseries.times = times[i_start:i_end + 1]
+        self.pi_timeseries.forecast_datetime = times[i_start]
+        self.forecast_date = times[i_start]
 
     def write(self, file_path: Path, file_name: str = "timeseries_import"):
-        tree = ET.ElementTree(self.root)
-        tree.write((file_path / file_name).with_suffix(".xml"))
-
-    def get_external_id_from_series(self, series) -> Tuple[str, str, List[str]]:
-        header = series.find("pi:header", ns)
-        locationId = header.find("pi:locationId", ns).text
-        parameterId = header.find("pi:parameterId", ns).text
-        qualifier_ids = []
-        qualifiers_els = header.findall("pi:qualifierId", ns)
-        for qualifier in qualifiers_els:
-            qualifier_ids.append(qualifier.text)
-        return locationId, parameterId, qualifier_ids
-
-    def get_single_date_range(self, locationId, paramterId, qualifier_ids):
-        """Get the date range of the timeseries data for a single location and parameter"""
-        min_date = datetime.datetime.max
-        max_date = datetime.datetime.min
-        for series in self.root.findall("pi:series", ns):
-            if (
-                locationId,
-                paramterId,
-                qualifier_ids,
-            ) == self.get_external_id_from_series(series):
-                events = series.findall("pi:event", ns)
-                for event in events:
-                    event_datetime = self.__parse_date_time(event)
-                    if event_datetime < min_date:
-                        min_date = event_datetime
-                    if event_datetime > max_date:
-                        max_date = event_datetime
-        if min_date == datetime.datetime.max:
-            raise ValueError(
-                "No data for locationId {},  parameterId {} and qualifierIds {}".format(
-                    locationId, paramterId, qualifier_ids
-                )
-            )
-        return min_date, max_date
-
-    def get_single_date_range_from_series(self, series):
-        (
-            location_id,
-            parameter_id,
-            qualifier_ids,
-        ) = self.get_external_id_from_series(series)
-        return self.get_single_date_range(location_id, parameter_id, qualifier_ids)
+        self.pi_timeseries.write(output_folder=file_path, output_filename=file_name)
 
     def get_datetimes(self):
         """Get the dates of all timeseries data."""
-        datetimes = set()
-        for series in self.root.findall("pi:series", ns):
-            events = series.findall("pi:event", ns)
-            for event in events:
-                event_datetime = self.__parse_date_time(event)
-                datetimes.add(event_datetime)
-        datetimes = list(datetimes)
-        datetimes.sort()
-        return datetimes
+        return self.pi_timeseries.times
 
     def get_datetime_range(self):
         """Get the date range of the timeseries data, minimum and maximum over all series"""
-        min_date = datetime.datetime.max
-        max_date = datetime.datetime.min
-        for series in self.root.findall("pi:series", ns):
-            events = series.findall("pi:event", ns)
-            for event in events:
-                event_datetime = self.__parse_date_time(event)
-                if event_datetime < min_date:
-                    min_date = event_datetime
-                if event_datetime > max_date:
-                    max_date = event_datetime
-        return min_date, max_date
+        times = self.pi_timeseries.times
+        return times[0], times[-1]
 
     def get_timestep(self):
         """Get the timestep of the timeseries data, raise error if different stepsizes"""
-        timestep = None
-        for series in self.root.findall("pi:series", ns):
-            events = series.findall("pi:event", ns)
-            for i, event in enumerate(events):
-                if i == 0:
-                    continue
-                event_datetime = self.__parse_date_time(event)
-                previous_event_datetime = self.__parse_date_time(events[i - 1])
-                if timestep is None:
-                    timestep = event_datetime - previous_event_datetime
-                elif timestep != event_datetime - previous_event_datetime:
-                    raise ValueError("Different timesteps in timeseries data.")
-        return timestep
-
-    def set_reference_data(self, reference_data):
-        """Set the the reference XMLTimeSeriesFile object to use for creating new series."""
-        self._reference_data = reference_data
-
-    def get_series(
-        self,
-        location_id: str,
-        parameter_id: str,
-        qualifier_ids: List[str],
-        from_reference=False,
-    ) -> ET.Element:
-        """Get the XML series element for a location and parameter.
-        If from_reference is True, the series is taken from the reference data."""
-        if from_reference:
-            if hasattr(self, "_reference_data"):
-                root = self._reference_data.root
-            else:
-                raise ValueError("No reference data available.")
-        elif hasattr(self, "root") and self.root is not None:
-            root = self.root
-        else:
-            raise ValueError("No data to select from, use read first.")
-        for series in root.findall("pi:series", ns):
-            if (
-                location_id,
-                parameter_id,
-                qualifier_ids,
-            ) == self.get_external_id_from_series(series):
-                return series
-        raise ValueError("No series found for locationId {} and parameterId {}".format(location_id, parameter_id))
+        return self.pi_timeseries.dt
 
     def set_initial_value(self, internal_id: str, value: float):
-        location_id, parameter_id, qualifier_ids = self.get_external_id_from_internal_id(internal_id)
-        for series in self.root.findall("pi:series", ns):
-            if (
-                location_id,
-                parameter_id,
-                qualifier_ids,
-            ) == self.get_external_id_from_series(series):
-                logger.info(
-                    "Overwriting initial value for locationId {} and parameterId {} and qualifier ids {}".format(
-                        location_id, parameter_id, qualifier_ids
-                    )
-                )
-                event = series.find("pi:event", ns)
-                event.attrib["value"] = str(value)
-                return
-        else:
-            # if no series found, create a new series with just one event (based on the reference data)
-            reference_series = self.get_series(location_id, parameter_id, qualifier_ids, from_reference=True)
-            new_series = copy.deepcopy(reference_series)
-            start_date, end_date = self.get_datetime_range()
-            first_event = new_series.find("pi:event", ns)
-            if first_event is None:
-                raise ValueError("No event found in reference data.")
-            first_event.attrib["value"] = str(value)
-            first_event.attrib["date"] = start_date.strftime("%Y-%m-%d")
-            first_event.attrib["time"] = start_date.strftime("%H:%M:%S")
-            header = new_series.find("pi:header", ns)
-            if header is None:
-                raise ValueError("No header found in reference data.")
-            header.find("pi:startDate", ns).attrib = {
-                "date": start_date.strftime("%Y-%m-%d"),
-                "time": start_date.strftime("%H:%M:%S"),
-            }
-            header.find("pi:endDate", ns).attrib = {
-                "date": end_date.strftime("%Y-%m-%d"),
-                "time": end_date.strftime("%H:%M:%S"),
-            }
-            if self.forecast_date_in_header:
-                header.find("pi:forecastDate", ns).attrib = {
-                    "date": start_date.strftime("%Y-%m-%d"),
-                    "time": start_date.strftime("%H:%M:%S"),
-                }
-            self.root.append(new_series)
+        self.pi_timeseries.set(internal_id, [value])

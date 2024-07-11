@@ -147,7 +147,7 @@ class BaseGoal(Goal):
         if not np.isfinite(self.function_nominal):
             if isinstance(self.function_range, (list, tuple)):
                 if np.all(np.isfinite(self.function_range)):
-                    self.function_nominal = abs(self.function_range[0]) + abs(self.function_range[1]) / 2
+                    self.function_nominal = (abs(self.function_range[0]) + abs(self.function_range[1])) / 2
                     return
             self.function_nominal = 1.0
             logger.warning("Function nominal for goal with id '%s' not specified, nominal is set to 1.0", self.goal_id)

@@ -10,6 +10,43 @@ from rtctools.data import pi
 logger = logging.getLogger("rtctools")
 
 
+def extend_dataframe(df: pd.DataFrame, other_df: pd.DataFrame):
+    """
+    Extend a dataframe by another dataframe.
+    
+    Rows of `df` will be overwritten or extended by
+    those of `other_df`.
+    """
+    df.set_index("time", inplace=True)
+    df.update(other_df.set_index("time"))
+    df.reset_index(inplace=True)
+
+
+def extend_timeseries(timeseries: pi.Timeseries, other_timeseries: pi.Timeseries):
+    """
+    Extend a timeseries by another timeseries.
+    
+    Variables of `timeseries` will be overwritten or extended by
+    those of `other_timeseries`.
+    """
+    start_time = min(timeseries.start_datetime, other_timeseries.start_datetime)
+    end_time = max(timeseries.end_datetime, other_timeseries.end_datetime)
+    timeseries.resize(start_datetime=start_time, end_datetime=end_time)
+    i_times = []
+    for time in other_timeseries.times:
+        try:
+            i_times.append(timeseries.times.index(time))
+        except KeyError as error:
+            message = f"Time {time} not found in given timeseries."
+            logger.error(message)
+            raise error
+    variables = [var for var, _ in timeseries.items()]
+    for var in variables:
+        values = timeseries.get(var)
+        values_to_add = other_timeseries.get(var)
+        values[i_times] = values_to_add
+
+
 def _get_variables_from_pi(data_config: rtc.DataConfig, timeseries: pi.Timeseries):
     """Get all variables of a PI timeseries that are in the data configuration."""
     variables = []

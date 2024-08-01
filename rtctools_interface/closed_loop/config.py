@@ -10,6 +10,7 @@ class ClosedLoopConfig():
         self,
         file: Path = None,
         round_to_dates: bool = False,
+        store_intermediate_results: bool = True,
     ):
         """
         Create a configuration for closed-loop optimization.
@@ -25,6 +26,8 @@ class ClosedLoopConfig():
             is rounded to just the date.
             In particular, the start time is rounded to the start of the day
             and the end time is rounded to the end of the day.
+        :param store_intermediate_results: If true, store all intermediate results
+            for each optimization period.
         """
         if file is not None:
             file = Path(file).resolve()
@@ -32,6 +35,7 @@ class ClosedLoopConfig():
         self._forecast_timestep = None
         self._optimization_period = None
         self.round_to_dates = round_to_dates
+        self.store_intermediate_results = store_intermediate_results
 
     @classmethod
     def from_fixed_periods(
@@ -39,6 +43,7 @@ class ClosedLoopConfig():
         forecast_timestep: timedelta,
         optimization_period: timedelta,
         round_to_dates: bool = False,
+        store_intermediate_results: bool = True,
     ):
         """
         Create a closed loop configuration based on fixed periods.
@@ -51,10 +56,12 @@ class ClosedLoopConfig():
                 f"The forecast timestep ({forecast_timestep}) should be less than or equal to"
                 f" the optimization period ({optimization_period})."
             )
-        config = cls()
+        config = cls(
+            round_to_dates=round_to_dates,
+            store_intermediate_results=store_intermediate_results
+        )
         config._forecast_timestep = forecast_timestep
         config._optimization_period = optimization_period
-        config.round_to_dates = round_to_dates
         return config
 
     @property

@@ -11,7 +11,9 @@ from rtctools.optimization.csv_mixin import CSVMixin
 from rtctools.util import run_optimization_problem, _resolve_folder
 from rtctools_interface.closed_loop.config import ClosedLoopConfig
 import rtctools_interface.closed_loop.optimization_ranges as opt_ranges
-from rtctools_interface.closed_loop.results_construction import combine_csv_exports, combine_xml_exports
+from rtctools_interface.closed_loop.results_construction import (
+    combine_csv_exports, combine_xml_exports, extend_dataframe, extend_timeseries,
+)
 from rtctools_interface.closed_loop.time_series_handler import XMLTimeSeriesFile, CSVTimeSeriesFile, TimeSeriesHandler
 import logging
 

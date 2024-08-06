@@ -154,7 +154,7 @@ def run_optimization_problem_closed_loop(
         modelling_period_input_folder_i = modelling_period_input_folder / modelling_period_name
         write_input_folder(modelling_period_input_folder_i, original_input_folder, timeseries_import)
 
-        logger.info(f"Run optimization for period {i}: {(str(start_time), str(end_time))}.")
+        logger.info(f"Running optimization for period {i}: {(str(start_time), str(end_time))}.")
         result = run_optimization_problem(
             optimization_problem_class,
             base_folder,
@@ -164,7 +164,13 @@ def run_optimization_problem_closed_loop(
             output_folder=modelling_period_output_folder_i,
             **kwargs,
         )
-        logger.info(f"Finished optimization for period {i}: {(str(start_time), str(end_time))}.")
+        period = f"period {i} {(str(start_time), str(end_time))}"
+        if result.solver_stats["success"]:
+            logger.info(f"Successful optimization for {period}.")
+        else:
+            message = f"Failed optimization for {period} with status '{result.solver_stats['return_status']}'."
+            logger.error(message)
+            raise Exception(message)
 
         results_previous_run = {key: result.extract_results().get(key) for key in variables_in_import}
         previous_run_datetimes = result.io.datetimes

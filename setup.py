@@ -16,6 +16,7 @@ setup(
         "pandas",
         "plotly",
         "pydantic",
+        "casadi != 3.6.6",
         "rtc-tools >= 2.7.0a3",
     ],
     tests_require=["pytest", "pytest-runner"],

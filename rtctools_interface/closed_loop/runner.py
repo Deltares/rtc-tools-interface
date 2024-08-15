@@ -1,4 +1,5 @@
 import datetime
+import json
 import os
 import copy
 from pathlib import Path
@@ -61,9 +62,7 @@ def _get_optimization_ranges(
     """Return a list of optimization periods."""
     if config.file is not None:
         datetime_range = input_timeseries.get_datetime_range()
-        optimization_ranges = opt_ranges.get_optimization_ranges_from_file(
-            config.file, datetime_range
-        )
+        optimization_ranges = opt_ranges.get_optimization_ranges_from_file(config.file, datetime_range)
     elif config.optimization_period is not None:
         datetimes = input_timeseries.get_datetimes()
         optimization_ranges = opt_ranges.get_optimization_ranges(
@@ -73,9 +72,7 @@ def _get_optimization_ranges(
             optimization_period=config.optimization_period,
         )
     else:
-        raise ValueError(
-            "The closed-loop configuration should have either a file or optimization_period set."
-        )
+        raise ValueError("The closed-loop configuration should have either a file or optimization_period set.")
     if config.round_to_dates:
         optimization_ranges = opt_ranges.round_datetime_ranges_to_days(optimization_ranges)
     return optimization_ranges
@@ -126,6 +123,17 @@ def run_optimization_problem_closed_loop(
 
     variables_in_import = original_import.get_all_internal_ids()
 
+    fixed_input_config_file = (original_input_folder / "fixed_inputs.json").resolve()
+    if not fixed_input_config_file.exists():
+        raise FileNotFoundError(
+            f"Could not find fixed inputs configuration file: {fixed_input_config_file}"
+            "Create a file with a list of strings that represent the fixed inputs (can be an empty list)."
+        )
+    with open(fixed_input_config_file, "r") as file:
+        fixed_input_series = json.load(file)
+    if not isinstance(fixed_input_series, list) and all(isinstance(item, str) for item in fixed_input_series):
+        raise ValueError("Fixed input config file should be a list of strings (or an empty list).")
+
     modelling_period_input_folder = base_folder / "input_modelling_periods"
     if modelling_period_input_folder.exists():
         shutil.rmtree(modelling_period_input_folder)
@@ -172,12 +180,10 @@ def run_optimization_problem_closed_loop(
             logger.error(message)
             raise Exception(message)
 
-        results_previous_run = {key: result.extract_results().get(key) for key in variables_in_import}
+        results_previous_run = {
+            key: result.extract_results().get(key) for key in variables_in_import if key not in fixed_input_series
+        }
         previous_run_datetimes = result.io.datetimes
-        if len(results_previous_run) != len(variables_in_import):
-            logger.warning("Could not find the results for all input variables.")
-            logger.warning("Missing variables: " + str(set(variables_in_import) - set(results_previous_run.keys())))
-            raise ValueError("Could not find the results for all input variables.")
 
     logger.info("Finished all optimization runs.")
     if issubclass(optimization_problem_class, PIMixin):

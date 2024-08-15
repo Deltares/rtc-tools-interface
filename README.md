@@ -189,7 +189,19 @@ Import `ClosedLoopConfig` and `run_optimization_problem_closed_loop` with:
 from rtctools_interface.closed_loop.config import ClosedLoopConfig
 from rtctools_interface.closed_loop.runner import run_optimization_problem_closed_loop
 ```
+#### Fixed inputs
+Create the file `fixed_inputs.json`, in which you specify which variables in your
+timeseries import are what we call 'fixed_inputs'. They are timeseries that the closed
+loop runner should simply copy as they are, even if they contain only NaNs in a modelling
+period.
 
+The variables that are not mentioned in this list of fixed_inputs, and have only NaN's
+in a modelling period, are considered being 'initial values'. The closed loop runner will set 
+the first timestep of each modelling period with the corresponding calculated value from the 
+previous modelling period.
+
+
+#### Closed loop config
 A `ClosedLoopConfig` configuration can be created from a csv file or
 from a given forecast timestep (time between each time range)
 and optimization period (duration of each time range).

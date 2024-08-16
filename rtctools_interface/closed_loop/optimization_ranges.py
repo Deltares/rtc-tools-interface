@@ -49,7 +49,7 @@ def get_optimization_ranges_from_file(
         min(closed_loop_dates["start_date"]).date() == model_time_range[0].date()
     ), (
         "The start day of the first optimization run is not equal"
-        " to the start day of the timeseries import."
+        " to the start day of the forecast date (or first timestep)."
     )
     assert (
         max(closed_loop_dates["end_date"]).date() <= model_time_range[1].date()

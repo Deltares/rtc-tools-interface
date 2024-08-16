@@ -28,8 +28,15 @@ def combine_xml_exports(output_base_path: Path, original_input_timeseries_path: 
     dataconfig = rtc.DataConfig(folder=original_input_timeseries_path)
 
     ts_import_orig = pi.Timeseries(
-        data_config=dataconfig, folder=original_input_timeseries_path, basename="timeseries_import", binary=False
+        data_config=dataconfig,
+        folder=original_input_timeseries_path,
+        basename="timeseries_import",
+        binary=False,
     )
+    if ts_import_orig.forecast_datetime > ts_import_orig.start_datetime:
+        logger.info("Timeseries export will start at original forecast date, disregarding data before forecast date.")
+        ts_import_orig.resize(ts_import_orig.forecast_datetime, ts_import_orig.end_datetime)
+        ts_import_orig.times = ts_import_orig.times[ts_import_orig.times.index(ts_import_orig.forecast_datetime):]
     orig_start_datetime = ts_import_orig.start_datetime
     orig_end_datetime = ts_import_orig.end_datetime
 

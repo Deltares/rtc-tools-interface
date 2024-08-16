@@ -170,6 +170,11 @@ class XMLTimeSeriesFile(TimeSeriesHandler):
         self.pi_timeseries = None
         self.read(timeseries_import_basename)
 
+        if self.get_datetime_range()[0] < self.forecast_date:
+            logger.warning("Currently, the closed loop runner does support data before the forecast date.")
+            logger.warning("Removing data before forecast date.")
+            self.select_time_range(self.forecast_date, self.pi_timeseries.times[-1])
+
     def read(self, file_name: str):
         """Read the timeseries data from a file."""
         timeseries_import_basename = file_name
@@ -215,6 +220,8 @@ class XMLTimeSeriesFile(TimeSeriesHandler):
         self.forecast_date = times[i_start]
 
     def write(self, file_path: Path, file_name: str = "timeseries_import"):
+        # By setting make_new_file headers will be recreated, neceesary for writing new forecast date
+        self.pi_timeseries.make_new_file = True
         self.pi_timeseries.write(output_folder=file_path, output_filename=file_name)
 
     def get_datetimes(self):

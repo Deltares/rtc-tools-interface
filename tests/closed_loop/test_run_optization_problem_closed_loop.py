@@ -20,7 +20,7 @@ R_TOL = 0.1
 
 
 def compare_xml_file(file_result: Path, file_ref: Path):
-    """Compare two timeseries_export files elementwise."""	
+    """Compare two timeseries_export files elementwise."""
     tree_result = ET.parse(file_result)
     tree_ref = ET.parse(file_ref)
     series_result = tree_result.findall("pi:series", ns)

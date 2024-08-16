@@ -142,39 +142,90 @@ class TestClosedLoop(TestCase):
         """
         Check if test model runs without problems and generates same results.
         """
+        test_cases = [
+            {
+                "description": "without forecast date",
+                "input_folder": "input",
+            },
+            {
+                "description": "with forecast date unequal to first date",
+                "input_folder": "input_with_forecast_date",
+            },
+            {
+                "description": "with forecast date equal to first date",
+                "input_folder": "input_with_forecast_date_equal_first_date",
+            }
+        ]
+
         base_folder = Path(__file__).parent / "test_models" / "goal_programming_xml"
-        config = ClosedLoopConfig(
-            file=base_folder / "input" / "closed_loop_dates.csv",
-            round_to_dates=True
-        )
-        run_optimization_problem_closed_loop(ExampleXml, base_folder=base_folder, config=config)
-        self.compare_xml_files(
-            output_folder=base_folder / "output" / "output_modelling_periods",
-            reference_folder=base_folder / "output" / "output_modelling_periods_reference",
-            n_periods=3
-        )
-        self.compare_xml_file(
-            output_file=base_folder / "output" / "timeseries_export.xml",
-            reference_file=base_folder / "output" / "timeseries_export_reference.xml"
-        )
+
+        for case in test_cases:
+            with self.subTest(case["description"]):
+                config = ClosedLoopConfig(
+                    file=base_folder / case["input_folder"] / "closed_loop_dates.csv",
+                    round_to_dates=True
+                )
+                run_optimization_problem_closed_loop(
+                    ExampleXml,
+                    base_folder=base_folder,
+                    config=config,
+                    input_folder=case["input_folder"]
+                )
+
+                self.compare_xml_files(
+                    output_folder=base_folder / "output" / "output_modelling_periods",
+                    reference_folder=base_folder / "output" / "output_modelling_periods_reference",
+                    n_periods=3
+                )
+                self.compare_xml_file(
+                    output_file=base_folder / "output" / "timeseries_export.xml",
+                    reference_file=base_folder / "output" / "timeseries_export_reference.xml"
+                )
 
     def test_running_closed_loop_xml_fixed_periods(self):
         """
         Check if test model runs for fixed optimization periods.
         """
+        test_cases = [
+            {
+                "description": "without forecast date",
+                "output_folder": "output_fixed_periods",
+                "input_folder": "input",
+                "optimization_period": timedelta(days=3),
+                "forecast_timestep": timedelta(days=2)
+            },
+            {
+                "description": "with forecast date unequal to first date",
+                "output_folder": "output_fixed_periods",
+                "input_folder": "input_with_forecast_date",
+                "optimization_period": timedelta(days=3),
+                "forecast_timestep": timedelta(days=2)
+            },
+            {
+                "description": "with forecast date equal to first date",
+                "output_folder": "output_fixed_periods",
+                "input_folder": "input_with_forecast_date_equal_first_date",
+                "optimization_period": timedelta(days=3),
+                "forecast_timestep": timedelta(days=2)
+            }
+        ]
+
         base_folder = Path(__file__).parent / "test_models" / "goal_programming_xml"
-        output_folder = "output_fixed_periods"
-        config = ClosedLoopConfig.from_fixed_periods(
-            optimization_period=timedelta(days=3),
-            forecast_timestep=timedelta(days=2)
-        )
-        run_optimization_problem_closed_loop(
-            ExampleXml,
-            base_folder=base_folder,
-            config=config,
-            output_folder=output_folder
-        )
-        self.compare_xml_file(
-            output_file=base_folder / output_folder / "timeseries_export.xml",
-            reference_file=base_folder / "output" / "timeseries_export_reference.xml"
-        )
+
+        for case in test_cases:
+            with self.subTest(case["description"]):
+                config = ClosedLoopConfig.from_fixed_periods(
+                    optimization_period=case["optimization_period"],
+                    forecast_timestep=case["forecast_timestep"]
+                )
+                run_optimization_problem_closed_loop(
+                    ExampleXml,
+                    base_folder=base_folder,
+                    config=config,
+                    output_folder=case["output_folder"],
+                    input_folder=case["input_folder"]
+                )
+                self.compare_xml_file(
+                    output_file=base_folder / case["output_folder"] / "timeseries_export.xml",
+                    reference_file=base_folder / "output" / "timeseries_export_reference.xml"
+                )

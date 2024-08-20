@@ -87,7 +87,7 @@ def run_optimization_problem_closed_loop(
     config: Optional[ClosedLoopConfig] = None,
     modelling_period_input_folder: Optional[str] = None,
     **kwargs,
-):
+) -> dict:
     """
     Runs an optimization problem in closed loop mode.
 

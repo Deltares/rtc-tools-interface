@@ -1,11 +1,13 @@
+import copy
 import datetime
 import json
+import logging
 import os
-import copy
-from pathlib import Path
 import shutil
 import sys
+from pathlib import Path
 from typing import List, Optional
+
 from rtctools.data.pi import DiagHandler
 from rtctools.optimization.pi_mixin import PIMixin
 from rtctools.optimization.csv_mixin import CSVMixin
@@ -14,7 +16,6 @@ from rtctools_interface.closed_loop.config import ClosedLoopConfig
 import rtctools_interface.closed_loop.optimization_ranges as opt_ranges
 from rtctools_interface.closed_loop.results_construction import combine_csv_exports, combine_xml_exports
 from rtctools_interface.closed_loop.time_series_handler import XMLTimeSeriesFile, CSVTimeSeriesFile, TimeSeriesHandler
-import logging
 
 logger = logging.getLogger("rtctools")
 
@@ -83,7 +84,8 @@ def run_optimization_problem_closed_loop(
     base_folder="..",
     log_level=logging.INFO,
     profile=False,
-    config: ClosedLoopConfig = None,
+    config: Optional[ClosedLoopConfig] = None,
+    modelling_period_input_folder: Optional[str] = None,
     **kwargs,
 ):
     """
@@ -134,7 +136,8 @@ def run_optimization_problem_closed_loop(
     if not isinstance(fixed_input_series, list) and all(isinstance(item, str) for item in fixed_input_series):
         raise ValueError("Fixed input config file should be a list of strings (or an empty list).")
 
-    modelling_period_input_folder = base_folder / "input_modelling_periods"
+    if modelling_period_input_folder is None:
+        modelling_period_input_folder = base_folder / "input_modelling_periods"
     if modelling_period_input_folder.exists():
         shutil.rmtree(modelling_period_input_folder)
     modelling_period_input_folder.mkdir(exist_ok=True)

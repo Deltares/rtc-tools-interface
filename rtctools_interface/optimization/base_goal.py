@@ -33,6 +33,7 @@ class BaseGoal(Goal):
         self,
         optimization_problem: OptimizationProblem,
         state,
+        *,
         goal_type="minimization_path",
         function_min=np.nan,
         function_max=np.nan,

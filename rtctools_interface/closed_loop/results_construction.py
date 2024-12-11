@@ -36,8 +36,8 @@ def combine_xml_exports(
     )
     if ts_import_orig.forecast_datetime > ts_import_orig.start_datetime:
         logger.info(
-            "Timeseries export will start at original forecast date, "
-            "disregarding data before forecast date."
+            "Timeseries export will start at original forecast date, disregarding data before"
+            " forecast date."
         )
         ts_import_orig.resize(ts_import_orig.forecast_datetime, ts_import_orig.end_datetime)
         ts_import_orig.times = ts_import_orig.times[
@@ -67,6 +67,21 @@ def combine_xml_exports(
         all_times = ts_import_orig.times  # Workaround to map indices to times, as ts_export does
         # not contain all times. TODO Check whether the assumption that these times map to
         # the correct indices for ts_export always holds.
+        new_times = ts_export_step.times
+        if len(new_times) <= 1:
+            logger.debug(f"Skipping model horizon {i}: only a single timestep was exported.")
+            i += 1
+            continue
+        try:
+            start_new_data_index = all_times.index(new_times[1])
+        except ValueError:
+            if all_times[-1] + ts_export.dt == new_times[0]:
+                start_new_data_index = len(all_times)
+            else:
+                raise ValueError(
+                    "Could not match the start data of the timeseries export file "
+                    + "with the end of the previous."
+                )
         for loc_par in variables:
             try:
                 current_values = ts_export.get(loc_par)
@@ -74,21 +89,10 @@ def combine_xml_exports(
             except KeyError:
                 logger.debug(f"Variable {loc_par} not found in output of model horizon: {i}")
                 continue
-            new_times = ts_export_step.times
-            try:
-                start_new_data_index = all_times.index(new_times[0])
-            except ValueError:
-                if all_times[-1] + ts_export.dt == new_times[0]:
-                    start_new_data_index = len(all_times)
-                else:
-                    raise ValueError(
-                        "Could not match the start data of the timeseries export file "
-                        + "with the end of the previous."
-                    )
             combined_values = copy.deepcopy(current_values)
-            combined_values[start_new_data_index : start_new_data_index + len(new_values)] = (
-                new_values  # noqa
-            )
+            combined_values[start_new_data_index : start_new_data_index + len(new_values[1:])] = (
+                new_values[1:]
+            )  # noqa
             ts_export.set(loc_par, combined_values)
         i += 1
     ts_export.write(output_folder=output_base_path.parent, output_filename="timeseries_export")
@@ -109,8 +113,8 @@ def combine_xml_exports(
 
 def combine_dataframes(dfs: list[pd.DataFrame], index_col: str = "time"):
     """Combine multiple dataframes with the same index column.
-    The dataframes are combined in the order they are passed,
-    with the last dataframe taking precedence in case of overlapping indices."""
+    The dataframes are combined in the order they are passed, with the last dataframe taking
+    precedence in case of overlapping indices."""
     combined_df = pd.DataFrame()
     for df in dfs:
         df.set_index(index_col, inplace=True)

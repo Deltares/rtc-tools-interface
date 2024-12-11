@@ -187,15 +187,27 @@ def run_optimization_problem_closed_loop(
         )
 
         logger.info(f"Running optimization for period {i}: {(str(start_time), str(end_time))}.")
-        result = run_optimization_problem(
-            optimization_problem_class,
-            base_folder,
-            log_level,
-            profile,
-            input_folder=modelling_period_input_folder_i,
-            output_folder=modelling_period_output_folder_i,
-            **kwargs,
-        )
+        run_number_in_fallback_list = 1
+        # Fallback mechanism: allows optimization class to request a retry
+        # run_number_in_fallback_list: 1=first attempt, 2=retry with fallback, 3=done
+        for _k in range(2):
+            if run_number_in_fallback_list < 3:
+                result = run_optimization_problem(
+                    optimization_problem_class,
+                    base_folder,
+                    log_level,
+                    profile,
+                    input_folder=modelling_period_input_folder_i,
+                    output_folder=modelling_period_output_folder_i,
+                    run_number_in_fallback_list=run_number_in_fallback_list,
+                    **kwargs,
+                )
+                if hasattr(result, "run_number_in_fallback_list"):
+                    run_number_in_fallback_list = result.run_number_in_fallback_list
+                else:
+                    run_number_in_fallback_list = 3
+                if run_number_in_fallback_list == 2:
+                    logger.info("The model failed, it will run it again with a fallback option")
         period = f"period {i} {(str(start_time), str(end_time))}"
         if result.solver_stats["success"]:
             logger.info(f"Successful optimization for {period}.")
@@ -207,11 +219,21 @@ def run_optimization_problem_closed_loop(
             logger.error(message)
             raise Exception(message)
 
-        results_previous_run = {
-            key: result.extract_results().get(key)
-            for key in variables_in_import
-            if key not in fixed_input_series
-        }
+        extracted_results = result.extract_results() or {}
+        results_previous_run = {}
+        for key in variables_in_import:
+            if key not in fixed_input_series:
+                extracted_value = extracted_results.get(key)
+                if extracted_value is not None:
+                    results_previous_run[key] = extracted_value
+                else:
+                    try:
+                        fallback_value = result.get_timeseries(key)
+                    except KeyError:
+                        fallback_value = None
+                    results_previous_run[key] = (
+                        fallback_value.values if fallback_value is not None else None
+                    )
         previous_run_datetimes = result.io.datetimes
 
     logger.info("Finished all optimization runs.")

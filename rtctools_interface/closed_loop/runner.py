@@ -183,9 +183,19 @@ def run_optimization_problem_closed_loop(
             logger.error(message)
             raise Exception(message)
 
-        results_previous_run = {
-            key: result.extract_results().get(key) for key in variables_in_import if key not in fixed_input_series
-        }
+        results_previous_run = {}
+        for key in variables_in_import:
+            if key not in fixed_input_series:
+                extracted_value = result.extract_results().get(key)
+                if extracted_value is not None:
+                    results_previous_run[key] = extracted_value
+                else:
+                    try:
+                        fallback_value = result.get_timeseries(key)
+                    except KeyError:
+                        fallback_value = None
+                    if fallback_value is not None:
+                        results_previous_run[key] = fallback_value.values
         previous_run_datetimes = result.io.datetimes
 
     logger.info("Finished all optimization runs.")

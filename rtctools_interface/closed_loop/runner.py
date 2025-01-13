@@ -166,15 +166,26 @@ def run_optimization_problem_closed_loop(
         write_input_folder(modelling_period_input_folder_i, original_input_folder, timeseries_import)
 
         logger.info(f"Running optimization for period {i}: {(str(start_time), str(end_time))}.")
-        result = run_optimization_problem(
-            optimization_problem_class,
-            base_folder,
-            log_level,
-            profile,
-            input_folder=modelling_period_input_folder_i,
-            output_folder=modelling_period_output_folder_i,
-            **kwargs,
-        )
+        run_number_in_fallback_list = 1
+        # Create a second fallback run with parameter
+        for k in range(2):
+            if run_number_in_fallback_list < 3:
+                result = run_optimization_problem(
+                optimization_problem_class,
+                base_folder,
+                log_level,
+                profile,
+                input_folder=modelling_period_input_folder_i,
+                output_folder=modelling_period_output_folder_i,
+                run_number_in_fallback_list = run_number_in_fallback_list,
+                **kwargs,
+                )
+                if hasattr(result, 'run_number_in_fallback_list'):
+                   run_number_in_fallback_list = result.run_number_in_fallback_list
+                else:
+                    run_number_in_fallback_list = 3
+                if run_number_in_fallback_list == 2:
+                    logger.info("The model failed, it will run it again a fallback option")
         period = f"period {i} {(str(start_time), str(end_time))}"
         if result.solver_stats["success"]:
             logger.info(f"Successful optimization for {period}.")

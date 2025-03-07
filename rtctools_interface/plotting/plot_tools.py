@@ -107,14 +107,14 @@ def add_buttons_to_plotly(plotly_figure):
     hide_comparison = [not comparison_run(trace.name) for trace in plotly_figure.data]
     buttons = [
         {
-            "label": "Show results from previous run",
-            "method": "update",
-            "args": [{"visible": all_names}],
-        },
-        {
             "label": "Hide results from previous run",
             "method": "update",
             "args": [{"visible": hide_comparison}],
+        },
+        {
+            "label": "Show results from previous run",
+            "method": "update",
+            "args": [{"visible": all_names}],
         },
     ]
 

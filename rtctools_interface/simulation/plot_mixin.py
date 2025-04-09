@@ -39,6 +39,16 @@ class PlotMixin(PlottingBaseMixin):
         """Tasks after optimizing."""
         super().post()
 
+        # find empty arrays in self._manual_extracted_states
+        # for these variables try to use self.get_timeseries(variable)
+        for variable in self.custom_variables:
+            if not self._manual_extracted_states[variable] or len(self._manual_extracted_states[variable]) == 0:
+                logger.debug(f"Variable {variable} has empty data collected.")
+                try:
+                    self._manual_extracted_states[variable] = self.get_timeseries(variable)
+                except KeyError:
+                    logger.warning(f"Variable {variable} not found in output of model.")
+
         timeseries_data = self.collect_timeseries_data(self.custom_variables)
         self._intermediate_results.append({"timeseries_data": timeseries_data, "priority": 0})
         current_run = self.create_plot_data_and_config([])

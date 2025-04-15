@@ -87,7 +87,7 @@ def run_optimization_problem_closed_loop(
     config: Optional[ClosedLoopConfig] = None,
     modelling_period_input_folder: Optional[str] = None,
     **kwargs,
-):
+) -> dict:
     """
     Runs an optimization problem in closed loop mode.
 
@@ -197,3 +197,4 @@ def run_optimization_problem_closed_loop(
         logger.warning(
             "Could not combine exports because the optimization problem class is not derived from PIMixin or CSVMixin."
         )
+    return result.solver_stats

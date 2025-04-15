@@ -83,15 +83,16 @@ def combine_xml_exports(output_base_path: Path, original_input_timeseries_path: 
     ts_export.write(output_folder=output_base_path.parent, output_filename="timeseries_export")
 
     if write_csv_out:
-        data = pd.DataFrame()
-        data["date"] = all_times
+        data = pd.DataFrame({"date": all_times})
+        new_columns = []
         for timeseries_id in variables:
             try:
                 values = ts_export.get(timeseries_id)
+                new_columns.append(pd.Series(values, name=timeseries_id))
             except KeyError:
                 logger.debug("Variable {} not found in output of model horizon: {}".format(timeseries_id, i))
                 continue
-            data[timeseries_id] = values
+        data = pd.concat([data] + new_columns, axis=1)
         data.round(6).to_csv(output_base_path.parent / "timeseries_export.csv", index=False)
 
 

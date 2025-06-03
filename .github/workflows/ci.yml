@@ -46,7 +46,7 @@ jobs:
           python-version: '3.9'
       - run: pip install setuptools wheel
       - run: python setup.py sdist bdist_wheel
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v3.1.3
         with:
           name: dist
           path: dist/

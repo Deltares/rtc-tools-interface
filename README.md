@@ -70,21 +70,23 @@ where $w$ is equal to the `weight` (default is 1), $r$ is equal to the `order` (
 For the range goal, rtc-tools adds the following equation to the objective function of the specified priority
 $$w\sum_t \epsilon_t^r $$
 and the following constraints
-$$  
-\begin{aligned}
-g_{low}(\epsilon_t) \leq &x_t \leq g_{up}(\epsilon_t) \quad &\forall t\\
- 0 \leq &\epsilon_t \leq 1 \quad &\forall t 
-\end{aligned}
-$$
+
+$$g_{low}(\epsilon_t) \leq x_t \leq g_{up}(\epsilon_t) \quad \forall t $$
+
+$$0 \leq \epsilon_t \leq 1 \quad \forall t $$
+
 where
-$$
-\begin{aligned}
-g_{low}(\epsilon_t) &:= (1-\epsilon_t) m_{t,target} + \epsilon_t m \\
-g_{up}(\epsilon_t)  &:= (1-\epsilon_t) M_{t,target} + \epsilon_t M 
-\end{aligned}
-$$
-and $w$ is equal to the `weight` (default is 1), $r$ is equal to the `order` (default is 2), $t$ the timestep, $x$ the selected `state`, $m_{target}$ and $M_{target}$ the lower and upper targets (`target_min` and `target_max`), $m$ and $M$ the actual bounds of $x$ (`function_min` and `function_max`). The auxiliary variable $\epsilon$ is automatically created by rtc-tools. In loose terms, the range goal tries to archieve
-$$ m_{t,target} \leq x_t \leq M_{t,target} \quad \forall t$$
+
+$$g_{low}(\epsilon_t) = (1-\epsilon_t) m_{t,target} + \epsilon_t m $$
+
+$$g_{up}(\epsilon_t)  = (1-\epsilon_t) M_{t,target} + \epsilon_t M $$
+
+and $w$ is equal to the `weight` (default is 1), $r$ is equal to the `order` (default is 2), $t$ the timestep, $x$ the selected `state`, $m_{target}$ and $M_{target}$ the lower and upper targets (`target_min` and `target_max`), $m$ and $M$ the actual bounds of $x$ (`function_min` and `function_max`). The auxiliary variable $\epsilon$ is automatically created by rtc-tools. 
+
+In loose terms, the range goal tries to archieve
+
+$$m_{t,target} \leq x_t \leq M_{t,target} \quad \forall t$$
+
 by minimizing, if any, the sum of exceedances for the timesteps. For more details on the range goal, see [Read the Docs](https://rtc-tools.readthedocs.io/en/latest/optimization/goal_programming/goals.html) of rtc-tools.
 
 

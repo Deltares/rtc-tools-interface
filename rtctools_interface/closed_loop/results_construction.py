@@ -67,7 +67,7 @@ def combine_xml_exports(output_base_path: Path, original_input_timeseries_path: 
                 continue
             new_times = ts_export_step.times
             try:
-                start_new_data_index = all_times.index(new_times[0])
+                start_new_data_index = all_times.index(new_times[1])
             except ValueError:
                 if all_times[-1] + ts_export.dt == new_times[0]:
                     start_new_data_index = len(all_times)
@@ -77,7 +77,7 @@ def combine_xml_exports(output_base_path: Path, original_input_timeseries_path: 
                         + "with the end of the previous."
                     )
             combined_values = copy.deepcopy(current_values)
-            combined_values[start_new_data_index : start_new_data_index + len(new_values)] = new_values  # noqa
+            combined_values[start_new_data_index : start_new_data_index + len(new_values[1:])] = new_values[1:]  # noqa
             ts_export.set(loc_par, combined_values)
         i += 1
     ts_export.write(output_folder=output_base_path.parent, output_filename="timeseries_export")

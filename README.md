@@ -93,7 +93,7 @@ by minimizing, if any, the sum of exceedances for the timesteps. For more detail
 #### range_rate_of_change
 The range_rate_of_change goal can be used to set a target range on ramp rate. Like the range goal, one needs to set the `target_min` and `target_max` for that. **Importantly** for the range_rate_of_change goal, the supplied values are relative to the nominal of the function. So supplying a `target_max` of `10` corresponds to the aim of having a maximum increase per timestep of 10% * `nominal`, where the nominal automatically set to `maximum rate of change`/2 or specified manually. To formulate the target of having a maximum increase and decrease by of 10% per timestep, one would set the `target_min` to `-10` and the `target_max` to `10`.
 
-The equations for the range_rate_of_change goal are almost the same as for the range goal, which can be found above. The only difference is that $x_t$ is replaced by $der(x_t)$.
+The equations for the range_rate_of_change goal are almost the same as for the range goal, which can be found above. The only difference is that $x_t$ is replaced by $\partial x_t$.
 
 ### Example goal table
 See the table below for an example content of the `goal_table.csv`.

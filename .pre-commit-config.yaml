@@ -1,0 +1,11 @@
+exclude: |
+      (?x)^(
+          .pre-commit-config.yaml|
+          versioneer.py
+      )$
+repos:
+  # Using this mirror lets us use mypyc-compiled black, which is about 2x faster
+  - repo: https://github.com/pycqa/flake8
+    rev: 3.7.8
+    hooks:
+      - id: flake8

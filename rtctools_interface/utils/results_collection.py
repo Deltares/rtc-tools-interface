@@ -160,7 +160,11 @@ class PlottingBaseMixin(ReadGoalsMixin):
     def create_plot_data_and_config(self, base_goals: list) -> PlotDataAndConfig:
         """Create the PlotDataAndConfig dict."""
         prio_independent_data: PrioIndependentData = {
-            "io_datetimes": self.io.datetimes,
+            "io_datetimes": [
+                dt
+                for idx, dt in enumerate(self.io.datetimes)
+                if self.io.times_sec[idx] in self.times()
+            ],
             "times": self.times(),
             "base_goals": base_goals,
         }

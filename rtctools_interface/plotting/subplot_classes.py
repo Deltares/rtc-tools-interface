@@ -200,10 +200,35 @@ class SubplotMatplotlib(SubplotBase):
 
     def plot_dashed_line(self, xarray, yarray, label, color="red"):
         """Given the input and output array, add dashed line plot to the subplot."""
-        self.axis.plot(xarray, yarray, "--", label=label, color=color)
+        # Create step data for implicit timesteps:
+        step_x = []
+        step_y = []
+        for i in range(len(xarray)):
+            if i == 0:
+                step_x.append(xarray[i])
+                step_y.append(yarray[i])
+            else:
+                step_x.append(xarray[i])
+                step_y.append(yarray[i-1])
+                step_x.append(xarray[i])
+                step_y.append(yarray[i])
+        self.axis.plot(step_x, step_y, "--", label=label, color=color)
 
     def plot_line(self, xarray, yarray, label, color=None, linewidth=None, linestyle=None):
-        self.axis.plot(xarray, yarray, label=label, color=color, linewidth=linewidth, linestyle=linestyle)
+        """Plot step line for implicit timesteps."""
+        # Create step data for implicit timesteps:
+        step_x = []
+        step_y = []
+        for i in range(len(xarray)):
+            if i == 0:
+                step_x.append(xarray[i])
+                step_y.append(yarray[i])
+            else:
+                step_x.append(xarray[i])
+                step_y.append(yarray[i-1])
+                step_x.append(xarray[i])
+                step_y.append(yarray[i])
+        self.axis.plot(step_x, step_y, label=label, color=color, linewidth=linewidth, linestyle=linestyle)
 
     def format_subplot(self):
         """Format the current axis and set legend and title."""
@@ -258,30 +283,66 @@ class SubplotPlotly(SubplotBase):
         return color_mapping.get(color, color)
 
     def plot_dashed_line(self, xarray, yarray, label, color="red"):
-        """Given the input and output array, add dashed line plot to the subplot."""
+        """Given the input and output array, add dashed step line plot to the subplot."""
+        # Create step data for plotly by duplicating points
+        step_x = []
+        step_y = []
+
+        for i in range(len(xarray)):
+            if i == 0:
+                # First point - just add as is
+                step_x.append(xarray[i])
+                step_y.append(yarray[i])
+            else:
+                # Add horizontal line from previous time to current time at previous value
+                step_x.append(xarray[i])
+                step_y.append(yarray[i-1])
+                # Add vertical line at current time from previous to current value
+                step_x.append(xarray[i])
+                step_y.append(yarray[i])
+
         self.figure.add_trace(
             go.Scatter(
                 legendgroup=self.i_plot,
-                x=xarray,
-                y=yarray,
+                x=step_x,
+                y=step_y,
                 name=label,
-                line={"color": self.map_color_code(color), "dash": "dot"},
+                line={"color": self.map_color_code(color), "dash": "dot", "shape": "hv"},
             ),
             row=self.row_num,
             col=self.col_num,
         )
 
     def plot_line(self, xarray, yarray, label, color=None, linewidth=None, linestyle=None):
+        """Plot step line for implicit timesteps."""
         linewidth = float(linewidth) * 1.3 if linewidth else linewidth
         linestyle = "dot" if linestyle == "dotted" else linestyle
+
+        # Create step data for plotly by duplicating points
+        step_x = []
+        step_y = []
+
+        for i in range(len(xarray)):
+            if i == 0:
+                # First point - just add as is
+                step_x.append(xarray[i])
+                step_y.append(yarray[i])
+            else:
+                # Add horizontal line from previous time to current time at previous value
+                step_x.append(xarray[i])
+                step_y.append(yarray[i-1])
+                # Add vertical line at current time from previous to current value
+                step_x.append(xarray[i])
+                step_y.append(yarray[i])
+
         self.figure.add_trace(
             go.Scatter(
                 legendgroup=self.i_plot,
                 legendgrouptitle_text=self.subplot_title,
-                x=xarray,
-                y=yarray,
+                x=step_x,
+                y=step_y,
                 name=label,
-                line={"width": linewidth, "dash": linestyle, "color": color},
+                line={"width": linewidth, "dash": linestyle, "color": color, "shape": "hv"},
             ),
             row=self.row_num,
             col=self.col_num,

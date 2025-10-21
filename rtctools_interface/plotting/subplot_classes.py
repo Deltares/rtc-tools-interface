@@ -208,8 +208,8 @@ class SubplotMatplotlib(SubplotBase):
                 step_x.append(xarray[i])
                 step_y.append(yarray[i])
             else:
-                step_x.append(xarray[i])
-                step_y.append(yarray[i-1])
+                step_x.append(xarray[i-1])
+                step_y.append(yarray[i])
                 step_x.append(xarray[i])
                 step_y.append(yarray[i])
         self.axis.plot(step_x, step_y, "--", label=label, color=color)
@@ -224,8 +224,8 @@ class SubplotMatplotlib(SubplotBase):
                 step_x.append(xarray[i])
                 step_y.append(yarray[i])
             else:
-                step_x.append(xarray[i])
-                step_y.append(yarray[i-1])
+                step_x.append(xarray[i-1])
+                step_y.append(yarray[i])
                 step_x.append(xarray[i])
                 step_y.append(yarray[i])
         self.axis.plot(step_x, step_y, label=label, color=color, linewidth=linewidth, linestyle=linestyle)
@@ -295,8 +295,8 @@ class SubplotPlotly(SubplotBase):
                 step_y.append(yarray[i])
             else:
                 # Add horizontal line from previous time to current time at previous value
-                step_x.append(xarray[i])
-                step_y.append(yarray[i-1])
+                step_x.append(xarray[i-1])
+                step_y.append(yarray[i])
                 # Add vertical line at current time from previous to current value
                 step_x.append(xarray[i])
                 step_y.append(yarray[i])
@@ -329,8 +329,8 @@ class SubplotPlotly(SubplotBase):
                 step_y.append(yarray[i])
             else:
                 # Add horizontal line from previous time to current time at previous value
-                step_x.append(xarray[i])
-                step_y.append(yarray[i-1])
+                step_x.append(xarray[i-1])
+                step_y.append(yarray[i])
                 # Add vertical line at current time from previous to current value
                 step_x.append(xarray[i])
                 step_y.append(yarray[i])

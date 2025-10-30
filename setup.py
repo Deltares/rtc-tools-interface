@@ -4,7 +4,7 @@ import versioneer
 
 
 setup(
-    name="rtc-tools-interface",
+    name="rtc_tools_interface",
     version=versioneer.get_version(),
     maintainer="Deltares",
     packages=find_packages("."),

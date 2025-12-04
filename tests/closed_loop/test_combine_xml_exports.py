@@ -28,10 +28,8 @@ class TestCombineXmlExports(unittest.TestCase):
     """Combining XML output files."""
 
     def test_combine_xml_exports(self):
-        original_input_timeseries_path =Path(os.path.join(os.getcwd())) / Path(
-        r"test_models\goal_programming_xml\input"
-    )
-        output_base_path = Path(os.path.join(Path(os.getcwd()), 'test_models/goal_programming_xml/output/output_modelling_periods_reference'))
+        original_input_timeseries_path =Path("./test_models/goal_programming_xml/input")
+        output_base_path = Path('./test_models/goal_programming_xml/output/output_modelling_periods_reference')
         dataconfig = rtc.DataConfig(folder=original_input_timeseries_path)
 
         ts_import_orig = pi.Timeseries(data_config=dataconfig,

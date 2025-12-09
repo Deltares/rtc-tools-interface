@@ -1,4 +1,5 @@
 """Tests for the base optimization problem class."""
+
 import unittest
 
 

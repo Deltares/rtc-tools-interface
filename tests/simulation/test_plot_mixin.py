@@ -1,16 +1,17 @@
 """Tests for goal-plotting functionalities."""
+
 import unittest
 
-
-from rtctools_interface.simulation.plot_mixin import PlotMixin
 from rtctools_interface.simulation.base_simulation_problem import BaseSimulationProblem
-
+from rtctools_interface.simulation.plot_mixin import PlotMixin
 from tests.utils.get_test import get_test_data
 
 
 class BaseSimulationProblemPlotting(PlotMixin, BaseSimulationProblem):
-    # Ignore too many ancestors, since the use of mixin classes is how rtc-tools is set up.
-    # Ignore abstract-method not implemented, as this is related how some todo's are setup in simulation mode.
+    # Ignore too many ancestors, since the use of mixin classes is
+    #   how rtc-tools is set up.
+    # Ignore abstract-method not implemented, as this is related how
+    #   some todo's are setup in simulation mode.
     # pylint: disable=too-many-ancestors, abstract-method
     """Simulation problem with plotting functionalities."""
 

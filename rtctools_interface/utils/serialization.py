@@ -1,18 +1,23 @@
 """Methods to serialize and deserialize the PlotDataAndConfig objects."""
-import json
+
 import datetime
+import json
 from pathlib import Path
 from typing import Any
 
 import numpy as np
 import pandas as pd
+
 from rtctools_interface.utils.plot_table_schema import PlotTableRow
 
 
 def custom_encoder(obj):
     """Custom JSON encoder for types not supported by default."""
     if isinstance(obj, (datetime.datetime, datetime.date)):
-        return {"__type__": "datetime" if isinstance(obj, datetime.datetime) else "date", "value": obj.isoformat()}
+        return {
+            "__type__": "datetime" if isinstance(obj, datetime.datetime) else "date",
+            "value": obj.isoformat(),
+        }
     if isinstance(obj, np.ndarray):
         return {"__type__": "ndarray", "data": obj.tolist()}
     if isinstance(obj, Path):

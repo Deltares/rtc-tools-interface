@@ -1,4 +1,5 @@
 """Tests for the base optimization problem class."""
+
 import unittest
 
 from rtctools_interface.optimization.base_optimization_problem import BaseOptimizationProblem

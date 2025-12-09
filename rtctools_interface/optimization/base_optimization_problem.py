@@ -1,4 +1,5 @@
 """Module for a basic optimization problem."""
+
 from rtctools.optimization.collocated_integrated_optimization_problem import (
     CollocatedIntegratedOptimizationProblem,
 )

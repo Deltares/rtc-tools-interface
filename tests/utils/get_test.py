@@ -1,8 +1,8 @@
 """Tools for getting optimization or simulation test data."""
+
 import pathlib
 
 import pandas as pd
-
 
 DATA_DIR = pathlib.Path(__file__).parent.parent / "data"
 

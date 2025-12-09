@@ -1,7 +1,8 @@
 """Module for a basic optimization problem."""
-from pathlib import Path
-from typing import Dict, Union
+
 import logging
+from pathlib import Path
+
 import pandas as pd
 
 from rtctools_interface.optimization.base_goal import BaseGoal
@@ -12,7 +13,9 @@ from rtctools_interface.utils.read_goals_mixin import ReadGoalsMixin
 logger = logging.getLogger("rtctools")
 
 
-def write_performance_metrics(performance_metrics: Dict[str, pd.DataFrame], output_path: Union[str, Path]):
+def write_performance_metrics(
+    performance_metrics: dict[str, pd.DataFrame], output_path: str | Path
+):
     """Write the performance metrics for each goal to a csv file."""
     output_path = Path(output_path) / "performance_metrics"
     output_path.mkdir(parents=True, exist_ok=True)
@@ -29,6 +32,7 @@ class GoalGeneratorMixin(ReadGoalsMixin, StatisticsMixin):
     folder. One can also set the path to the goal_table_file manually
     with the `goal_table_file` class variable.
     """
+
     calculate_performance_metrics = True
 
     def __init__(self, **kwargs):
@@ -48,7 +52,9 @@ class GoalGeneratorMixin(ReadGoalsMixin, StatisticsMixin):
         goals = super().path_goals()
         new_goals = self._goal_generator_path_goals
         if new_goals:
-            goals = goals + [BaseGoal(optimization_problem=self, **goal.__dict__) for goal in new_goals]
+            goals = goals + [
+                BaseGoal(optimization_problem=self, **goal.__dict__) for goal in new_goals
+            ]
         return goals
 
     def goals(self):
@@ -56,14 +62,18 @@ class GoalGeneratorMixin(ReadGoalsMixin, StatisticsMixin):
         goals = super().goals()
         new_goals = self._goal_generator_non_path_goals
         if new_goals:
-            goals = goals + [BaseGoal(optimization_problem=self, **goal.__dict__) for goal in new_goals]
+            goals = goals + [
+                BaseGoal(optimization_problem=self, **goal.__dict__) for goal in new_goals
+            ]
         return goals
 
     def store_performance_metrics(self, label):
         """Calculate and store performance metrics."""
         results = self.extract_results()
         goal_generator_goals = self._all_goal_generator_goals
-        all_base_goals = [goal for goal in self.goals() + self.path_goals() if isinstance(goal, BaseGoal)]
+        all_base_goals = [
+            goal for goal in self.goals() + self.path_goals() if isinstance(goal, BaseGoal)
+        ]
         targets = self.collect_range_target_values(all_base_goals)
         for goal in goal_generator_goals:
             next_row = get_performance_metrics(results, goal, targets.get(str(goal.goal_id)))

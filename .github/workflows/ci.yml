@@ -5,40 +5,12 @@ on:
   pull_request:
 
 jobs:
-  flake8:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
-        with:
-          python-version: '3.9'
-      - name: Cache pip
-        uses: actions/cache@v3
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('setup.py') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
-      - run: pip install --upgrade flake8==5
-      - run: flake8 --exclude=_version.py rtctools_interface
 
-  pylint:
+  ruff:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
-        with:
-          python-version: '3.9'
-      - name: Cache pip
-        uses: actions/cache@v3
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('setup.py') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
-      - run: pip install -e .
-      - run: pip install pylint
-      - run: pylint rtctools_interface/optimization tests
+      - uses: actions/checkout@v4
+      - uses: astral-sh/ruff-action@v3
 
   test:
     runs-on: ubuntu-latest

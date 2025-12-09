@@ -2,7 +2,6 @@ from setuptools import find_packages, setup
 
 import versioneer
 
-
 setup(
     name="rtc_tools_interface",
     version=versioneer.get_version(),

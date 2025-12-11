@@ -1,17 +1,17 @@
 """Mixin to store all required data for plotting."""
+
+import copy
 import logging
 import os
-import copy
-from pathlib import Path
 import time
-from typing import Dict, List, Optional
+from pathlib import Path
 
 import numpy as np
+
 from rtctools_interface.utils.plot_table_schema import PlotTableRow
 from rtctools_interface.utils.read_goals_mixin import ReadGoalsMixin
-
-from rtctools_interface.utils.serialization import deserialize, serialize
 from rtctools_interface.utils.read_plot_table import get_plot_config
+from rtctools_interface.utils.serialization import deserialize, serialize
 from rtctools_interface.utils.type_definitions import (
     PlotDataAndConfig,
     PlotOptions,
@@ -35,7 +35,10 @@ def get_most_recent_cache(cache_folder):
 
 
 def clean_cache_folder(cache_folder, max_files=10):
-    """Clean the cache folder with pickles, remove the oldest ones when there are more than `max_files`."""
+    """Clean the cache folder with pickles.
+
+    remove the oldest ones when there are more than `max_files`.
+    """
     cache_path = Path(cache_folder)
     files = [f for f in cache_path.iterdir() if f.suffix == ".json"]
 
@@ -57,16 +60,17 @@ def write_cache_file(cache_folder: Path, results_to_store: PlotDataAndConfig):
     clean_cache_folder(cache_folder, MAX_NUM_CACHED_FILES)
 
 
-def read_cache_file_from_folder(cache_folder: Path) -> Optional[PlotDataAndConfig]:
+def read_cache_file_from_folder(cache_folder: Path) -> PlotDataAndConfig | None:
     """Read the most recent file from the cache folder."""
     cache_file_path = get_most_recent_cache(cache_folder)
-    loaded_data: Optional[PlotDataAndConfig]
+    loaded_data: PlotDataAndConfig | None
     if cache_file_path:
-        with open(cache_file_path, "r", encoding="utf-8") as handle:
+        with open(cache_file_path, encoding="utf-8") as handle:
             loaded_data: dict = deserialize(handle.read())
         if loaded_data.get("config_version", 0) < CONFIG_VERSION:
             logger.warning(
-                "The cache file that was found is not supported by the current version of rtc-tools-interface!"
+                """The cache file that was found is not supported by
+                the current version of rtc-tools-interface!"""
             )
             loaded_data = None
     else:
@@ -74,17 +78,25 @@ def read_cache_file_from_folder(cache_folder: Path) -> Optional[PlotDataAndConfi
     return loaded_data
 
 
-def get_plot_variables(plot_config: list[PlotTableRow]) -> List[str]:
+def get_plot_variables(plot_config: list[PlotTableRow]) -> list[str]:
     """Get list of variable-names that are in the plot table."""
-    variables_style_1 = [var for subplot_config in plot_config for var in subplot_config.variables_style_1]
-    variables_style_2 = [var for subplot_config in plot_config for var in subplot_config.variables_style_2]
+    variables_style_1 = [
+        var for subplot_config in plot_config for var in subplot_config.variables_style_1
+    ]
+    variables_style_2 = [
+        var for subplot_config in plot_config for var in subplot_config.variables_style_2
+    ]
     variables_with_previous_result = [
-        var for subplot_config in plot_config for var in subplot_config.variables_with_previous_result
+        var
+        for subplot_config in plot_config
+        for var in subplot_config.variables_with_previous_result
     ]
     return list(set(variables_style_1 + variables_style_2 + variables_with_previous_result))
 
 
-def filter_plot_config(plot_config: list[PlotTableRow], all_goal_generator_goals) -> list[PlotTableRow]:
+def filter_plot_config(
+    plot_config: list[PlotTableRow], all_goal_generator_goals
+) -> list[PlotTableRow]:
     """ "Remove PlotTableRows corresponding to non-existing goals in the goal generator."""
     goal_generator_goal_ids = [goal.goal_id for goal in all_goal_generator_goals]
     new_plot_config = [
@@ -98,7 +110,8 @@ def filter_plot_config(plot_config: list[PlotTableRow], all_goal_generator_goals
 class PlottingBaseMixin(ReadGoalsMixin):
     """Base class for creating plots.
 
-    Reads the plot table, if available the goal table, and contains functions to store all required data for plots."""
+    Reads the plot table, if available the goal table, and contains
+    functions to store all required data for plots."""
 
     plot_max_rows = 4
     plot_results_each_priority = True
@@ -143,7 +156,7 @@ class PlottingBaseMixin(ReadGoalsMixin):
         super().pre()
         self._intermediate_results = []
 
-    def collect_timeseries_data(self, all_variables_to_store: List[str]) -> Dict[str, np.ndarray]:
+    def collect_timeseries_data(self, all_variables_to_store: list[str]) -> dict[str, np.ndarray]:
         """Collect the timeseries data for a list of variables."""
         extracted_results = copy.deepcopy(self.extract_results())
         timeseries_data = {}
@@ -154,7 +167,7 @@ class PlottingBaseMixin(ReadGoalsMixin):
                 try:
                     timeseries_data[timeseries_name] = self.io.get_timeseries(timeseries_name)[1]
                 except KeyError as exc:
-                    raise KeyError("Cannot find timeseries for %s" % timeseries_name) from exc
+                    raise KeyError(f"Cannot find timeseries for {timeseries_name}") from exc
         return timeseries_data
 
     def create_plot_data_and_config(self, base_goals: list) -> PlotDataAndConfig:

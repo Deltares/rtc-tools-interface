@@ -1,10 +1,10 @@
 """Module for configuring a closed-loop optimization problem."""
+
 from datetime import timedelta
 from pathlib import Path
-from typing import Optional
 
 
-class ClosedLoopConfig():
+class ClosedLoopConfig:
     """Configuration of a closed-loop optimization problem."""
 
     def __init__(
@@ -30,8 +30,8 @@ class ClosedLoopConfig():
         if file is not None:
             file = Path(file).resolve()
         self._file = file
-        self._forecast_timestep: Optional[timedelta] = None
-        self._optimization_period: Optional[timedelta] = None
+        self._forecast_timestep: timedelta | None = None
+        self._optimization_period: timedelta | None = None
         self.round_to_dates = round_to_dates
 
     @classmethod

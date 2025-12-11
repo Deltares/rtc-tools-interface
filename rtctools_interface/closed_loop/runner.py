@@ -6,28 +6,38 @@ import os
 import shutil
 import sys
 from pathlib import Path
-from typing import List, Optional
 
 from rtctools.data.pi import DiagHandler
-from rtctools.optimization.pi_mixin import PIMixin
 from rtctools.optimization.csv_mixin import CSVMixin
-from rtctools.util import run_optimization_problem, _resolve_folder
-from rtctools_interface.closed_loop.config import ClosedLoopConfig
+from rtctools.optimization.pi_mixin import PIMixin
+from rtctools.util import _resolve_folder, run_optimization_problem
+
 import rtctools_interface.closed_loop.optimization_ranges as opt_ranges
-from rtctools_interface.closed_loop.results_construction import combine_csv_exports, combine_xml_exports
-from rtctools_interface.closed_loop.time_series_handler import XMLTimeSeriesFile, CSVTimeSeriesFile, TimeSeriesHandler
+from rtctools_interface.closed_loop.config import ClosedLoopConfig
+from rtctools_interface.closed_loop.results_construction import (
+    combine_csv_exports,
+    combine_xml_exports,
+)
+from rtctools_interface.closed_loop.time_series_handler import (
+    CSVTimeSeriesFile,
+    TimeSeriesHandler,
+    XMLTimeSeriesFile,
+)
 
 logger = logging.getLogger("rtctools")
 
 
 def set_initial_values_from_previous_run(
-    results_previous_run: Optional[dict],
+    results_previous_run: dict | None,
     timeseries: TimeSeriesHandler,
-    previous_run_datetimes: List[datetime.datetime],
+    previous_run_datetimes: list[datetime.datetime],
 ) -> None:
-    """Modifies the initial values of `timeseries` based on the results of the previous run (if any)"""
+    """Modifies the initial values of `timeseries` based on the results of the previous run
+    (if any)"""
     if results_previous_run is not None:
-        variables_to_set = {key: value for key, value in results_previous_run.items() if not timeseries.is_set(key)}
+        variables_to_set = {
+            key: value for key, value in results_previous_run.items() if not timeseries.is_set(key)
+        }
         if timeseries.forecast_date:
             index_of_initial_value = previous_run_datetimes.index(timeseries.forecast_date)
         else:
@@ -63,7 +73,9 @@ def _get_optimization_ranges(
     """Return a list of optimization periods."""
     if config.file is not None:
         datetime_range = input_timeseries.get_datetime_range()
-        optimization_ranges = opt_ranges.get_optimization_ranges_from_file(config.file, datetime_range)
+        optimization_ranges = opt_ranges.get_optimization_ranges_from_file(
+            config.file, datetime_range
+        )
     elif config.optimization_period is not None:
         datetimes = input_timeseries.get_datetimes()
         optimization_ranges = opt_ranges.get_optimization_ranges(
@@ -73,7 +85,9 @@ def _get_optimization_ranges(
             optimization_period=config.optimization_period,
         )
     else:
-        raise ValueError("The closed-loop configuration should have either a file or optimization_period set.")
+        raise ValueError(
+            "The closed-loop configuration should have either a file or optimization_period set."
+        )
     if config.round_to_dates:
         optimization_ranges = opt_ranges.round_datetime_ranges_to_days(optimization_ranges)
     return optimization_ranges
@@ -84,8 +98,8 @@ def run_optimization_problem_closed_loop(
     base_folder="..",
     log_level=logging.INFO,
     profile=False,
-    config: Optional[ClosedLoopConfig] = None,
-    modelling_period_input_folder: Optional[str] = None,
+    config: ClosedLoopConfig | None = None,
+    modelling_period_input_folder: str | None = None,
     **kwargs,
 ) -> dict:
     """
@@ -111,7 +125,7 @@ def run_optimization_problem_closed_loop(
         handler.setFormatter(formatter)
         logger.addHandler(handler)
     if issubclass(optimization_problem_class, PIMixin):
-        if not any((isinstance(h, DiagHandler) for h in logger.handlers)):
+        if not any(isinstance(h, DiagHandler) for h in logger.handlers):
             diag_handler = DiagHandler(original_output_folder)
             logger.addHandler(diag_handler)
     logger.setLevel(log_level)
@@ -129,11 +143,14 @@ def run_optimization_problem_closed_loop(
     if not fixed_input_config_file.exists():
         raise FileNotFoundError(
             f"Could not find fixed inputs configuration file: {fixed_input_config_file}"
-            "Create a file with a list of strings that represent the fixed inputs (can be an empty list)."
+            "Create a file with a list of strings that represent the fixed inputs"
+            " (can be an empty list)."
         )
-    with open(fixed_input_config_file, "r") as file:
+    with open(fixed_input_config_file) as file:
         fixed_input_series = json.load(file)
-    if not isinstance(fixed_input_series, list) and all(isinstance(item, str) for item in fixed_input_series):
+    if not isinstance(fixed_input_series, list) and all(
+        isinstance(item, str) for item in fixed_input_series
+    ):
         raise ValueError("Fixed input config file should be a list of strings (or an empty list).")
 
     if modelling_period_input_folder is None:
@@ -157,13 +174,17 @@ def run_optimization_problem_closed_loop(
 
         timeseries_import.select_time_range(start_date=start_time, end_date=end_time)
 
-        set_initial_values_from_previous_run(results_previous_run, timeseries_import, previous_run_datetimes)
+        set_initial_values_from_previous_run(
+            results_previous_run, timeseries_import, previous_run_datetimes
+        )
 
         modelling_period_name = f"period_{i}"
         modelling_period_output_folder_i = modelling_periods_output_folder / modelling_period_name
         modelling_period_output_folder_i.mkdir(exist_ok=True)
         modelling_period_input_folder_i = modelling_period_input_folder / modelling_period_name
-        write_input_folder(modelling_period_input_folder_i, original_input_folder, timeseries_import)
+        write_input_folder(
+            modelling_period_input_folder_i, original_input_folder, timeseries_import
+        )
 
         logger.info(f"Running optimization for period {i}: {(str(start_time), str(end_time))}.")
         result = run_optimization_problem(
@@ -179,22 +200,30 @@ def run_optimization_problem_closed_loop(
         if result.solver_stats["success"]:
             logger.info(f"Successful optimization for {period}.")
         else:
-            message = f"Failed optimization for {period} with status '{result.solver_stats['return_status']}'."
+            message = (
+                f"Failed optimization for {period} with status"
+                + f"{result.solver_stats['return_status']}'."
+            )
             logger.error(message)
             raise Exception(message)
 
         results_previous_run = {
-            key: result.extract_results().get(key) for key in variables_in_import if key not in fixed_input_series
+            key: result.extract_results().get(key)
+            for key in variables_in_import
+            if key not in fixed_input_series
         }
         previous_run_datetimes = result.io.datetimes
 
     logger.info("Finished all optimization runs.")
     if issubclass(optimization_problem_class, PIMixin):
-        combine_xml_exports(modelling_periods_output_folder, original_input_folder, write_csv_out=True)
+        combine_xml_exports(
+            modelling_periods_output_folder, original_input_folder, write_csv_out=True
+        )
     elif issubclass(optimization_problem_class, CSVMixin):
         combine_csv_exports(modelling_periods_output_folder)
     else:
         logger.warning(
-            "Could not combine exports because the optimization problem class is not derived from PIMixin or CSVMixin."
+            "Could not combine exports because the optimization problem class is not "
+            "derived from PIMixin or CSVMixin."
         )
     return result.solver_stats

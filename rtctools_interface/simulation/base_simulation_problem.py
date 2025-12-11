@@ -1,4 +1,5 @@
 """Module for a basic simulation problem."""
+
 from rtctools.simulation.csv_mixin import CSVMixin
 from rtctools.simulation.simulation_problem import SimulationProblem
 

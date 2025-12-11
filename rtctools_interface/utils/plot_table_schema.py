@@ -1,9 +1,10 @@
 """Schema for the plot_table."""
 
-from typing import Literal, Union
+from typing import Literal
+
+import numpy as np
 import pandas as pd
 from pydantic import BaseModel, field_validator, model_validator
-import numpy as np
 
 
 def string_to_list(string):
@@ -22,13 +23,15 @@ class PlotTableRow(BaseModel):
 
     specified_in: Literal["python", "goal_generator"]
     y_axis_title: str
-    id: Union[int, str, float] = np.nan
+    id: int | str | float = np.nan
     variables_style_1: list[str] = []
     variables_style_2: list[str] = []
     variables_with_previous_result: list[str] = []
-    custom_title: Union[str, float] = np.nan
+    custom_title: str | float = np.nan
 
-    @field_validator("variables_style_1", "variables_style_2", "variables_with_previous_result", mode="before")
+    @field_validator(
+        "variables_style_1", "variables_style_2", "variables_with_previous_result", mode="before"
+    )
     @classmethod
     def convert_to_list(cls, value):
         """Convert the inputs to a list."""

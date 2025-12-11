@@ -1,8 +1,8 @@
 """Tests for the base simulation problem class."""
+
 import unittest
 
 from rtctools_interface.simulation.base_simulation_problem import BaseSimulationProblem
-
 from tests.utils.get_test import get_test_data
 
 

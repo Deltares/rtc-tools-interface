@@ -1,9 +1,9 @@
 """This file contains functions to get performance metrics for the BaseGoal."""
-import logging
-from typing import Dict, Optional
 
-import pandas as pd
+import logging
+
 import numpy as np
+import pandas as pd
 
 from rtctools_interface.optimization.goal_table_schema import (
     BaseGoalModel,
@@ -13,7 +13,6 @@ from rtctools_interface.optimization.goal_table_schema import (
     RangeRateOfChangeGoalModel,
 )
 from rtctools_interface.utils.type_definitions import TargetDict
-
 
 logger = logging.getLogger("rtctools")
 
@@ -58,7 +57,9 @@ def get_basic_metrics(timeseries: np.ndarray) -> dict[str, float]:
     return metrics
 
 
-def performance_metrics_minmaximization(results: Dict[str, np.ndarray], goal: MinimizationGoalModel) -> pd.Series:
+def performance_metrics_minmaximization(
+    results: dict[str, np.ndarray], goal: MinimizationGoalModel
+) -> pd.Series:
     """Get all relevant statistics for a min/maximization goal."""
     state_timeseries = results[goal.state]
     metrics = get_basic_metrics(state_timeseries)
@@ -67,35 +68,53 @@ def performance_metrics_minmaximization(results: Dict[str, np.ndarray], goal: Mi
 
 def get_range_percentual_exceedance(
     timeseries: np.ndarray, goal: RangeGoalModel, targets: TargetDict
-) -> Optional[dict[str, Optional[float]]]:
+) -> dict[str, float | None] | None:
     """Calculate percentage of timesteps in which target is exceeded"""
     if goal.goal_type not in ["range", "range_rate_of_change"]:
         below_target = None
         above_target = None
     else:
-        below_target = float(sum(np.where(timeseries + ABS_TOL < targets["target_min"], 1, 0)) / len(timeseries))
-        above_target = float(sum(np.where(timeseries - ABS_TOL > targets["target_max"], 1, 0)) / len(timeseries))
+        below_target = float(
+            sum(np.where(timeseries + ABS_TOL < targets["target_min"], 1, 0)) / len(timeseries)
+        )
+        above_target = float(
+            sum(np.where(timeseries - ABS_TOL > targets["target_max"], 1, 0)) / len(timeseries)
+        )
     return {"perc_below_target": below_target, "perc_above_target": above_target}
 
 
 def get_range_total_exceedance(
     timeseries: np.ndarray, goal: RangeGoalModel, targets: TargetDict
-) -> Optional[dict[str, Optional[float]]]:
+) -> dict[str, float | None] | None:
     """Calculate sum of absolute exceedances of the target"""
     if goal.goal_type not in ["range", "range_rate_of_change"]:
         below_target = None
         above_target = None
     else:
         below_target = float(
-            sum(np.abs(np.where(timeseries < targets["target_min"], timeseries - targets["target_min"], 0)))
+            sum(
+                np.abs(
+                    np.where(
+                        timeseries < targets["target_min"], timeseries - targets["target_min"], 0
+                    )
+                )
+            )
         )
         above_target = float(
-            sum(np.abs(np.where(timeseries > targets["target_max"], timeseries - targets["target_max"], 0)))
+            sum(
+                np.abs(
+                    np.where(
+                        timeseries > targets["target_max"], timeseries - targets["target_max"], 0
+                    )
+                )
+            )
         )
     return {"sum_below_target": below_target, "sum_above_target": above_target}
 
 
-def performance_metrics_range(results: Dict[str, np.ndarray], goal: RangeGoalModel, targets: TargetDict) -> pd.Series:
+def performance_metrics_range(
+    results: dict[str, np.ndarray], goal: RangeGoalModel, targets: TargetDict
+) -> pd.Series:
     """Get all relevant statistics for a range goal."""
     metrics: dict = {}
     state_timeseries = results[goal.state]
@@ -106,16 +125,16 @@ def performance_metrics_range(results: Dict[str, np.ndarray], goal: RangeGoalMod
 
 
 def performance_metrics_rangerateofchange(
-    results: Dict[str, np.ndarray], goal: RangeGoalModel, _targets: TargetDict
+    results: dict[str, np.ndarray], goal: RangeGoalModel, _targets: TargetDict
 ) -> pd.Series:
     """Get all relevant statistics for a range-rate-of-change goal."""
-    metrics: dict[str, Optional[float]] = {}
+    metrics: dict[str, float | None] = {}
     state_timeseries = results[goal.state]
     metrics = metrics | get_basic_metrics(state_timeseries)
     return pd.Series(metrics)
 
 
-def get_performance_metrics(results, goal: BaseGoalModel, targets: TargetDict) -> Optional[pd.Series]:
+def get_performance_metrics(results, goal: BaseGoalModel, targets: TargetDict) -> pd.Series | None:
     """Returns a series with performance metrics for each goal."""
     if type(goal) in [MinimizationGoalModel, MaximizationGoalModel]:  # pylint: disable=unidiomatic-typecheck
         return performance_metrics_minmaximization(results, goal)

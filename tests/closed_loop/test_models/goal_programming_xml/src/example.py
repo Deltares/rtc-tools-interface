@@ -1,12 +1,13 @@
-""" This example model is a modified version of the goal_programming example model of
+"""This example model is a modified version of the goal_programming example model of
 rtc-tools: https://gitlab.com/deltares/rtc-tools"""
+
 import numpy as np
 from rtctools.optimization.collocated_integrated_optimization_problem import (
     CollocatedIntegratedOptimizationProblem,
 )
-from rtctools.optimization.pi_mixin import PIMixin
 from rtctools.optimization.goal_programming_mixin import Goal, GoalProgrammingMixin, StateGoal
 from rtctools.optimization.modelica_mixin import ModelicaMixin
+from rtctools.optimization.pi_mixin import PIMixin
 
 from rtctools_interface.closed_loop.runner import run_optimization_problem_closed_loop
 
@@ -59,7 +60,9 @@ class MinimizeChangeInQpumpGoal(Goal):
     order = 2
 
 
-class Example(GoalProgrammingMixin, PIMixin, ModelicaMixin, CollocatedIntegratedOptimizationProblem):
+class Example(
+    GoalProgrammingMixin, PIMixin, ModelicaMixin, CollocatedIntegratedOptimizationProblem
+):
     """
     An introductory example to goal programming in RTC-Tools
     """
@@ -72,14 +75,18 @@ class Example(GoalProgrammingMixin, PIMixin, ModelicaMixin, CollocatedIntegrated
 
         # Release through orifice downhill only. This constraint enforces the
         # fact that water only flows downhill
-        constraints.append((self.state("Q_orifice") + (1 - self.state("is_downhill")) * 10, 0.0, 10.0))
+        constraints.append(
+            (self.state("Q_orifice") + (1 - self.state("is_downhill")) * 10, 0.0, 10.0)
+        )
 
         # Make sure is_downhill is true only when the sea is lower than the
         # water level in the storage.
         M = 2  # The so-called "big-M"
         constraints.append(
             (
-                self.state("H_sea") - self.state("storage.HQ.H") - (1 - self.state("is_downhill")) * M,
+                self.state("H_sea")
+                - self.state("storage.HQ.H")
+                - (1 - self.state("is_downhill")) * M,
                 -np.inf,
                 0.0,
             )

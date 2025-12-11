@@ -1,16 +1,23 @@
-"""Classes for plotting, either using plotly or matplotlib. The classes generate one subplot in the full figure.."""
-from abc import abstractmethod, ABC
+"""Classes for plotting, either using plotly or matplotlib.
+
+The classes generate one subplot in the full figure."""
+
 import logging
 import random
-from typing import Any, Dict, Optional
+from abc import ABC, abstractmethod
+from typing import Any
 
 import matplotlib.dates as mdates
 import matplotlib.ticker as mtick
+import numpy as np
 import plotly.graph_objects as go
 
-import numpy as np
 from rtctools_interface.utils.plot_table_schema import PlotTableRow
-from rtctools_interface.utils.type_definitions import GoalConfig, IntermediateResult, PrioIndependentData
+from rtctools_interface.utils.type_definitions import (
+    GoalConfig,
+    IntermediateResult,
+    PrioIndependentData,
+)
 
 logger = logging.getLogger("rtctools")
 
@@ -42,7 +49,9 @@ def generate_unique_color(used_colors):
     if available_colors:
         new_color = available_colors[0]
     else:  # Generate a new color, may be similar to the existing colors.
-        new_color = "#{:02x}{:02x}{:02x}".format(random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
+        new_color = (
+            f"#{random.randint(0, 255):02x}{random.randint(0, 255):02x}{random.randint(0, 255):02x}"
+        )
     used_colors.append(new_color)
     return new_color
 
@@ -53,12 +62,12 @@ class SubplotBase(ABC):
     def __init__(
         self,
         subplot_config: PlotTableRow,
-        goal: Optional[GoalConfig],
-        results: Dict[str, Any],
-        results_prev: Optional[IntermediateResult],
+        goal: GoalConfig | None,
+        results: dict[str, Any],
+        results_prev: IntermediateResult | None,
         prio_independent_data: PrioIndependentData,
         used_colors,
-        results_compare: Optional[IntermediateResult] = None,
+        results_compare: IntermediateResult | None = None,
     ):
         self.config: PlotTableRow = subplot_config
         self.goal = goal
@@ -73,7 +82,10 @@ class SubplotBase(ABC):
         if self.goal:
             self.rate_of_change = self.goal.get("goal_type") in ["range_rate_of_change"]
             if self.goal.get("goal_type") in ["range", "range_rate_of_change"]:
-                self.target_min, self.target_max = self.goal["target_min_series"], self.goal["target_max_series"]
+                self.target_min, self.target_max = (
+                    self.goal["target_min_series"],
+                    self.goal["target_max_series"],
+                )
             else:
                 self.target_min, self.target_max = None, None
         else:
@@ -89,22 +101,30 @@ class SubplotBase(ABC):
             self.subplot_title = ""
 
     def get_differences(self, timeseries):
-        """Get rate of change timeseries for input timeseries, relative to the function nominal."""
+        """Get rate of change timeseries for input timeseries.
+
+        Timeseries is relative to the function nominal."""
         timeseries = list(timeseries)
         return [
             (st - st_prev) / dt / self.function_nominal * 100
-            for st, st_prev, dt in zip(timeseries, [np.nan] + timeseries[:-1], self.time_deltas)
+            for st, st_prev, dt in zip(
+                timeseries, [np.nan] + timeseries[:-1], self.time_deltas, strict=False
+            )
         ]
 
     def plot_with_comparison(self, label, state_name, linestyle=None, linewidth=None):
         """Plot the state both for the recent run and the comparison run."""
         timeseries_data = self.results[state_name]
         color = generate_unique_color(self.used_colors)
-        self.plot_timeseries(label, timeseries_data, color=color, linestyle=linestyle, linewidth=linewidth)
+        self.plot_timeseries(
+            label, timeseries_data, color=color, linestyle=linestyle, linewidth=linewidth
+        )
         if self.results_compare and state_name in self.results_compare["timeseries_data"]:
             timeseries_data = self.results_compare["timeseries_data"][state_name]
             label += COMPARISON_RUN_SUFFIX
-            self.plot_timeseries(label, timeseries_data, linestyle="dotted", color=color, linewidth=linewidth)
+            self.plot_timeseries(
+                label, timeseries_data, linestyle="dotted", color=color, linewidth=linewidth
+            )
 
     def plot_with_previous(self, label, state_name, linestyle=None, linewidth=None):
         """Add line with the results for a particular state. If the results for the previous
@@ -189,13 +209,15 @@ class SubplotMatplotlib(SubplotBase):
         self,
         axis,
         subplot_config: PlotTableRow,
-        goal: Optional[GoalConfig],
-        results: Dict[str, Any],
-        results_prev: Optional[IntermediateResult],
+        goal: GoalConfig | None,
+        results: dict[str, Any],
+        results_prev: IntermediateResult | None,
         prio_independent_data: PrioIndependentData,
         used_colors,
     ):
-        super().__init__(subplot_config, goal, results, results_prev, prio_independent_data, used_colors)
+        super().__init__(
+            subplot_config, goal, results, results_prev, prio_independent_data, used_colors
+        )
         self.axis = axis
 
     def plot_dashed_line(self, xarray, yarray, label, color="red"):
@@ -208,7 +230,7 @@ class SubplotMatplotlib(SubplotBase):
                 step_x.append(xarray[i])
                 step_y.append(yarray[i])
             else:
-                step_x.append(xarray[i-1])
+                step_x.append(xarray[i - 1])
                 step_y.append(yarray[i])
                 step_x.append(xarray[i])
                 step_y.append(yarray[i])
@@ -224,11 +246,13 @@ class SubplotMatplotlib(SubplotBase):
                 step_x.append(xarray[i])
                 step_y.append(yarray[i])
             else:
-                step_x.append(xarray[i-1])
+                step_x.append(xarray[i - 1])
                 step_y.append(yarray[i])
                 step_x.append(xarray[i])
                 step_y.append(yarray[i])
-        self.axis.plot(step_x, step_y, label=label, color=color, linewidth=linewidth, linestyle=linestyle)
+        self.axis.plot(
+            step_x, step_y, label=label, color=color, linewidth=linewidth, linestyle=linestyle
+        )
 
     def format_subplot(self):
         """Format the current axis and set legend and title."""
@@ -257,19 +281,25 @@ class SubplotPlotly(SubplotBase):
     def __init__(
         self,
         subplot_config: PlotTableRow,
-        goal: Optional[GoalConfig],
-        results: Dict[str, Any],
-        results_prev: Optional[IntermediateResult],
+        goal: GoalConfig | None,
+        results: dict[str, Any],
+        results_prev: IntermediateResult | None,
         prio_independent_data: PrioIndependentData,
         used_colors,
-        results_compare: Optional[IntermediateResult] = None,
+        results_compare: IntermediateResult | None = None,
         figure=None,
         row_num=0,
         col_num=0,
         i_plot=None,
     ):
         super().__init__(
-            subplot_config, goal, results, results_prev, prio_independent_data, used_colors, results_compare
+            subplot_config,
+            goal,
+            results,
+            results_prev,
+            prio_independent_data,
+            used_colors,
+            results_compare,
         )
         self.row_num = row_num
         self.col_num = col_num
@@ -295,7 +325,7 @@ class SubplotPlotly(SubplotBase):
                 step_y.append(yarray[i])
             else:
                 # Add horizontal line from previous time to current time at previous value
-                step_x.append(xarray[i-1])
+                step_x.append(xarray[i - 1])
                 step_y.append(yarray[i])
                 # Add vertical line at current time from previous to current value
                 step_x.append(xarray[i])
@@ -329,7 +359,7 @@ class SubplotPlotly(SubplotBase):
                 step_y.append(yarray[i])
             else:
                 # Add horizontal line from previous time to current time at previous value
-                step_x.append(xarray[i-1])
+                step_x.append(xarray[i - 1])
                 step_y.append(yarray[i])
                 # Add vertical line at current time from previous to current value
                 step_x.append(xarray[i])
@@ -351,7 +381,9 @@ class SubplotPlotly(SubplotBase):
     def format_subplot(self):
         """Format the current axis and set legend and title."""
         # Format y-axis
-        self.figure.update_yaxes(title_text=self.config.y_axis_title, row=self.row_num, col=self.col_num)
+        self.figure.update_yaxes(
+            title_text=self.config.y_axis_title, row=self.row_num, col=self.col_num
+        )
         # Set title
         self.figure.layout.annotations[self.i_plot]["text"] = self.subplot_title
         # Format x-axis
@@ -361,5 +393,7 @@ class SubplotPlotly(SubplotBase):
         if self.rate_of_change:
             self.figure.update_yaxes(tickformat=".1", row=self.row_num, col=self.col_num)
         # Add grid lines
-        self.figure.update_xaxes(showgrid=True, row=self.row_num, col=self.col_num, gridwidth=1, gridcolor="gray")
+        self.figure.update_xaxes(
+            showgrid=True, row=self.row_num, col=self.col_num, gridwidth=1, gridcolor="gray"
+        )
         self.figure.update_xaxes(showticklabels=True, row=self.row_num, col=self.col_num)

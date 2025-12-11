@@ -2,10 +2,9 @@ import copy
 import logging
 import os
 from pathlib import Path
-from typing import List
+
 import pandas as pd
-from rtctools.data import rtc
-from rtctools.data import pi
+from rtctools.data import pi, rtc
 
 logger = logging.getLogger("rtctools")
 
@@ -22,7 +21,9 @@ def _get_variables_from_pi(data_config: rtc.DataConfig, timeseries: pi.Timeserie
     return variables
 
 
-def combine_xml_exports(output_base_path: Path, original_input_timeseries_path: Path, write_csv_out: bool = False):
+def combine_xml_exports(
+    output_base_path: Path, original_input_timeseries_path: Path, write_csv_out: bool = False
+):
     """Combine the xml exports of multiple periods into a single xml file."""
     logger.info("Combining XML exports.")
     dataconfig = rtc.DataConfig(folder=original_input_timeseries_path)
@@ -34,14 +35,22 @@ def combine_xml_exports(output_base_path: Path, original_input_timeseries_path: 
         binary=False,
     )
     if ts_import_orig.forecast_datetime > ts_import_orig.start_datetime:
-        logger.info("Timeseries export will start at original forecast date, disregarding data before forecast date.")
+        logger.info(
+            "Timeseries export will start at original forecast date, "
+            "disregarding data before forecast date."
+        )
         ts_import_orig.resize(ts_import_orig.forecast_datetime, ts_import_orig.end_datetime)
-        ts_import_orig.times = ts_import_orig.times[ts_import_orig.times.index(ts_import_orig.forecast_datetime):]
+        ts_import_orig.times = ts_import_orig.times[
+            ts_import_orig.times.index(ts_import_orig.forecast_datetime) :
+        ]
     orig_start_datetime = ts_import_orig.start_datetime
     orig_end_datetime = ts_import_orig.end_datetime
 
     ts_export = pi.Timeseries(
-        data_config=dataconfig, folder=output_base_path / "period_0", basename="timeseries_export", binary=False
+        data_config=dataconfig,
+        folder=output_base_path / "period_0",
+        basename="timeseries_export",
+        binary=False,
     )  # Use the first timeseries export as a starting point for the combined timeseries export.
     ts_export.resize(orig_start_datetime, orig_end_datetime)
 
@@ -63,7 +72,7 @@ def combine_xml_exports(output_base_path: Path, original_input_timeseries_path: 
                 current_values = ts_export.get(loc_par)
                 new_values = ts_export_step.get(loc_par)
             except KeyError:
-                logger.debug("Variable {} not found in output of model horizon: {}".format(loc_par, i))
+                logger.debug(f"Variable {loc_par} not found in output of model horizon: {i}")
                 continue
             new_times = ts_export_step.times
             try:
@@ -77,7 +86,9 @@ def combine_xml_exports(output_base_path: Path, original_input_timeseries_path: 
                         + "with the end of the previous."
                     )
             combined_values = copy.deepcopy(current_values)
-            combined_values[start_new_data_index : start_new_data_index + len(new_values)] = new_values  # noqa
+            combined_values[start_new_data_index : start_new_data_index + len(new_values)] = (
+                new_values  # noqa
+            )
             ts_export.set(loc_par, combined_values)
         i += 1
     ts_export.write(output_folder=output_base_path.parent, output_filename="timeseries_export")
@@ -90,16 +101,16 @@ def combine_xml_exports(output_base_path: Path, original_input_timeseries_path: 
                 values = ts_export.get(timeseries_id)
                 new_columns.append(pd.Series(values, name=timeseries_id))
             except KeyError:
-                logger.debug("Variable {} not found in output of model horizon: {}".format(timeseries_id, i))
+                logger.debug(f"Variable {timeseries_id} not found in output of model horizon: {i}")
                 continue
         data = pd.concat([data] + new_columns, axis=1)
         data.round(6).to_csv(output_base_path.parent / "timeseries_export.csv", index=False)
 
 
-def combine_dataframes(dfs: List[pd.DataFrame], index_col: str = "time"):
+def combine_dataframes(dfs: list[pd.DataFrame], index_col: str = "time"):
     """Combine multiple dataframes with the same index column.
-    The dataframes are combined in the order they are passed, with the last dataframe taking precedence
-    in case of overlapping indices."""
+    The dataframes are combined in the order they are passed,
+    with the last dataframe taking precedence in case of overlapping indices."""
     combined_df = pd.DataFrame()
     for df in dfs:
         df.set_index(index_col, inplace=True)
@@ -125,5 +136,7 @@ if __name__ == "__main__":
     output_base_path = closed_loop_test_folder / Path(
         r"test_models\goal_programming_xml\output\output_modelling_periods_reference"
     )
-    original_input_timeseries_path = closed_loop_test_folder / Path(r"test_models\goal_programming_xml\input")
+    original_input_timeseries_path = closed_loop_test_folder / Path(
+        r"test_models\goal_programming_xml\input"
+    )
     combine_xml_exports(output_base_path, original_input_timeseries_path, True)

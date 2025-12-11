@@ -1,15 +1,14 @@
 """Module for a basic Goal."""
+
 import logging
 
 import numpy as np
-
 from rtctools.optimization.goal_programming_mixin import Goal
 from rtctools.optimization.optimization_problem import OptimizationProblem
 from rtctools.optimization.timeseries import Timeseries
 
 from rtctools_interface.optimization.goal_table_schema import GOAL_TYPES, TARGET_DATA_TYPES
 from rtctools_interface.utils.type_definitions import GoalConfig
-
 
 logger = logging.getLogger("rtctools")
 
@@ -76,7 +75,9 @@ class BaseGoal(Goal):
             return optimization_problem.state(self.state)
         if self.goal_type in ["range_rate_of_change"]:
             return optimization_problem.der(self.state)
-        raise ValueError("Unsupported goal type '{}', supported are {}".format(self.goal_type, GOAL_TYPES.keys()))
+        raise ValueError(
+            f"Unsupported goal type '{self.goal_type}', supported are {GOAL_TYPES.keys()}"
+        )
 
     def _set_order(self, order):
         """Set the order of the goal."""
@@ -88,7 +89,8 @@ class BaseGoal(Goal):
             self.order = 2
         if self.goal_type == "maximization_path" and self.order % 2 == 0:
             logger.warning(
-                "Using even order '%i' for a maximization_path goal" + " results in a minimization_path goal.",
+                "Using even order '%i' for a maximization_path goal"
+                + " results in a minimization_path goal.",
                 self.order,
             )
 
@@ -129,11 +131,14 @@ class BaseGoal(Goal):
             ~np.isfinite(function_max) & ~np.isfinite(state_range[1])
         ).any():
             raise ValueError(
-                f"The upper/lower bound for state {self.state} for goal with id={self.goal_id} is not specified"
+                f"The upper/lower bound for state {self.state} for "
+                + f"goal with id={self.goal_id} is not specified"
                 + " so the function range should be specified!"
             )
         if self.goal_type in ["range_rate_of_change"]:
-            maximum_scaled_difference = (state_range[1] - state_range[0]) / np.diff(optimization_problem.times()).min()
+            maximum_scaled_difference = (state_range[1] - state_range[0]) / np.diff(
+                optimization_problem.times()
+            ).min()
             calculated_range = (-maximum_scaled_difference, maximum_scaled_difference)
         else:
             calculated_range = state_range
@@ -148,10 +153,15 @@ class BaseGoal(Goal):
         if not np.isfinite(self.function_nominal):
             if isinstance(self.function_range, (list, tuple)):
                 if np.all(np.isfinite(self.function_range)):
-                    self.function_nominal = (abs(self.function_range[0]) + abs(self.function_range[1])) / 2
+                    self.function_nominal = (
+                        abs(self.function_range[0]) + abs(self.function_range[1])
+                    ) / 2
                     return
             self.function_nominal = 1.0
-            logger.warning("Function nominal for goal with id '%s' not specified, nominal is set to 1.0", self.goal_id)
+            logger.warning(
+                "Function nominal for goal with id '%s' not specified, nominal is set to 1.0",
+                self.goal_id,
+            )
 
     def _set_target_bounds(
         self,
@@ -197,7 +207,9 @@ class BaseGoal(Goal):
             raise ValueError(f"target_data_type should be one of {TARGET_DATA_TYPES}.")
 
         if self.goal_type == "range_rate_of_change" and self.target_data_type != "value":
-            raise ValueError("For range_rate_of_change goal only the `value` target type is supported.")
+            raise ValueError(
+                "For range_rate_of_change goal only the `value` target type is supported."
+            )
 
         if self.target_data_type == "value":
             set_value_target()
@@ -216,9 +228,15 @@ class BaseGoal(Goal):
             "goal_id": self.goal_id,
             "state": self.state,
             "goal_type": self.goal_type,
-            "function_min": self.function_range[0] if np.any(np.isfinite(self.function_range[0])) else None,
-            "function_max": self.function_range[1] if np.any(np.isfinite(self.function_range[1])) else None,
-            "function_nominal": self.function_nominal if np.any(np.isfinite(self.function_nominal)) else None,
+            "function_min": self.function_range[0]
+            if np.any(np.isfinite(self.function_range[0]))
+            else None,
+            "function_max": self.function_range[1]
+            if np.any(np.isfinite(self.function_range[1]))
+            else None,
+            "function_nominal": self.function_nominal
+            if np.any(np.isfinite(self.function_nominal))
+            else None,
             "target_min_series": None,
             "target_max_series": None,
             "target_min": self.target_min,

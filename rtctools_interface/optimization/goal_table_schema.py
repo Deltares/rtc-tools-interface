@@ -1,14 +1,16 @@
 """Schema for the goal_table."""
-from typing import Literal, Union
-from pydantic import BaseModel, Field, field_validator, model_validator
+
+from typing import Literal
+
 import numpy as np
 import pandas as pd
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 
 class BaseGoalModel(BaseModel):
     """BaseModel for a goal."""
 
-    goal_id: Union[int, str] = Field(..., alias="id")
+    goal_id: int | str = Field(..., alias="id")
     active: Literal[0, 1]
     state: str
     goal_type: str
@@ -22,7 +24,9 @@ class BaseGoalModel(BaseModel):
     def validate_goal_type(cls, value):
         """Check whether the supplied goal type is supported"""
         if value not in GOAL_TYPES.keys():
-            raise ValueError(f"Invalid goal_type '{value}'. Allowed values are {GOAL_TYPES.keys()}.")
+            raise ValueError(
+                f"Invalid goal_type '{value}'. Allowed values are {GOAL_TYPES.keys()}."
+            )
         return value
 
     @field_validator("goal_id", "active")
@@ -55,8 +59,8 @@ class RangeGoalModel(BaseGoalModel):
     target_data_type: str
     function_min: float = np.nan
     function_max: float = np.nan
-    target_min: Union[float, str] = np.nan
-    target_max: Union[float, str] = np.nan
+    target_min: float | str = np.nan
+    target_max: float | str = np.nan
 
     @field_validator("target_min", "target_max")
     @classmethod
@@ -73,12 +77,14 @@ class RangeGoalModel(BaseGoalModel):
         try:
             assert not (pd.isna(self.target_min) and pd.isna(self.target_max))
         except AssertionError as exc:
-            raise ValueError("For a range goal, at least one of target_min and target_max should be set.") from exc
+            raise ValueError(
+                "For a range goal, at least one of target_min and target_max should be set."
+            ) from exc
         return self
 
     @model_validator(mode="after")
     def validate_target_type_and_value(self):
-        """Check whether the target_min and target_max datatype correspond to the target_data_type"""
+        """Check if target_min and target_max dtype correspond to target_data_type."""
         try:
             if self.target_data_type == "value":
                 assert isinstance(self.target_min, float)
@@ -88,7 +94,8 @@ class RangeGoalModel(BaseGoalModel):
                 assert isinstance(self.target_max, str) or pd.isna(self.target_max)
         except AssertionError as exc:
             raise ValueError(
-                "The type in the target_min/target_max column does not correspond to the target_data_type."
+                "The type in the target_min/target_max column does not "
+                "correspond to the target_data_type."
             ) from exc
         return self
 

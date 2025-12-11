@@ -1,9 +1,9 @@
-"""Base class/mixin for with some methods for retrieving particular data/stats for goals and plotting. """
+"""Base mixin for retrieving particular stats for goals and plotting."""
 
 import logging
-from typing import Dict, List, Tuple
 
 import numpy as np
+
 from rtctools_interface.optimization.base_goal import BaseGoal
 from rtctools_interface.utils.type_definitions import TargetDict
 
@@ -18,10 +18,10 @@ class StatisticsMixin:
 
     def collect_range_target_values(
         self,
-        base_goals: List[BaseGoal],
-    ) -> Dict[str, TargetDict]:
+        base_goals: list[BaseGoal],
+    ) -> dict[str, TargetDict]:
         """For the goals with targets, collect the actual timeseries with these targets."""
-        target_series: Dict[str, TargetDict] = {}
+        target_series: dict[str, TargetDict] = {}
         for goal in base_goals:
             if goal.goal_type in ["range", "range_rate_of_change"]:
                 target_dict = self.collect_range_target_values_from_basegoal(goal)
@@ -32,17 +32,17 @@ class StatisticsMixin:
         """Collect the target timeseries for a single basegoal."""
         t = self.times()
 
-        def get_parameter_ranges(goal) -> Tuple[np.ndarray, np.ndarray]:
+        def get_parameter_ranges(goal) -> tuple[np.ndarray, np.ndarray]:
             target_min = np.full_like(t, 1) * float(goal.target_min)
             target_max = np.full_like(t, 1) * float(goal.target_max)
             return target_min, target_max
 
-        def get_value_ranges(goal) -> Tuple[np.ndarray, np.ndarray]:
+        def get_value_ranges(goal) -> tuple[np.ndarray, np.ndarray]:
             target_min = np.full_like(t, 1) * float(goal.target_min)
             target_max = np.full_like(t, 1) * float(goal.target_max)
             return target_min, target_max
 
-        def get_timeseries_ranges(goal) -> Tuple[np.ndarray, np.ndarray]:
+        def get_timeseries_ranges(goal) -> tuple[np.ndarray, np.ndarray]:
             try:
                 target_min = goal.target_min.values
             except AttributeError:
@@ -62,11 +62,11 @@ class StatisticsMixin:
             elif goal.target_data_type == "timeseries":
                 target_min, target_max = get_timeseries_ranges(goal)
             else:
-                message = "Target type {} not known for goal {}.".format(goal.target_data_type, goal.goal_id)
+                message = f"Target type {goal.target_data_type} not known for goal {goal.goal_id}."
                 logger.error(message)
                 raise ValueError(message)
         else:
-            message = "Goal type {} not supported for target collection.".format(goal.goal_type)
+            message = f"Goal type {goal.goal_type} not supported for target collection."
             logger.error(message)
             raise ValueError(message)
         target_dict: TargetDict = {"target_min": target_min, "target_max": target_max}

@@ -1,4 +1,5 @@
 """Module for calculating optimization periods."""
+
 import bisect
 import datetime
 from pathlib import Path
@@ -12,30 +13,40 @@ def get_optimization_ranges_from_file(
     """Read horizon config from a csv file"""
     if not file_path.exists():
         raise FileNotFoundError(
-            f"The closed_loop_dates csv does not exist. Please create a horizon config file in {file_path}."
+            "The closed_loop_dates csv does not exist. Please create a horizon "
+            f"config file in {file_path}."
         )
     try:
         closed_loop_dates = pd.read_csv(file_path)
     except pd.errors.EmptyDataError:
         raise ValueError(
-            "The closed_loop_dates csv is empty. Please provide a valid file with start_date and end_date column."
+            "The closed_loop_dates csv is empty. Please provide a valid file with "
+            "start_date and end_date column."
         )
     closed_loop_dates.columns = closed_loop_dates.columns.str.replace(" ", "")
-    if not all([col in closed_loop_dates.columns for col in ["start_date", "end_date"]]):
-        raise ValueError("The closed_loop_dates csv should have both 'start_date' and 'end_date' columns.")
+    if not all(col in closed_loop_dates.columns for col in ["start_date", "end_date"]):
+        raise ValueError(
+            "The closed_loop_dates csv should have both 'start_date' and 'end_date' columns."
+        )
     closed_loop_dates["start_date"] = pd.to_datetime(closed_loop_dates["start_date"])
     closed_loop_dates["end_date"] = pd.to_datetime(closed_loop_dates["end_date"])
     for i in range(1, len(closed_loop_dates)):
         if closed_loop_dates["start_date"].iloc[i] > closed_loop_dates["end_date"].iloc[i - 1]:
-            raise ValueError(f"Closed loop date table: Start date at row {i} is later than the previous end date. ")
+            raise ValueError(
+                f"Closed loop date table: Start date at row {i} is later than previous end date."
+            )
     if any(closed_loop_dates["start_date"] < closed_loop_dates["start_date"].shift(1)):
         raise ValueError("Closed loop date table: The start dates are not in ascending order.")
     if any(closed_loop_dates["end_date"] < closed_loop_dates["end_date"].shift(1)):
         raise ValueError("Closed loop date table: The end dates are not in ascending order.")
     if any(closed_loop_dates["end_date"] < closed_loop_dates["start_date"]):
-        raise ValueError("Closed loop date table: For one or more rows the end date is before the start date.")
+        raise ValueError(
+            "Closed loop date table: For one or more rows the end date is before the start date."
+        )
     if any(closed_loop_dates["start_date"] > closed_loop_dates["end_date"]):
-        raise ValueError("Closed loop date table: For one or more rows the start date is after the end date.")
+        raise ValueError(
+            "Closed loop date table: For one or more rows the start date is after the end date."
+        )
     if (
         any(closed_loop_dates["start_date"].dt.hour != 0)
         or any(closed_loop_dates["start_date"].dt.minute != 0)
@@ -43,17 +54,14 @@ def get_optimization_ranges_from_file(
         or any(closed_loop_dates["end_date"].dt.minute != 0)
     ):
         raise ValueError(
-            "Closed loop date table: Currently, the date ranges can only be specific up to the level of days."
+            "Closed loop date table: Currently, the date ranges can only be specific "
+            "up to the level of days."
         )
-    assert (
-        min(closed_loop_dates["start_date"]).date() == model_time_range[0].date()
-    ), (
+    assert min(closed_loop_dates["start_date"]).date() == model_time_range[0].date(), (
         "The start day of the first optimization run is not equal"
         " to the start day of the forecast date (or first timestep)."
     )
-    assert (
-        max(closed_loop_dates["end_date"]).date() <= model_time_range[1].date()
-    ), (
+    assert max(closed_loop_dates["end_date"]).date() <= model_time_range[1].date(), (
         "The end date of one or more optimization runs is later"
         " than the end date of the timeseries import."
     )
@@ -65,9 +73,7 @@ def get_optimization_ranges_from_file(
 
 
 def _get_next_time_index(
-    times: list[datetime.date],
-    i_current: int,
-    timestep_size: datetime.timedelta
+    times: list[datetime.date], i_current: int, timestep_size: datetime.timedelta
 ) -> int:
     """
     Get the next timestep index.
@@ -91,7 +97,7 @@ def get_optimization_ranges(
     model_times: list[datetime.date],
     start_time: datetime.datetime,
     forecast_timestep: datetime.timedelta,
-    optimization_period: datetime.timedelta
+    optimization_period: datetime.timedelta,
 ) -> list[tuple[datetime.datetime, datetime.datetime]]:
     """Calculate a list of optimization periods."""
     if forecast_timestep > optimization_period:
@@ -114,7 +120,7 @@ def get_optimization_ranges(
 
 
 def round_datetime_ranges_to_days(
-    datetime_ranges: list[tuple[datetime.datetime, datetime.datetime]]
+    datetime_ranges: list[tuple[datetime.datetime, datetime.datetime]],
 ) -> list[tuple[datetime.datetime, datetime.datetime]]:
     """Round datetimes to dats in datetime ranges.
 

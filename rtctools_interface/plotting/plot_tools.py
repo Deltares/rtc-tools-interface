@@ -1,12 +1,13 @@
 """Functions to create plots."""
-from io import StringIO
+
 import logging
 import math
 import os
+from io import StringIO
 from pathlib import Path
-from typing import Any, Dict, Optional, Union
-import matplotlib
+from typing import Any
 
+import matplotlib
 import matplotlib.pyplot as plt
 from plotly.subplots import make_subplots
 
@@ -15,7 +16,11 @@ from rtctools_interface.plotting.subplot_classes import (
     SubplotMatplotlib,
     SubplotPlotly,
 )
-from rtctools_interface.utils.type_definitions import GoalConfig, IntermediateResult, PlotDataAndConfig
+from rtctools_interface.utils.type_definitions import (
+    GoalConfig,
+    IntermediateResult,
+    PlotDataAndConfig,
+)
 
 logger = logging.getLogger("rtctools")
 
@@ -38,7 +43,7 @@ def get_subplot_axis(i_plot, n_rows, n_cols, axs):
     return subplot
 
 
-def get_file_write_path(output_folder: Union[str, Path], file_name="figure"):
+def get_file_write_path(output_folder: str | Path, file_name="figure"):
     """Get path to to file."""
     new_output_folder = Path(output_folder) / "figures"
     os.makedirs(new_output_folder, exist_ok=True)
@@ -50,7 +55,7 @@ def get_file_name(priority: int, final_result: bool):
     if final_result:
         file_name = "final_results"
     else:
-        file_name = "after_priority_{}".format(priority)
+        file_name = f"after_priority_{priority}"
     return file_name
 
 
@@ -70,8 +75,10 @@ def save_fig_as_html(fig, output_folder, priority, final_result) -> dict:
     return fig
 
 
-def get_goal(subplot_config, base_goals) -> Union[GoalConfig, None]:
-    """Find the goal belonging to a subplot. Only checks for goals as specified in the goal table."""
+def get_goal(subplot_config, base_goals) -> GoalConfig | None:
+    """Find the goal belonging to a subplot.
+
+    Only checks for goals as specified in the goal table."""
     for goal in base_goals:
         if goal.get("goal_id") == subplot_config.id:
             return goal
@@ -85,7 +92,9 @@ def save_fig_as_stringio(fig):
     return svg_data
 
 
-def save_figure(fig, save_plot_to, output_folder, priority, final_result) -> Union[StringIO, matplotlib.figure.Figure]:
+def save_figure(
+    fig, save_plot_to, output_folder, priority, final_result
+) -> StringIO | matplotlib.figure.Figure:
     """Save figure."""
     if save_plot_to == "image":
         return save_fig_as_png(fig, output_folder, priority, final_result)
@@ -136,7 +145,10 @@ def add_buttons_to_plotly(plotly_figure):
 def check_empty_plot_table(plot_config):
     """Chech whether there are any elements in the plot table."""
     if len(plot_config) == 0:
-        logger.info("Nothing to plot." + " Are there any goals that are active and described in the plot_table?")
+        logger.info(
+            "Nothing to plot."
+            + " Are there any goals that are active and described in the plot_table?"
+        )
         return True
     return False
 
@@ -152,7 +164,7 @@ def get_main_title(final_result: bool, result_dict):
 
 def create_matplotlib_figure(
     result_dict, results_prev, current_run: PlotDataAndConfig, final_result=False
-) -> Union[StringIO, matplotlib.figure.Figure]:
+) -> StringIO | matplotlib.figure.Figure:
     # pylint: disable=too-many-locals
     """Creates a figure with a subplot for each row in the plot_table."""
     used_colors: list = []
@@ -165,7 +177,9 @@ def create_matplotlib_figure(
     # Initalize figure
     n_cols = math.ceil(len(plot_config) / plot_max_rows)
     n_rows = math.ceil(len(plot_config) / n_cols)
-    fig, axs = plt.subplots(nrows=n_rows, ncols=n_cols, figsize=(n_cols * 9, n_rows * 3), dpi=80, squeeze=False)
+    fig, axs = plt.subplots(
+        nrows=n_rows, ncols=n_cols, figsize=(n_cols * 9, n_rows * 3), dpi=80, squeeze=False
+    )
     main_title = get_main_title(final_result, result_dict)
     fig.suptitle(main_title, fontsize=14)
     i_plot = -1
@@ -216,10 +230,10 @@ def set_plotly_layout(plotly_figure, final_result, result_dict, results_compare)
 
 def create_plotly_figure(
     result_dict: IntermediateResult,
-    results_prev: Optional[IntermediateResult],
+    results_prev: IntermediateResult | None,
     current_run: PlotDataAndConfig,
     final_result=False,
-    results_compare: Optional[IntermediateResult] = None,
+    results_compare: IntermediateResult | None = None,
 ) -> Any:
     # pylint: disable=too-many-locals
     """Creates a figure with a subplot for each row in the plot_table."""
@@ -230,7 +244,9 @@ def create_plotly_figure(
     n_cols = math.ceil(len(plot_config) / current_run["plot_options"]["plot_max_rows"])
     n_rows = math.ceil(len(plot_config) / n_cols)
     i_plot = -1
-    plotly_figure = make_subplots(rows=n_rows, cols=n_cols, subplot_titles=len(plot_config) * [" "], shared_xaxes=True)
+    plotly_figure = make_subplots(
+        rows=n_rows, cols=n_cols, subplot_titles=len(plot_config) * [" "], shared_xaxes=True
+    )
     base_goals = current_run["prio_independent_data"]["base_goals"]
 
     # Add subplot for each row in the plot_table
@@ -257,18 +273,27 @@ def create_plotly_figure(
     set_plotly_layout(plotly_figure, final_result, result_dict, results_compare)
 
     return save_fig_as_html(
-        plotly_figure, current_run["plot_options"]["output_folder"], result_dict["priority"], final_result
+        plotly_figure,
+        current_run["plot_options"]["output_folder"],
+        result_dict["priority"],
+        final_result,
     )
 
 
-def create_plot_each_priority(current_run: PlotDataAndConfig, plotting_library: str = "plotly") -> Dict[int, Any]:
+def create_plot_each_priority(
+    current_run: PlotDataAndConfig, plotting_library: str = "plotly"
+) -> dict[int, Any]:
     """Create all plots for one optimization run, for each priority one seperate plot."""
     intermediate_results = current_run["intermediate_results"]
     plot_results = {}
-    for intermediate_result_prev, intermediate_result in zip([None] + intermediate_results[:-1], intermediate_results):
+    for intermediate_result_prev, intermediate_result in zip(
+        [None] + intermediate_results[:-1], intermediate_results, strict=False
+    ):
         priority = intermediate_result["priority"]
         if plotting_library == "plotly":
-            plot_results[priority] = create_plotly_figure(intermediate_result, intermediate_result_prev, current_run)
+            plot_results[priority] = create_plotly_figure(
+                intermediate_result, intermediate_result_prev, current_run
+            )
         elif plotting_library == "matplotlib":
             plot_results[priority] = create_matplotlib_figure(
                 intermediate_result, intermediate_result_prev, current_run
@@ -280,14 +305,18 @@ def create_plot_each_priority(current_run: PlotDataAndConfig, plotting_library: 
 
 def create_plot_final_results(
     current_run: PlotDataAndConfig,
-    previous_run: Optional[PlotDataAndConfig] = None,
+    previous_run: PlotDataAndConfig | None = None,
     output_folder=None,
     plotting_library: str = "plotly",
-) -> Dict[str, Union[StringIO, matplotlib.figure.Figure]]:
+) -> dict[str, StringIO | matplotlib.figure.Figure]:
     """Create a plot for the final results."""
-    current_final_result = sorted(current_run["intermediate_results"], key=lambda x: x["priority"])[-1]
+    current_final_result = sorted(current_run["intermediate_results"], key=lambda x: x["priority"])[
+        -1
+    ]
     if previous_run:
-        previous_final_result = sorted(previous_run["intermediate_results"], key=lambda x: x["priority"])[-1]
+        previous_final_result = sorted(
+            previous_run["intermediate_results"], key=lambda x: x["priority"]
+        )[-1]
     else:
         previous_final_result = None
 
@@ -296,10 +325,16 @@ def create_plot_final_results(
 
     if plotting_library == "plotly":
         final_results_plot = create_plotly_figure(
-            current_final_result, None, current_run, final_result=True, results_compare=previous_final_result
+            current_final_result,
+            None,
+            current_run,
+            final_result=True,
+            results_compare=previous_final_result,
         )
     elif plotting_library == "matplotlib":
-        final_results_plot = create_matplotlib_figure(current_final_result, None, current_run, final_result=True)
+        final_results_plot = create_matplotlib_figure(
+            current_final_result, None, current_run, final_result=True
+        )
     else:
         raise ValueError("Invalid plotting library.")
     result_name = "final_results"

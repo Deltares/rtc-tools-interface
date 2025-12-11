@@ -1,11 +1,11 @@
 """Tests for goal-plotting functionalities."""
+
 import unittest
 
 from rtctools_interface.optimization.base_optimization_problem import (
     BaseOptimizationProblem,
 )
 from rtctools_interface.optimization.plot_mixin import PlotMixin
-
 from tests.utils.get_test import get_test_data
 
 

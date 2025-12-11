@@ -1,9 +1,9 @@
 """Tests for the base optimization problem class."""
+
 import unittest
 
 from rtctools_interface.optimization.base_optimization_problem import BaseOptimizationProblem
 from rtctools_interface.optimization.read_goals import read_goals_from_csv
-
 from tests.utils.get_test import get_test_data
 
 

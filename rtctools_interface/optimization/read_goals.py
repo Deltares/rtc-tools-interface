@@ -37,12 +37,13 @@ def validate_goal_list(goal_list):
 
 
 def read_goals_from_csv(
-    file,
+    file, csv_list_separator
 ) -> list[
     RangeGoalModel | RangeRateOfChangeGoalModel | MinimizationGoalModel | MaximizationGoalModel
 ]:
+
     """Read goals from csv file and validate values."""
-    raw_goal_table = pd.read_csv(file, sep=",")
+    raw_goal_table = pd.read_csv(file, sep=csv_list_separator)
     goal_table_checks(raw_goal_table)
 
     parsed_goals = []
@@ -73,7 +74,7 @@ def read_goals_from_list(
 
 
 def read_goals(
-    file=None, path_goal: bool = True, read_from="csv_table", goals_to_generate=None
+    file=None, path_goal: bool = True, read_from="csv_table", goals_to_generate=None, csv_list_separator = ","
 ) -> list[
     RangeGoalModel | RangeRateOfChangeGoalModel | MinimizationGoalModel | MaximizationGoalModel
 ]:
@@ -83,7 +84,7 @@ def read_goals(
     In either case only the active goals.
     """
     if read_from == "csv_table":
-        parsed_goals = read_goals_from_csv(file)
+        parsed_goals = read_goals_from_csv(file, csv_list_separator)
     elif read_from == "passed_list":
         parsed_goals = read_goals_from_list(goals_to_generate)
     else:

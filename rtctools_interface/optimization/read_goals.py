@@ -37,7 +37,7 @@ def validate_goal_list(goal_list):
 
 
 def read_goals_from_csv(
-    file, csv_list_separator
+    file, csv_list_separator = ","
 ) -> list[
     RangeGoalModel | RangeRateOfChangeGoalModel | MinimizationGoalModel | MaximizationGoalModel
 ]:

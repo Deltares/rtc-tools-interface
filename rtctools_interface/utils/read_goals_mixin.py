@@ -13,6 +13,7 @@ class ReadGoalsMixin:
         self,
         read_from: Literal["csv_table", "passed_list"] = "csv_table",
         goals_to_generate: list | None = None,
+        csv_list_separator=",",
     ):
         """Read goal table and store as instance variable."""
         goals_to_generate = goals_to_generate if goals_to_generate else []
@@ -29,12 +30,14 @@ class ReadGoalsMixin:
                 path_goal=True,
                 read_from=read_from,
                 goals_to_generate=goals_to_generate,
+                csv_list_separator=csv_list_separator
             )
             self._goal_generator_non_path_goals = read_goals(
                 self.goal_table_file,
                 path_goal=False,
                 read_from=read_from,
                 goals_to_generate=goals_to_generate,
+                csv_list_separator=csv_list_separator
             )
             self._all_goal_generator_goals = (
                 self._goal_generator_path_goals + self._goal_generator_non_path_goals

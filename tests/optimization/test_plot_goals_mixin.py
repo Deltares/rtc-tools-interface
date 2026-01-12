@@ -58,3 +58,17 @@ class TestPlotMixin(unittest.TestCase):
             "target_bounds_as_timeseries",
         ]:
             self.run_test(test, plotting_library="plotly")
+
+    def test_plot_goals_mixin_Semicolon(self):
+        test_data = get_test_data("basicSemicolon", optimization=True)
+        problem = BaseOptimizationProblemPlotting(
+            goal_table_file=test_data["goals_file"],
+            plot_table_file=test_data["plot_table_file"],
+            model_folder=test_data["model_folder"],
+            model_name=test_data["model_name"],
+            input_folder=test_data["model_input_folder"],
+            output_folder=test_data["output_folder"],
+            plotting_library="matplotlib",
+            csv_list_separator=";"
+        )
+        problem.optimize()

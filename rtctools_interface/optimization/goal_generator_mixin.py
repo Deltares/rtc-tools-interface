@@ -40,7 +40,8 @@ class GoalGeneratorMixin(ReadGoalsMixin, StatisticsMixin):
         if not hasattr(self, "_all_goal_generator_goals"):
             goals_to_generate = kwargs.get("goals_to_generate", [])
             read_from = kwargs.get("read_goals_from", "csv_table")
-            self.load_goals(read_from, goals_to_generate)
+            csv_list_separator = kwargs.get("csv_list_separator", ",")
+            self.load_goals(read_from, goals_to_generate, csv_list_separator)
         if self.calculate_performance_metrics:
             # A dataframe for each goal defined by the goal generator
             self._performance_metrics = {}

@@ -69,6 +69,6 @@ class TestPlotMixin(unittest.TestCase):
             input_folder=test_data["model_input_folder"],
             output_folder=test_data["output_folder"],
             plotting_library="matplotlib",
-            csv_list_separator=";"
+            goal_table_list_separator=";"
         )
         problem.optimize()

@@ -13,9 +13,18 @@ class ReadGoalsMixin:
         self,
         read_from: Literal["csv_table", "passed_list"] = "csv_table",
         goals_to_generate: list | None = None,
-        csv_list_separator=",",
+        csv_list_separator: str = ",",
     ):
-        """Read goal table and store as instance variable."""
+        """Read goal table and store as instance variable.
+
+        Args:
+            read_from (Literal["csv_table", "passed_list"]): Source type for reading goals.
+            goals_to_generate (list | None, optional): List of goals to generate. Defaults to None.
+            csv_list_separator (str, optional): Separator for the goal table CSV. Defaults to ','.
+
+        Notes:
+            The `goal_table_list_separator` parameter allows customization of the CSV delimiter.
+        """
         goals_to_generate = goals_to_generate if goals_to_generate else []
         if not hasattr(self, "goal_table_file"):
             self.goal_table_file = os.path.join(self._input_folder, "goal_table.csv")
@@ -30,14 +39,14 @@ class ReadGoalsMixin:
                 path_goal=True,
                 read_from=read_from,
                 goals_to_generate=goals_to_generate,
-                csv_list_separator=csv_list_separator
+                csv_list_separator=csv_list_separator,
             )
             self._goal_generator_non_path_goals = read_goals(
                 self.goal_table_file,
                 path_goal=False,
                 read_from=read_from,
                 goals_to_generate=goals_to_generate,
-                csv_list_separator=csv_list_separator
+                csv_list_separator=csv_list_separator,
             )
             self._all_goal_generator_goals = (
                 self._goal_generator_path_goals + self._goal_generator_non_path_goals

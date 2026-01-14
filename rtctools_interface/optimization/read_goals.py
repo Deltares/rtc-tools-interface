@@ -1,5 +1,7 @@
 """Module for reading goals from a csv file."""
 
+from pathlib import Path
+
 import pandas as pd
 
 from rtctools_interface.optimization.goal_table_schema import (
@@ -37,11 +39,10 @@ def validate_goal_list(goal_list):
 
 
 def read_goals_from_csv(
-    file, csv_list_separator = ","
+    file: str | Path, csv_list_separator: str = ","
 ) -> list[
     RangeGoalModel | RangeRateOfChangeGoalModel | MinimizationGoalModel | MaximizationGoalModel
 ]:
-
     """Read goals from csv file and validate values."""
     raw_goal_table = pd.read_csv(file, sep=csv_list_separator)
     goal_table_checks(raw_goal_table)
@@ -54,7 +55,7 @@ def read_goals_from_csv(
 
 
 def read_goals_from_list(
-    goals_to_generate,
+    goals_to_generate: list,
 ) -> list[
     RangeGoalModel | RangeRateOfChangeGoalModel | MinimizationGoalModel | MaximizationGoalModel
 ]:
@@ -74,7 +75,11 @@ def read_goals_from_list(
 
 
 def read_goals(
-    file=None, path_goal: bool = True, read_from="csv_table", goals_to_generate=None, csv_list_separator = ","
+    file: str | None = None,
+    path_goal: bool = True,
+    read_from: str = "csv_table",
+    goals_to_generate: list | None = None,
+    csv_list_separator: str = ",",
 ) -> list[
     RangeGoalModel | RangeRateOfChangeGoalModel | MinimizationGoalModel | MaximizationGoalModel
 ]:

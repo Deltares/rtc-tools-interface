@@ -1,5 +1,9 @@
 """Tests for goal-plotting functionalities."""
 
+import matplotlib
+
+matplotlib.use("Agg")
+
 import unittest
 
 from rtctools_interface.simulation.base_simulation_problem import BaseSimulationProblem

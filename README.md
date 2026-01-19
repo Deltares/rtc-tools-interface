@@ -255,3 +255,11 @@ Note that this happens for:
 - Currently, only the initial values of the first time step in a given time range are set.
 - The closed_loop runner only works in combination with the CSVMixin or the PIMixin.
     The CDFMixin is not supported.
+
+### Matplotlib in Headless Environments
+
+For CI or servers without a display, set `MPLBACKEND=Agg` to ensure Matplotlib uses a non-interactive backend:
+
+```bash
+export MPLBACKEND=Agg
+```

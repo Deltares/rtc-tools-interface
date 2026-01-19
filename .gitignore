@@ -30,6 +30,7 @@ dist
 *.html
 *.pickle
 *.csv
+!tests/data/**/*.csv
 *.json
 output/
 input_modelling_periods/

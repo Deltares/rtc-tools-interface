@@ -10,8 +10,18 @@ from rtctools_interface.utils.plot_table_schema import PlotTableRow
 logger = logging.getLogger("rtctools")
 
 
-def read_plot_config_from_csv(plot_table_file: Path | str, csv_list_separator) -> list[PlotTableRow]:
-    """Read plot information from csv file and check values"""
+def read_plot_config_from_csv(
+    plot_table_file: Path | str, csv_list_separator: str = ","
+) -> list[PlotTableRow]:
+    """Read plot information from csv file and check values.
+
+    Args:
+        plot_table_file (Path | str): Path to the plot table CSV file.
+        csv_list_separator (str, optional): Separator used in the CSV file. Defaults to ','.
+
+    Returns:
+        list[PlotTableRow]: List of parsed plot table rows.
+    """
     plot_table_file = Path(plot_table_file)
     if plot_table_file.is_file():
         try:
@@ -43,7 +53,10 @@ def read_plot_config_from_list(plot_config: list[PlotTableRow]) -> list[PlotTabl
 
 
 def get_plot_config(
-    plot_table_file=None, plot_config_list=None, read_from="csv_table", csv_list_separator=",",
+    plot_table_file=None,
+    plot_config_list=None,
+    read_from="csv_table",
+    csv_list_separator: str = ",",
 ) -> list[PlotTableRow]:
     """Get plot config rows."""
     if read_from == "csv_table":

@@ -100,9 +100,10 @@ See the table below for an example content of the `goal_table.csv`.
 
 | id     | state | active | goal_type    | function_min | function_max | function_nominal | target_data_type | target_min | target_max | priority | weight | order |
 |--------|-------|--------|--------------|--------------|--------------|------------------|------------------|------------|------------|----------|--------|-------|
-| goal_1 | reservoir_1_waterlevel     | 1      | range        | 0            | 15           | 10               | value            | 5.0        | 10.0       | 5       |        |       |
-| goal_2 | reservoir_2_waterlevel     | 1      | range        | 0            | 15           | 10               | timeseries            | "target_series"        | "target_series"       | 10       |        |       |
-| goal_3 | electricity_cost     | 1      | minimization_path |              |              |                  |                  |            |            | 20       |        |       |
+| goal_1 | reservoir_1_waterlevel     | 1      | range        | 0            | 15           | 10               | value            | 5.0        | 10.0       | 5       |    1    |    1   |
+| goal_2 | reservoir_2_waterlevel     | 1      | range        | 0            | 15           | 10               | timeseries            | "target_series"        | "target_series"       | 10       |    1    |   1    |
+| goal_3 | electricity_cost     | 1      | minimization_path |              |              |                  |                  |            |            | 20       |   1     |   1    |
+| goal_4 | reservoir_2_volume | 1 | range_rate_of_change | -100 | 100 | 10 | value | -10 | 10 | 30 | 1 | 1 |  
 
 ## Goal performance metrics
 For all goals defined with the goal generator this rtc-tools-interface module will also calculate performance metrics. By default, these performance metrics are saved to a .csv in the folder `output/perfomance_metrics`, with one csv file per goal. With the class variable `calculate_performance_metrics` this functionality can be disabled (by default it is enabled).

@@ -26,7 +26,7 @@ class ReadGoalsMixin:
             The `goal_table_list_separator` parameter allows customization of the CSV delimiter.
         """
         goals_to_generate = goals_to_generate if goals_to_generate else []
-        if not hasattr(self, "goal_table_file"):
+        if not hasattr(self, "goal_table_file") or self.goal_table_file is None:
             self.goal_table_file = os.path.join(self._input_folder, "goal_table.csv")
 
         if (
@@ -52,4 +52,6 @@ class ReadGoalsMixin:
                 self._goal_generator_path_goals + self._goal_generator_non_path_goals
             )
         else:
+            self._goal_generator_path_goals = []
+            self._goal_generator_non_path_goals = []
             self._all_goal_generator_goals = []

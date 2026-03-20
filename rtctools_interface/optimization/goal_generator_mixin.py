@@ -6,7 +6,10 @@ from pathlib import Path
 import pandas as pd
 
 from rtctools_interface.optimization.base_goal import BaseGoal
-from rtctools_interface.optimization.goal_performance_metrics import get_performance_metrics
+from rtctools_interface.optimization.goal_performance_metrics import (
+    get_custom_performance_metrics,
+    get_performance_metrics,
+)
 from rtctools_interface.optimization.helpers.statistics_mixin import StatisticsMixin
 from rtctools_interface.utils.read_goals_mixin import ReadGoalsMixin
 
@@ -72,17 +75,43 @@ class GoalGeneratorMixin(ReadGoalsMixin, StatisticsMixin):
         """Calculate and store performance metrics."""
         results = self.extract_results()
         goal_generator_goals = self._all_goal_generator_goals
-        all_base_goals = [
-            goal for goal in self.goals() + self.path_goals() if isinstance(goal, BaseGoal)
-        ]
+        goals = self.goals()
+        path_goals = self.path_goals()
+        all_base_goals = [goal for goal in goals + path_goals if isinstance(goal, BaseGoal)]
         targets = self.collect_range_target_values(all_base_goals)
+
         for goal in goal_generator_goals:
             next_row = get_performance_metrics(results, goal, targets.get(str(goal.goal_id)))
             if next_row is not None:
                 next_row.rename(label, inplace=True)
+                self._performance_metrics.setdefault(str(goal.goal_id), pd.DataFrame())
                 self._performance_metrics[goal.goal_id] = pd.concat(
                     [self._performance_metrics[goal.goal_id].T, next_row], axis=1
                 ).T
+
+        custom_goals = [(goal, False, i) for i, goal in enumerate(goals) if not isinstance(goal, BaseGoal)]
+        custom_goals.extend(
+            (goal, True, i) for i, goal in enumerate(path_goals) if not isinstance(goal, BaseGoal)
+        )
+
+        for goal, is_path_goal, goal_index in custom_goals:
+            target_values = self.collect_target_values_for_goal(goal, is_path_goal=is_path_goal)
+            evaluated_values = self.evaluate_goal_function(
+                goal, ensemble_member=0, is_path_goal=is_path_goal
+            )
+            goal_id = self.get_performance_metric_id(
+                goal, is_path_goal=is_path_goal, goal_index=goal_index
+            )
+            next_row = get_custom_performance_metrics(
+                evaluated_values,
+                None if target_values is None else target_values["target_min"],
+                None if target_values is None else target_values["target_max"],
+            )
+            next_row.rename(label, inplace=True)
+            self._performance_metrics.setdefault(goal_id, pd.DataFrame())
+            self._performance_metrics[goal_id] = pd.concat(
+                [self._performance_metrics[goal_id].T, next_row], axis=1
+            ).T
 
     def priority_completed(self, priority):
         """Tasks after priority optimization."""

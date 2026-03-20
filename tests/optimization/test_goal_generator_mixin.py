@@ -1,6 +1,7 @@
 """Tests for performance metrics in GoalGeneratorMixin."""
 
 import unittest
+from pathlib import Path
 
 from rtctools.optimization.goal_programming_mixin import Goal
 
@@ -91,6 +92,23 @@ class TestGoalGeneratorMixin(unittest.TestCase):
         self.assertEqual(metrics[integral_goal_id].loc["final_results", "mean_absolute_difference"], 0)
         self.assertEqual(metrics[integral_goal_id].loc["final_results", "max_difference"], 0)
 
+    def test_get_performance_metrics_with_plot_writes_html(self):
+        test_data = get_test_data("basic", optimization=True)
+        problem = CustomGoalOptimizationProblem(
+            model_folder=test_data["model_folder"],
+            model_name=test_data["model_name"],
+            input_folder=test_data["model_input_folder"],
+            output_folder=test_data["output_folder"],
+        )
 
+        problem.optimize()
+        metrics = problem.get_performance_metrics_with_plot()
 
+        expected_html = (
+            Path(test_data["output_folder"])
+            / "performance_metrics"
+            / "performance_metrics_dashboard.html"
+        )
 
+        self.assertTrue(expected_html.exists())
+        self.assertEqual(metrics.keys(), problem.get_performance_metrics().keys())

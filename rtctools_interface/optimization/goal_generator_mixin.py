@@ -13,6 +13,11 @@ from rtctools_interface.optimization.goal_performance_metrics import (
 from rtctools_interface.optimization.helpers.statistics_mixin import StatisticsMixin
 from rtctools_interface.utils.read_goals_mixin import ReadGoalsMixin
 
+from rtctools_interface.plotting.performance_metrics_plot_tools import (
+    create_performance_metrics_dashboard,
+)
+
+
 logger = logging.getLogger("rtctools")
 
 
@@ -48,8 +53,11 @@ class GoalGeneratorMixin(ReadGoalsMixin, StatisticsMixin):
         if self.calculate_performance_metrics:
             # A dataframe for each goal defined by the goal generator
             self._performance_metrics = {}
+            self._performance_metrics_plot_file = None
+            self._performance_metrics_plot_figures = {}
             for goal in self._all_goal_generator_goals:
                 self._performance_metrics[goal.goal_id] = pd.DataFrame()
+
 
     def path_goals(self):
         """Return the list of path goals."""
@@ -129,3 +137,48 @@ class GoalGeneratorMixin(ReadGoalsMixin, StatisticsMixin):
     def get_performance_metrics(self):
         """Get the plot data and config from the current run."""
         return self._performance_metrics
+
+    def get_performance_metrics_with_plot(
+        self,
+        output_path: str | Path | None = None,
+        file_name: str = "performance_metrics_dashboard.html",
+    ):
+        """
+        Return performance metrics and also create an interactive HTML dashboard.
+
+        Parameters
+        ----------
+        output_path : str | Path | None
+            Folder where the HTML dashboard should be written.
+            If None, it is written to <output_folder>/performance_metrics/.
+        file_name : str
+            Name of the HTML file.
+
+        Returns
+        -------
+        dict[str, pandas.DataFrame]
+            Same object returned by get_performance_metrics().
+        """
+        performance_metrics = self.get_performance_metrics()
+
+        if output_path is None:
+            output_path = Path(self._output_folder) / "performance_metrics"
+        else:
+            output_path = Path(output_path)
+
+        figures, html_path = create_performance_metrics_dashboard(
+            performance_metrics,
+            output_folder=output_path,
+            file_name=file_name,
+        )
+
+        self._performance_metrics_plot_file = html_path
+        self._performance_metrics_plot_figures = figures
+        return performance_metrics
+
+    @property
+    def performance_metrics_plot_file(self):
+        """Path to the most recently generated performance metrics dashboard."""
+        return self._performance_metrics_plot_file
+
+

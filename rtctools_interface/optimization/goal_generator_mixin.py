@@ -11,12 +11,10 @@ from rtctools_interface.optimization.goal_performance_metrics import (
     get_performance_metrics,
 )
 from rtctools_interface.optimization.helpers.statistics_mixin import StatisticsMixin
-from rtctools_interface.utils.read_goals_mixin import ReadGoalsMixin
-
 from rtctools_interface.plotting.performance_metrics_plot_tools import (
     create_performance_metrics_dashboard,
 )
-
+from rtctools_interface.utils.read_goals_mixin import ReadGoalsMixin
 
 logger = logging.getLogger("rtctools")
 
@@ -58,7 +56,6 @@ class GoalGeneratorMixin(ReadGoalsMixin, StatisticsMixin):
             for goal in self._all_goal_generator_goals:
                 self._performance_metrics[goal.goal_id] = pd.DataFrame()
 
-
     def path_goals(self):
         """Return the list of path goals."""
         goals = super().path_goals()
@@ -97,7 +94,9 @@ class GoalGeneratorMixin(ReadGoalsMixin, StatisticsMixin):
                     [self._performance_metrics[goal.goal_id].T, next_row], axis=1
                 ).T
 
-        custom_goals = [(goal, False, i) for i, goal in enumerate(goals) if not isinstance(goal, BaseGoal)]
+        custom_goals = [
+            (goal, False, i) for i, goal in enumerate(goals) if not isinstance(goal, BaseGoal)
+        ]
         custom_goals.extend(
             (goal, True, i) for i, goal in enumerate(path_goals) if not isinstance(goal, BaseGoal)
         )
@@ -180,5 +179,3 @@ class GoalGeneratorMixin(ReadGoalsMixin, StatisticsMixin):
     def performance_metrics_plot_file(self):
         """Path to the most recently generated performance metrics dashboard."""
         return self._performance_metrics_plot_file
-
-

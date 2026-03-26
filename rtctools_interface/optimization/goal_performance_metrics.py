@@ -27,7 +27,9 @@ def _flatten_metric_values(values: np.ndarray) -> np.ndarray:
     return array.reshape(-1, order="F")
 
 
-def _normalize_target_shape(values: np.ndarray, target: np.ndarray | float | None) -> np.ndarray | None:
+def _normalize_target_shape(
+    values: np.ndarray, target: np.ndarray | float | None
+) -> np.ndarray | None:
     """Broadcast a goal target to the shape of the evaluated goal values."""
     if target is None:
         return None
@@ -40,7 +42,11 @@ def _normalize_target_shape(values: np.ndarray, target: np.ndarray | float | Non
     if target_array.ndim == 0:
         target_array = np.array([float(target_array)])
 
-    if target_array.ndim == 2 and value_array.ndim == 2 and target_array.shape == value_array.shape[::-1]:
+    if (
+        target_array.ndim == 2
+        and value_array.ndim == 2
+        and target_array.shape == value_array.shape[::-1]
+    ):
         target_array = target_array.transpose()
 
     if target_array.shape != value_array.shape:
@@ -106,9 +112,13 @@ def get_range_percentual_exceedance_from_targets(
     below_target = None
     above_target = None
     if target_min is not None and np.any(np.isfinite(target_min)):
-        below_target = float(sum(np.where(timeseries + ABS_TOL < target_min, 1, 0)) / len(timeseries))
+        below_target = float(
+            sum(np.where(timeseries + ABS_TOL < target_min, 1, 0)) / len(timeseries)
+        )
     if target_max is not None and np.any(np.isfinite(target_max)):
-        above_target = float(sum(np.where(timeseries - ABS_TOL > target_max, 1, 0)) / len(timeseries))
+        above_target = float(
+            sum(np.where(timeseries - ABS_TOL > target_max, 1, 0)) / len(timeseries)
+        )
 
     return {"perc_below_target": below_target, "perc_above_target": above_target}
 

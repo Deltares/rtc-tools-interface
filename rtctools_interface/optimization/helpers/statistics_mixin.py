@@ -108,7 +108,9 @@ class StatisticsMixin:
             "target_max": np.asarray(target_max, dtype=float),
         }
 
-    def evaluate_goal_function(self, goal, *, ensemble_member: int, is_path_goal: bool) -> np.ndarray:
+    def evaluate_goal_function(
+        self, goal, *, ensemble_member: int, is_path_goal: bool
+    ) -> np.ndarray:
         """Evaluate the goal function on the current solver output."""
         expression = goal.function(self, ensemble_member)
         if is_path_goal:
@@ -118,4 +120,3 @@ class StatisticsMixin:
 
         evaluator = ca.Function("performance_metrics_goal_eval", [self.solver_input], [expression])
         return np.array(evaluator(self.solver_output))
-

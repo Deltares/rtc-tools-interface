@@ -89,7 +89,9 @@ class TestGoalGeneratorMixin(unittest.TestCase):
         self.assertIn("sum_below_target", metrics[range_goal_id].columns)
         self.assertIn("sum_above_target", metrics[range_goal_id].columns)
 
-        self.assertEqual(metrics[integral_goal_id].loc["final_results", "mean_absolute_difference"], 0)
+        self.assertEqual(
+            metrics[integral_goal_id].loc["final_results", "mean_absolute_difference"], 0
+        )
         self.assertEqual(metrics[integral_goal_id].loc["final_results", "max_difference"], 0)
 
     def test_get_performance_metrics_with_plot_writes_html(self):
@@ -112,3 +114,15 @@ class TestGoalGeneratorMixin(unittest.TestCase):
 
         self.assertTrue(expected_html.exists())
         self.assertEqual(metrics.keys(), problem.get_performance_metrics().keys())
+
+        html = expected_html.read_text(encoding="utf-8")
+        self.assertIn("Bar Charts", html)
+        self.assertIn("Tables", html)
+        self.assertIn("Performance Metrics Bar Chart", html)
+        self.assertIn("Performance Metrics Tables", html)
+        self.assertIn("Select all goals", html)
+        self.assertIn("Unselect all goals", html)
+        self.assertIn("All goals", html)
+        self.assertNotIn("Heatmap view", html)
+        self.assertNotIn("Metric-focused view", html)
+

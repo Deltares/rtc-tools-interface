@@ -54,7 +54,7 @@ class GoalGeneratorMixin(ReadGoalsMixin, StatisticsMixin):
             self._performance_metrics_plot_file = None
             self._performance_metrics_plot_figures = {}
             for goal in self._all_goal_generator_goals:
-                self._performance_metrics[goal.goal_id] = pd.DataFrame()
+                self._performance_metrics[str(goal.goal_id)] = pd.DataFrame()
 
     def path_goals(self):
         """Return the list of path goals."""
@@ -86,12 +86,13 @@ class GoalGeneratorMixin(ReadGoalsMixin, StatisticsMixin):
         targets = self.collect_range_target_values(all_base_goals)
 
         for goal in goal_generator_goals:
-            next_row = get_performance_metrics(results, goal, targets.get(str(goal.goal_id)))
+            goal_id_str = str(goal.goal_id)
+            next_row = get_performance_metrics(results, goal, targets.get(goal_id_str))
             if next_row is not None:
                 next_row.rename(label, inplace=True)
-                self._performance_metrics.setdefault(str(goal.goal_id), pd.DataFrame())
-                self._performance_metrics[goal.goal_id] = pd.concat(
-                    [self._performance_metrics[goal.goal_id].T, next_row], axis=1
+                self._performance_metrics.setdefault(goal_id_str, pd.DataFrame())
+                self._performance_metrics[goal_id_str] = pd.concat(
+                    [self._performance_metrics[goal_id_str].T, next_row], axis=1
                 ).T
 
         custom_goals = [

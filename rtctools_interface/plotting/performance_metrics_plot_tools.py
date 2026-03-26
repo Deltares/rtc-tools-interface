@@ -174,17 +174,25 @@ def _build_goal_tables_html(
     if not goal_order:
         return "<p>No performance metrics available.</p>"
 
-    options = ["<option value='__all_goals__'>All goals</option>"]
+    # Normalize performance metric keys to strings so they match goal_order,
+    # which is built from str(goal_id) in _flatten_performance_metrics.
+    normalized_metrics: dict[str, pd.DataFrame] = {
+        str(goal_key): table for goal_key, table in performance_metrics.items()
+    }
+
+    options = ['<option value="__all_goals__">All goals</option>']
     panels: list[str] = []
 
     for goal_idx, goal_id in enumerate(goal_order):
-        table = performance_metrics.get(goal_id)
+        table = normalized_metrics.get(goal_id)
         if table is None or table.empty:
             continue
 
         selected = " selected" if goal_idx == 0 else ""
-        escaped_goal_id = html.escape(goal_id)
-        options.append(f"<option value='{escaped_goal_id}'{selected}>{escaped_goal_id}</option>")
+        escaped_goal_id = html.escape(goal_id, quote=True)
+        options.append(
+            f'<option value="{escaped_goal_id}"{selected}>{escaped_goal_id}</option>'
+        )
 
         headers = "".join(f"<th>{html.escape(str(column))}</th>" for column in table.columns)
         rows: list[str] = []
@@ -194,8 +202,8 @@ def _build_goal_tables_html(
 
         active_class = " active" if goal_idx == 0 else ""
         panels.append(
-            "<div class='goal-table-panel"
-            f"{active_class}' data-goal-table='{escaped_goal_id}'>"
+            "<div class=\"goal-table-panel"
+            f"{active_class}\" data-goal-table=\"{escaped_goal_id}\">"
             f"<h3 class='goal-table-title'>{escaped_goal_id}</h3>"
             "<table class='metric-table'>"
             f"<thead><tr><th>Priority</th>{headers}</tr></thead>"
@@ -296,7 +304,7 @@ def create_performance_metrics_dashboard(
         ),
         "<div id='metric-by-goal' class='tab-panel active'><h2>Performance Metrics Bar Chart</h2>",
         "<div class='metric-chart-wrapper'>",
-        pio.to_html(metric_by_goal, include_plotlyjs="cdn", full_html=False),
+        pio.to_html(metric_by_goal, include_plotlyjs=True, full_html=False),
         (
             "<div class='chart-controls'>"
             "<button id='select-all-goals-button' class='chart-control-button' "

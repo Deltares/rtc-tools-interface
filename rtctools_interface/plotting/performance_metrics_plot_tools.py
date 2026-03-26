@@ -114,9 +114,7 @@ def _metric_by_goal_figure(
                 meta=metric_name,
                 visible=(metric_idx == 0),
                 hovertemplate=(
-                    "goal=%{fullData.name}<br>"
-                    "priority=%{x}<br>"
-                    "value=%{y}<extra></extra>"
+                    "goal=%{fullData.name}<br>priority=%{x}<br>value=%{y}<extra></extra>"
                 ),
             )
 
@@ -186,20 +184,13 @@ def _build_goal_tables_html(
 
         selected = " selected" if goal_idx == 0 else ""
         escaped_goal_id = html.escape(goal_id)
-        options.append(
-            f"<option value='{escaped_goal_id}'{selected}>{escaped_goal_id}</option>"
-        )
+        options.append(f"<option value='{escaped_goal_id}'{selected}>{escaped_goal_id}</option>")
 
         headers = "".join(f"<th>{html.escape(str(column))}</th>" for column in table.columns)
         rows: list[str] = []
         for priority, row in table.iterrows():
             cells = "".join(f"<td>{_format_metric_value(value)}</td>" for value in row.tolist())
-            rows.append(
-                "<tr>"
-                f"<th scope='row'>{html.escape(str(priority))}</th>"
-                f"{cells}"
-                "</tr>"
-            )
+            rows.append(f"<tr><th scope='row'>{html.escape(str(priority))}</th>{cells}</tr>")
 
         active_class = " active" if goal_idx == 0 else ""
         panels.append(
@@ -243,9 +234,7 @@ def create_performance_metrics_dashboard(
         performance_metrics
     )
 
-    metric_by_goal = _metric_by_goal_figure(
-        long_df, goal_order, priority_order, metric_order
-    )
+    metric_by_goal = _metric_by_goal_figure(long_df, goal_order, priority_order, metric_order)
     figures = {
         "metric_by_goal": metric_by_goal,
         "goal_order": goal_order,
@@ -262,13 +251,25 @@ def create_performance_metrics_dashboard(
         "body { font-family: Arial, sans-serif; margin: 24px; }",
         "h1, h2 { margin-bottom: 0.4rem; }",
         ".tab-buttons { display: flex; gap: 12px; margin: 24px 0 16px; }",
-        ".tab-button { background: #f3f4f6; border: 1px solid #cbd5e1; border-radius: 6px; cursor: pointer; font-size: 14px; padding: 10px 16px; }",
+        (
+            ".tab-button { background: #f3f4f6; border: 1px solid #cbd5e1; "
+            "border-radius: 6px; cursor: pointer; font-size: 14px; "
+            "padding: 10px 16px; }"
+        ),
         ".tab-button.active { background: #2563eb; border-color: #2563eb; color: white; }",
         ".tab-panel { display: none; }",
         ".tab-panel.active { display: block; }",
         ".metric-chart-wrapper { position: relative; }",
-        ".chart-controls { position: absolute; top: 58px; right: 12px; z-index: 10; display: flex; flex-direction: row; gap: 8px; align-items: center; flex-wrap: nowrap; }",
-        ".chart-control-button { background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; cursor: pointer; font-size: 14px; padding: 8px 14px; }",
+        (
+            ".chart-controls { position: absolute; top: 58px; right: 12px; "
+            "z-index: 10; display: flex; flex-direction: row; gap: 8px; "
+            "align-items: center; flex-wrap: nowrap; }"
+        ),
+        (
+            ".chart-control-button { background: #f8fafc; border: 1px solid #cbd5e1; "
+            "border-radius: 6px; cursor: pointer; font-size: 14px; "
+            "padding: 8px 14px; }"
+        ),
         ".chart-control-button:hover { background: #eef2ff; }",
         ".goal-table-controls { margin-bottom: 16px; }",
         ".goal-table-select { min-width: 320px; padding: 6px 8px; }",
@@ -277,22 +278,33 @@ def create_performance_metrics_dashboard(
         ".goal-table-panel + .goal-table-panel.active { margin-top: 24px; }",
         ".goal-table-title { margin: 0 0 12px; font-size: 16px; }",
         ".metric-table { border-collapse: collapse; width: 100%; }",
-        ".metric-table th, .metric-table td { border: 1px solid #d1d5db; padding: 8px 10px; text-align: left; vertical-align: top; }",
+        (
+            ".metric-table th, .metric-table td { border: 1px solid #d1d5db; "
+            "padding: 8px 10px; text-align: left; vertical-align: top; }"
+        ),
         ".metric-table thead th { background: #f8fafc; position: sticky; top: 0; }",
         ".metric-table tbody tr:nth-child(even) { background: #f9fafb; }",
         "</style></head><body>",
         "<h1>Performance Metrics Dashboard</h1>",
-        "<div class='tab-buttons'>"
-        "<button class='tab-button active' type='button' data-target='metric-by-goal'>Bar Charts</button>"
-        "<button class='tab-button' type='button' data-target='goal-by-metric'>Tables</button>"
-        "</div>",
+        (
+            "<div class='tab-buttons'>"
+            "<button class='tab-button active' type='button' "
+            "data-target='metric-by-goal'>Bar Charts</button>"
+            "<button class='tab-button' type='button' "
+            "data-target='goal-by-metric'>Tables</button>"
+            "</div>"
+        ),
         "<div id='metric-by-goal' class='tab-panel active'><h2>Performance Metrics Bar Chart</h2>",
         "<div class='metric-chart-wrapper'>",
         pio.to_html(metric_by_goal, include_plotlyjs="cdn", full_html=False),
-        "<div class='chart-controls'>"
-        "<button id='select-all-goals-button' class='chart-control-button' type='button'>Select all goals</button>"
-        "<button id='unselect-all-goals-button' class='chart-control-button' type='button'>Unselect all goals</button>"
-        "</div>",
+        (
+            "<div class='chart-controls'>"
+            "<button id='select-all-goals-button' class='chart-control-button' "
+            "type='button'>Select all goals</button>"
+            "<button id='unselect-all-goals-button' class='chart-control-button' "
+            "type='button'>Unselect all goals</button>"
+            "</div>"
+        ),
         "</div>",
         "</div>",
         "<div id='goal-by-metric' class='tab-panel'><h2>Performance Metrics Tables</h2>",
@@ -319,7 +331,10 @@ def create_performance_metrics_dashboard(
         "  const unselectAllGoalsButton = document.getElementById('unselect-all-goals-button');",
         f"  let currentMetric = {json.dumps(default_metric)};",
         "  function getTraceIndexesForMetric(metricName) {",
-        "    if (!metricChart || !Array.isArray(metricChart.data) || metricChart.data.length === 0) {",
+        (
+            "    if (!metricChart || !Array.isArray(metricChart.data) || "
+            "metricChart.data.length === 0) {"
+        ),
         "      return [];",
         "    }",
         "    const indexes = [];",
@@ -335,7 +350,10 @@ def create_performance_metrics_dashboard(
         "    if (!metricChart || typeof Plotly === 'undefined' || traceIndexes.length === 0) {",
         "      return;",
         "    }",
-        "    Plotly.restyle(metricChart, { visible: traceIndexes.map(() => visibleState) }, traceIndexes);",
+        (
+            "    Plotly.restyle(metricChart, { visible: traceIndexes.map(() => visibleState) }, "
+            "traceIndexes);"
+        ),
         "  }",
         "  if (metricChart) {",
         "    metricChart.on('plotly_buttonclicked', function (eventData) {",
@@ -359,7 +377,10 @@ def create_performance_metrics_dashboard(
         "  function activateGoalTable(goalId) {",
         "    goalTablePanels.forEach((panel) => {",
         "      const showAllGoals = goalId === '__all_goals__';",
-        "      panel.classList.toggle('active', showAllGoals || panel.getAttribute('data-goal-table') === goalId);",
+        (
+            "      panel.classList.toggle('active', showAllGoals || "
+            "panel.getAttribute('data-goal-table') === goalId);"
+        ),
         "    });",
         "  }",
         "  if (goalTableSelect) {",

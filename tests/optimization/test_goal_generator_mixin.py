@@ -125,4 +125,3 @@ class TestGoalGeneratorMixin(unittest.TestCase):
         self.assertIn("All goals", html)
         self.assertNotIn("Heatmap view", html)
         self.assertNotIn("Metric-focused view", html)
-

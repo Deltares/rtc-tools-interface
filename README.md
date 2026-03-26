@@ -117,6 +117,40 @@ The calculated metrics are:
 - `mean_absolute_percentual_difference`: The mean of the absolute percentual difference per timestep over all timesteps (only for range goals).
 - `mean_absolute_difference`: The mean absolute difference per timestep of the state variable over all timesteps (only for range goals).
 
+### Accessing performance metrics in Python
+For optimization problems that use the `GoalGeneratorMixin`, the performance metrics are also available directly on the problem instance after `optimize()` has finished.
+
+Use `get_performance_metrics()` when you want the calculated metrics as Python objects:
+
+```python
+problem.optimize()
+performance_metrics = problem.get_performance_metrics()
+
+for goal_id, table in performance_metrics.items():
+    print(goal_id)
+    print(table)
+```
+
+The returned object is a `dict[str, pandas.DataFrame]`, with one dataframe per goal. The dataframe index contains the optimization priorities and `final_results`. The columns contain the calculated metrics listed above.
+
+Use `get_performance_metrics_with_plot()` when you want the same dictionary and an interactive HTML dashboard of the metrics:
+
+```python
+problem.optimize()
+performance_metrics = problem.get_performance_metrics_with_plot()
+```
+
+By default, this writes `performance_metrics_dashboard.html` to `output/performance_metrics/`. A custom output folder and file name can be provided:
+
+```python
+performance_metrics = problem.get_performance_metrics_with_plot(
+    output_path="custom_output_folder",
+    file_name="my_performance_metrics.html",
+)
+```
+
+The method returns the same `dict[str, pandas.DataFrame]` as `get_performance_metrics()`. The path to the most recently generated dashboard is available via `problem.performance_metrics_plot_file()`.
+
 
 ## Automatic plotting of results
 With the `PlotMixin` one can easily make plots of the results of rtc-tools. This functionality can be used both for optimization and simulation problems. For optimization problems, use:

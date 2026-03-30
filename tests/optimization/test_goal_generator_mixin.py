@@ -70,6 +70,7 @@ class TestGoalGeneratorMixin(unittest.TestCase):
 
         problem.optimize()
         metrics = problem.get_performance_metrics()
+        active_constraint_metrics = problem.get_active_constraint_metrics()
 
         range_goal_id = "WaterLevelRangeGoal__x__path__priority_10__idx_0"
         smooth_goal_id = "MinimizeUGoal__path__priority_15__idx_1"
@@ -88,6 +89,34 @@ class TestGoalGeneratorMixin(unittest.TestCase):
         self.assertIn("perc_above_target", metrics[range_goal_id].columns)
         self.assertIn("sum_below_target", metrics[range_goal_id].columns)
         self.assertIn("sum_above_target", metrics[range_goal_id].columns)
+        self.assertNotIn("active_hard_constraints", metrics[range_goal_id].columns)
+        self.assertNotIn("active_hard_constraints_fraction", metrics[range_goal_id].columns)
+        self.assertNotIn("active_previous_priority_constraints", metrics[range_goal_id].columns)
+
+        self.assertFalse(active_constraint_metrics.empty)
+        self.assertIn(10, active_constraint_metrics.index)
+        self.assertIn("final_results", active_constraint_metrics.index)
+        self.assertEqual(
+            set(active_constraint_metrics.columns),
+            {
+                "active_hard_constraints",
+                "active_hard_constraints_fraction",
+                "active_previous_priority_constraints",
+            },
+        )
+        self.assertGreater(
+            active_constraint_metrics.loc["final_results", "active_hard_constraints"], 0
+        )
+        self.assertGreater(
+            active_constraint_metrics.loc["final_results", "active_hard_constraints_fraction"], 0
+        )
+        self.assertLessEqual(
+            active_constraint_metrics.loc["final_results", "active_hard_constraints_fraction"], 1
+        )
+        self.assertGreater(
+            active_constraint_metrics.loc["final_results", "active_previous_priority_constraints"],
+            0,
+        )
 
         self.assertEqual(
             metrics[integral_goal_id].loc["final_results", "mean_absolute_difference"], 0
@@ -118,10 +147,19 @@ class TestGoalGeneratorMixin(unittest.TestCase):
         html = expected_html.read_text(encoding="utf-8")
         self.assertIn("Bar Charts", html)
         self.assertIn("Tables", html)
+        self.assertIn("Constraint Activity", html)
         self.assertIn("Performance Metrics Bar Chart", html)
         self.assertIn("Performance Metrics Tables", html)
         self.assertIn("Select all goals", html)
         self.assertIn("Unselect all goals", html)
         self.assertIn("All goals", html)
+        self.assertIn("Timeseries Sum", html)
+        self.assertIn("Timeseries Average", html)
+        self.assertIn("Percentage Below Target", html)
+        self.assertIn("Percentage Above Target", html)
+        self.assertIn("Active hard constraints", html)
+        self.assertIn("Fraction of active hard constraints", html)
+        self.assertIn("Active constraints from earlier priorities", html)
+        self.assertIn("Constraint activity by priority", html)
         self.assertNotIn("Heatmap view", html)
         self.assertNotIn("Metric-focused view", html)

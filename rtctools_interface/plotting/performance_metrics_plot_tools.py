@@ -11,6 +11,35 @@ import pandas as pd
 import plotly.graph_objects as go
 import plotly.io as pio
 
+ACTIVE_CONSTRAINT_LABELS = {
+    "active_hard_constraints": "Active hard constraints",
+    "active_hard_constraints_fraction": "Fraction of active hard constraints",
+    "active_previous_priority_constraints": "Active constraints from earlier priorities",
+}
+
+GOAL_METRIC_LABELS = {
+    "timeseries_sum": "Timeseries Sum",
+    "timeseries_min": "Timeseries Minimum",
+    "timeseries_max": "Timeseries Maximum",
+    "timeseries_avg": "Timeseries Average",
+    "mean_absolute_percentual_difference": "Mean Absolute Percentual Difference",
+    "mean_absolute_difference": "Mean Absolute Difference",
+    "max_difference": "Maximum Difference",
+    "perc_below_target": "Percentage Below Target",
+    "perc_above_target": "Percentage Above Target",
+    "sum_below_target": "Sum Below Target",
+    "sum_above_target": "Sum Above Target",
+}
+
+
+def _metric_display_label(metric_name: str) -> str:
+    """Return a user-friendly label for a metric key."""
+    if metric_name in ACTIVE_CONSTRAINT_LABELS:
+        return ACTIVE_CONSTRAINT_LABELS[metric_name]
+    if metric_name in GOAL_METRIC_LABELS:
+        return GOAL_METRIC_LABELS[metric_name]
+    return metric_name.replace("_", " ").title()
+
 
 def _empty_figure(message: str) -> go.Figure:
     fig = go.Figure()
@@ -127,7 +156,7 @@ def _metric_by_goal_figure(
 
         buttons.append(
             {
-                "label": metric_name,
+                "label": _metric_display_label(metric_name),
                 "method": "update",
                 "args": [
                     {"visible": visible},
@@ -186,7 +215,10 @@ def _build_goal_tables_html(
         escaped_goal_id = html.escape(goal_id)
         options.append(f"<option value='{escaped_goal_id}'{selected}>{escaped_goal_id}</option>")
 
-        headers = "".join(f"<th>{html.escape(str(column))}</th>" for column in table.columns)
+        headers = "".join(
+            f"<th>{html.escape(_metric_display_label(str(column)))}</th>"
+            for column in table.columns
+        )
         rows: list[str] = []
         for priority, row in table.iterrows():
             cells = "".join(f"<td>{_format_metric_value(value)}</td>" for value in row.tolist())
@@ -213,8 +245,34 @@ def _build_goal_tables_html(
     )
 
 
+def _build_active_constraint_tables_html(active_constraint_metrics: pd.DataFrame) -> str:
+    """Create the HTML for the priority-level active-constraint summary."""
+    if active_constraint_metrics is None or active_constraint_metrics.empty:
+        return "<p>No active constraint summary available.</p>"
+
+    headers = "".join(
+        (f"<th>{html.escape(_metric_display_label(str(column)))}</th>")
+        for column in active_constraint_metrics.columns
+    )
+    rows: list[str] = []
+    for priority, row in active_constraint_metrics.iterrows():
+        cells = "".join(f"<td>{_format_metric_value(value)}</td>" for value in row.tolist())
+        rows.append(f"<tr><th scope='row'>{html.escape(str(priority))}</th>{cells}</tr>")
+
+    return (
+        "<div class='active-constraint-table-panel active'>"
+        "<h3 class='goal-table-title'>Constraint activity by priority</h3>"
+        "<table class='metric-table'>"
+        f"<thead><tr><th>Priority</th>{headers}</tr></thead>"
+        f"<tbody>{''.join(rows)}</tbody>"
+        "</table>"
+        "</div>"
+    )
+
+
 def create_performance_metrics_dashboard(
     performance_metrics: dict[str, pd.DataFrame],
+    active_constraint_metrics: pd.DataFrame | None,
     output_folder: str | Path,
     file_name: str = "performance_metrics_dashboard.html",
 ) -> tuple[dict[str, Any], Path]:
@@ -239,10 +297,13 @@ def create_performance_metrics_dashboard(
         "metric_by_goal": metric_by_goal,
         "goal_order": goal_order,
         "metric_order": metric_order,
+        "active_constraint_metrics": active_constraint_metrics,
     }
 
     goal_tables_html = _build_goal_tables_html(performance_metrics, goal_order)
+    active_constraint_tables_html = _build_active_constraint_tables_html(active_constraint_metrics)
     default_metric = metric_order[0] if metric_order else ""
+    metric_label_to_key = {_metric_display_label(metric): metric for metric in metric_order}
 
     html_parts = [
         "<html><head><meta charset='utf-8'>",
@@ -292,6 +353,8 @@ def create_performance_metrics_dashboard(
             "data-target='metric-by-goal'>Bar Charts</button>"
             "<button class='tab-button' type='button' "
             "data-target='goal-by-metric'>Tables</button>"
+            "<button class='tab-button' type='button' "
+            "data-target='active-constraints'>Constraint Activity</button>"
             "</div>"
         ),
         "<div id='metric-by-goal' class='tab-panel active'><h2>Performance Metrics Bar Chart</h2>",
@@ -309,6 +372,9 @@ def create_performance_metrics_dashboard(
         "</div>",
         "<div id='goal-by-metric' class='tab-panel'><h2>Performance Metrics Tables</h2>",
         goal_tables_html,
+        "</div>",
+        "<div id='active-constraints' class='tab-panel'><h2>Constraint Activity</h2>",
+        active_constraint_tables_html,
         "</div>",
         "<script>(function () {",
         "  const buttons = document.querySelectorAll('.tab-button');",
@@ -330,6 +396,7 @@ def create_performance_metrics_dashboard(
         "  const selectAllGoalsButton = document.getElementById('select-all-goals-button');",
         "  const unselectAllGoalsButton = document.getElementById('unselect-all-goals-button');",
         f"  let currentMetric = {json.dumps(default_metric)};",
+        f"  const metricLabelToKey = {json.dumps(metric_label_to_key)};",
         "  function getTraceIndexesForMetric(metricName) {",
         (
             "    if (!metricChart || !Array.isArray(metricChart.data) || "
@@ -358,7 +425,10 @@ def create_performance_metrics_dashboard(
         "  if (metricChart) {",
         "    metricChart.on('plotly_buttonclicked', function (eventData) {",
         "      if (eventData && eventData.button && eventData.button.label) {",
-        "        currentMetric = eventData.button.label;",
+        (
+            "        currentMetric = metricLabelToKey[eventData.button.label] || "
+            "eventData.button.label;"
+        ),
         "      }",
         "    });",
         "  }",

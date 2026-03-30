@@ -29,6 +29,16 @@ def write_performance_metrics(
         performance_metric_table.to_csv(output_path / f"{goal_id}.csv")
 
 
+def write_active_constraint_metrics(
+    active_constraint_metrics: pd.DataFrame, output_path: str | Path
+):
+    """Write the active-constraint summary per priority to a csv file."""
+    output_path = Path(output_path) / "performance_metrics"
+    output_path.mkdir(parents=True, exist_ok=True)
+    if not active_constraint_metrics.empty:
+        active_constraint_metrics.to_csv(output_path / "active_constraint_metrics.csv")
+
+
 class GoalGeneratorMixin(ReadGoalsMixin, StatisticsMixin):
     # TODO: remove pylint disable below once we have more public functions.
     # pylint: disable=too-few-public-methods
@@ -51,6 +61,7 @@ class GoalGeneratorMixin(ReadGoalsMixin, StatisticsMixin):
         if self.calculate_performance_metrics:
             # A dataframe for each goal defined by the goal generator
             self._performance_metrics = {}
+            self._active_constraint_metrics = pd.DataFrame()
             self._performance_metrics_plot_file = None
             self._performance_metrics_plot_figures = {}
             for goal in self._all_goal_generator_goals:
@@ -84,6 +95,11 @@ class GoalGeneratorMixin(ReadGoalsMixin, StatisticsMixin):
         path_goals = self.path_goals()
         all_base_goals = [goal for goal in goals + path_goals if isinstance(goal, BaseGoal)]
         targets = self.collect_range_target_values(all_base_goals)
+        constraint_metrics = pd.Series(self.get_constraint_activity_metrics())
+        constraint_metrics.rename(label, inplace=True)
+        self._active_constraint_metrics = pd.concat(
+            [self._active_constraint_metrics.T, constraint_metrics], axis=1
+        ).T
 
         for goal in goal_generator_goals:
             next_row = get_performance_metrics(results, goal, targets.get(str(goal.goal_id)))
@@ -132,10 +148,15 @@ class GoalGeneratorMixin(ReadGoalsMixin, StatisticsMixin):
         if self.calculate_performance_metrics:
             self.store_performance_metrics("final_results")
             write_performance_metrics(self._performance_metrics, self._output_folder)
+            write_active_constraint_metrics(self._active_constraint_metrics, self._output_folder)
 
     def get_performance_metrics(self):
         """Get the plot data and config from the current run."""
         return self._performance_metrics
+
+    def get_active_constraint_metrics(self):
+        """Get the active-constraint summary grouped by priority label."""
+        return self._active_constraint_metrics
 
     def get_performance_metrics_with_plot(
         self,
@@ -167,6 +188,7 @@ class GoalGeneratorMixin(ReadGoalsMixin, StatisticsMixin):
 
         figures, html_path = create_performance_metrics_dashboard(
             performance_metrics,
+            active_constraint_metrics=self.get_active_constraint_metrics(),
             output_folder=output_path,
             file_name=file_name,
         )

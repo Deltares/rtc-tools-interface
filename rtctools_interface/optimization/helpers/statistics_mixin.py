@@ -5,8 +5,11 @@ import re
 
 import casadi as ca
 import numpy as np
+from rtctools.optimization.goal_programming_mixin import GoalProgrammingMixin
+from rtctools.optimization.timeseries import Timeseries
 
 from rtctools_interface.optimization.base_goal import BaseGoal
+from rtctools_interface.optimization.goal_performance_metrics import ABS_TOL
 from rtctools_interface.utils.type_definitions import TargetDict
 
 logger = logging.getLogger("rtctools")
@@ -120,3 +123,153 @@ class StatisticsMixin:
 
         evaluator = ca.Function("performance_metrics_goal_eval", [self.solver_input], [expression])
         return np.array(evaluator(self.solver_output))
+
+    @staticmethod
+    def _flatten_constraint_values(values) -> np.ndarray:
+        """Convert constraint values or bounds to a one-dimensional array."""
+        if isinstance(values, Timeseries):
+            values = values.values
+
+        array = np.asarray(values, dtype=float)
+        if array.ndim == 0:
+            return np.array([float(array)])
+        return array.reshape(-1, order="F")
+
+    def _normalize_constraint_bound_shape(self, values: np.ndarray, bound) -> np.ndarray:
+        """Broadcast a constraint bound to the shape of the evaluated values."""
+        flattened_values = self._flatten_constraint_values(values)
+        flattened_bound = self._flatten_constraint_values(bound)
+        if flattened_bound.shape != flattened_values.shape:
+            flattened_bound = np.broadcast_to(flattened_bound, flattened_values.shape)
+        return flattened_bound
+
+    def _evaluate_constraint_expression(
+        self, expression, *, ensemble_member: int, is_path_constraint: bool
+    ) -> np.ndarray:
+        """Evaluate a scalar or path constraint expression on the current solver output."""
+        if is_path_constraint:
+            expression = self.map_path_expression(expression, ensemble_member)
+        else:
+            expression = ca.transpose(ca.vertcat(expression))
+
+        evaluator = ca.Function(
+            "performance_metrics_constraint_eval", [self.solver_input], [expression]
+        )
+        return np.array(evaluator(self.solver_output))
+
+    def _count_active_constraint_entries(
+        self, values: np.ndarray, minimum, maximum
+    ) -> tuple[int, int]:
+        """Count total and active constraint entries for one expanded constraint."""
+        flattened_values = self._flatten_constraint_values(values)
+        flattened_min = self._normalize_constraint_bound_shape(values, minimum)
+        flattened_max = self._normalize_constraint_bound_shape(values, maximum)
+
+        total_entries = 0
+        active_entries = 0
+        for value, minimum_value, maximum_value in zip(
+            flattened_values, flattened_min, flattened_max, strict=False
+        ):
+            has_lower_bound = np.isfinite(minimum_value)
+            has_upper_bound = np.isfinite(maximum_value)
+            if not has_lower_bound and not has_upper_bound:
+                continue
+
+            total_entries += 1
+            if (
+                has_lower_bound
+                and has_upper_bound
+                and abs(minimum_value - maximum_value) <= ABS_TOL
+            ):
+                if abs(value - minimum_value) <= ABS_TOL:
+                    active_entries += 1
+            elif (has_lower_bound and abs(value - minimum_value) <= ABS_TOL) or (
+                has_upper_bound and abs(value - maximum_value) <= ABS_TOL
+            ):
+                active_entries += 1
+
+        return total_entries, active_entries
+
+    def _count_tuple_constraint_activity(
+        self, constraint: tuple, *, ensemble_member: int, is_path_constraint: bool
+    ) -> tuple[int, int]:
+        """Count total and active entries for a plain RTC-Tools constraint tuple."""
+        expression, minimum, maximum = constraint
+        values = self._evaluate_constraint_expression(
+            expression,
+            ensemble_member=ensemble_member,
+            is_path_constraint=is_path_constraint,
+        )
+        return self._count_active_constraint_entries(values, minimum, maximum)
+
+    def _count_goal_constraint_activity(
+        self, constraint, *, ensemble_member: int
+    ) -> tuple[int, int]:
+        """Count total and active entries for an internal goal-programming hard constraint."""
+        is_path_constraint = isinstance(constraint.min, Timeseries)
+        values = self._evaluate_constraint_expression(
+            constraint.function(self),
+            ensemble_member=ensemble_member,
+            is_path_constraint=is_path_constraint,
+        )
+        return self._count_active_constraint_entries(values, constraint.min, constraint.max)
+
+    def get_constraint_activity_metrics(
+        self, *, ensemble_member: int = 0
+    ) -> dict[str, float | int]:
+        """Return summary metrics for active hard constraints in the current subproblem."""
+        base_constraints = super(GoalProgrammingMixin, self).constraints(ensemble_member)
+        base_path_constraints = super(GoalProgrammingMixin, self).path_constraints(ensemble_member)
+
+        total_hard_constraints = 0
+        active_hard_constraints = 0
+
+        for constraint in base_constraints:
+            total_entries, active_entries = self._count_tuple_constraint_activity(
+                constraint,
+                ensemble_member=ensemble_member,
+                is_path_constraint=False,
+            )
+            total_hard_constraints += total_entries
+            active_hard_constraints += active_entries
+
+        for constraint in base_path_constraints:
+            total_entries, active_entries = self._count_tuple_constraint_activity(
+                constraint,
+                ensemble_member=ensemble_member,
+                is_path_constraint=True,
+            )
+            total_hard_constraints += total_entries
+            active_hard_constraints += active_entries
+
+        goal_constraints = list(
+            self._GoalProgrammingMixin__constraint_store[ensemble_member].values()
+        )
+        goal_constraints.extend(
+            self._GoalProgrammingMixin__path_constraint_store[ensemble_member].values()
+        )
+
+        current_priority = getattr(self, "_gp_current_priority", None)
+        active_previous_priority_constraints = 0
+
+        for constraint in goal_constraints:
+            total_entries, active_entries = self._count_goal_constraint_activity(
+                constraint, ensemble_member=ensemble_member
+            )
+            total_hard_constraints += total_entries
+            active_hard_constraints += active_entries
+
+            goal_priority = getattr(constraint.goal, "priority", None)
+            if current_priority is not None and goal_priority is not None:
+                if int(goal_priority) < int(current_priority):
+                    active_previous_priority_constraints += active_entries
+
+        active_fraction = 0.0
+        if total_hard_constraints > 0:
+            active_fraction = active_hard_constraints / total_hard_constraints
+
+        return {
+            "active_hard_constraints": active_hard_constraints,
+            "active_hard_constraints_fraction": active_fraction,
+            "active_previous_priority_constraints": active_previous_priority_constraints,
+        }

@@ -149,7 +149,7 @@ performance_metrics = problem.get_performance_metrics_with_plot(
 )
 ```
 
-The method returns the same `dict[str, pandas.DataFrame]` as `get_performance_metrics()`. The path to the most recently generated dashboard is available via `problem.performance_metrics_plot_file()`.
+The method returns the same `dict[str, pandas.DataFrame]` as `get_performance_metrics()`. The path to the most recently generated dashboard is available via `problem.performance_metrics_plot_file`.
 
 
 ## Automatic plotting of results

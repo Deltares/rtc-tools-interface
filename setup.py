@@ -6,7 +6,7 @@ setup(
     name="rtc_tools_interface",
     version=versioneer.get_version(),
     maintainer="Deltares",
-    packages=find_packages("."),
+    packages=find_packages(include=["rtctools_interface", "rtctools_interface.*"]),
     author="Deltares",
     description="Toolbox for user interfaces for RTC-Tools",
     install_requires=[

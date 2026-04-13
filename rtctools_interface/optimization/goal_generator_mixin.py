@@ -62,6 +62,7 @@ class GoalGeneratorMixin(ReadGoalsMixin, StatisticsMixin):
             # A dataframe for each goal defined by the goal generator
             self._performance_metrics = {}
             self._active_constraint_metrics = pd.DataFrame()
+            self._last_completed_priority = None
             self._performance_metrics_plot_file = None
             self._performance_metrics_plot_figures = {}
             for goal in self._all_goal_generator_goals:
@@ -87,7 +88,7 @@ class GoalGeneratorMixin(ReadGoalsMixin, StatisticsMixin):
             ]
         return goals
 
-    def store_performance_metrics(self, label):
+    def store_performance_metrics(self, label, *, current_priority=None):
         """Calculate and store performance metrics."""
         results = self.extract_results()
         goal_generator_goals = self._all_goal_generator_goals
@@ -95,7 +96,9 @@ class GoalGeneratorMixin(ReadGoalsMixin, StatisticsMixin):
         path_goals = self.path_goals()
         all_base_goals = [goal for goal in goals + path_goals if isinstance(goal, BaseGoal)]
         targets = self.collect_range_target_values(all_base_goals)
-        constraint_metrics = pd.Series(self.get_constraint_activity_metrics())
+        constraint_metrics = pd.Series(
+            self.get_constraint_activity_metrics(current_priority=current_priority)
+        )
         constraint_metrics.rename(label, inplace=True)
         self._active_constraint_metrics = pd.concat(
             [self._active_constraint_metrics.T, constraint_metrics], axis=1
@@ -141,13 +144,16 @@ class GoalGeneratorMixin(ReadGoalsMixin, StatisticsMixin):
         """Tasks after priority optimization."""
         super().priority_completed(priority)
         if self.calculate_performance_metrics:
-            self.store_performance_metrics(priority)
+            self._last_completed_priority = priority
+            self.store_performance_metrics(priority, current_priority=priority)
 
     def post(self):
         """Tasks after all optimization steps."""
         super().post()
         if self.calculate_performance_metrics:
-            self.store_performance_metrics("final_results")
+            self.store_performance_metrics(
+                "final_results", current_priority=self._last_completed_priority
+            )
             write_performance_metrics(self._performance_metrics, self._output_folder)
             write_active_constraint_metrics(self._active_constraint_metrics, self._output_folder)
 

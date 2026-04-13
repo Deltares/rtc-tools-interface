@@ -215,7 +215,7 @@ class StatisticsMixin:
         return self._count_active_constraint_entries(values, constraint.min, constraint.max)
 
     def get_constraint_activity_metrics(
-        self, *, ensemble_member: int = 0
+        self, *, ensemble_member: int = 0, current_priority: int | None = None
     ) -> dict[str, float | int]:
         """Return summary metrics for active hard constraints in the current subproblem."""
         base_constraints = super(GoalProgrammingMixin, self).constraints(ensemble_member)
@@ -249,7 +249,8 @@ class StatisticsMixin:
             self._GoalProgrammingMixin__path_constraint_store[ensemble_member].values()
         )
 
-        current_priority = getattr(self, "_gp_current_priority", None)
+        if current_priority is None:
+            current_priority = getattr(self, "_gp_current_priority", None)
         active_previous_priority_constraints = 0
 
         for constraint in goal_constraints:

@@ -88,6 +88,19 @@ class GoalGeneratorMixin(ReadGoalsMixin, StatisticsMixin):
             ]
         return goals
 
+    def _warn_if_priority_metrics_are_missing(self):
+        """Warn when only final results were stored, typically due to a skipped super() call."""
+        if self._active_constraint_metrics.empty:
+            return
+
+        labels = set(self._active_constraint_metrics.index)
+        if labels == {"final_results"}:
+            logger.warning(
+                "Only the 'final_results' row was collected for performance metrics. "
+                "If your optimization problem overrides priority_completed(), make sure it calls "
+                "super().priority_completed(priority)."
+            )
+
     def store_performance_metrics(self, label, *, current_priority=None):
         """Calculate and store performance metrics."""
         results = self.extract_results()
@@ -154,6 +167,7 @@ class GoalGeneratorMixin(ReadGoalsMixin, StatisticsMixin):
             self.store_performance_metrics(
                 "final_results", current_priority=self._last_completed_priority
             )
+            self._warn_if_priority_metrics_are_missing()
             write_performance_metrics(self._performance_metrics, self._output_folder)
             write_active_constraint_metrics(self._active_constraint_metrics, self._output_folder)
 

@@ -151,6 +151,23 @@ performance_metrics = problem.get_performance_metrics_with_plot(
 
 The method returns the same `dict[str, pandas.DataFrame]` as `get_performance_metrics()`. The path to the most recently generated dashboard is available via `problem.performance_metrics_plot_file`.
 
+### Important when overriding callbacks
+The per-priority rows in `get_performance_metrics()` and `get_active_constraint_metrics()` are collected in the optimization callback `priority_completed()`, while the `final_results` row is collected in `post()`.
+
+If your optimization problem class overrides either of these methods, make sure to call `super()`:
+
+```python
+def priority_completed(self, priority):
+    # your custom logic
+    super().priority_completed(priority)
+
+def post(self):
+    # your custom logic
+    super().post()
+```
+
+If `super().priority_completed(priority)` is omitted, the generated metrics file may contain only the `final_results` row.
+
 
 ## Automatic plotting of results
 With the `PlotMixin` one can easily make plots of the results of rtc-tools. This functionality can be used both for optimization and simulation problems. For optimization problems, use:

@@ -190,9 +190,7 @@ def _build_goal_tables_html(
 
         selected = " selected" if goal_idx == 0 else ""
         escaped_goal_id = html.escape(goal_id, quote=True)
-        options.append(
-            f'<option value="{escaped_goal_id}"{selected}>{escaped_goal_id}</option>'
-        )
+        options.append(f'<option value="{escaped_goal_id}"{selected}>{escaped_goal_id}</option>')
 
         headers = "".join(f"<th>{html.escape(str(column))}</th>" for column in table.columns)
         rows: list[str] = []
@@ -202,8 +200,8 @@ def _build_goal_tables_html(
 
         active_class = " active" if goal_idx == 0 else ""
         panels.append(
-            "<div class=\"goal-table-panel"
-            f"{active_class}\" data-goal-table=\"{escaped_goal_id}\">"
+            '<div class="goal-table-panel'
+            f'{active_class}" data-goal-table="{escaped_goal_id}">'
             f"<h3 class='goal-table-title'>{escaped_goal_id}</h3>"
             "<table class='metric-table'>"
             f"<thead><tr><th>Priority</th>{headers}</tr></thead>"

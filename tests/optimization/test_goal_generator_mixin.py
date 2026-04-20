@@ -287,3 +287,67 @@ class TestGoalGeneratorMixin(unittest.TestCase):
         self.assertTrue(
             (sensitivity_output / "finite_difference_rhs_sensitivity_2pct.csv").exists()
         )
+
+    def test_finite_difference_rhs_sensitivity_accepts_custom_iterables(self):
+        test_data = get_test_data("basic", optimization=True)
+        problem = CustomGoalOptimizationProblem(
+            model_folder=test_data["model_folder"],
+            model_name=test_data["model_name"],
+            input_folder=test_data["model_input_folder"],
+            output_folder=test_data["output_folder"],
+        )
+
+        problem.optimize()
+        baseline_objectives = {
+            priority: value
+            for priority, value in problem._priority_objective_values.items()
+            if priority != "final_results"
+        }
+
+        def fake_relaxed_run(*, source_priority, relaxation_percentage):
+            return {
+                current_priority: baseline_objectives[current_priority] - relaxation_percentage
+                for current_priority in baseline_objectives
+                if current_priority > source_priority
+            }
+
+        with (
+            patch.object(problem, "is_mixed_integer_problem", return_value=True),
+            patch.object(
+                problem,
+                "_run_relaxed_rhs_sensitivity_analysis",
+                side_effect=fake_relaxed_run,
+            ),
+        ):
+            matrices = problem.get_finite_difference_rhs_sensitivity_analysis(
+                relaxation_percentages=(percentage for percentage in [0.5, 2, 2, 7.5]),
+            )
+
+        self.assertEqual(list(matrices), [0.5, 2.0, 7.5])
+        sensitivity_output = Path(test_data["output_folder"]) / "sensitivity_analysis"
+        self.assertTrue(
+            (sensitivity_output / "finite_difference_rhs_sensitivity_0p5pct.csv").exists()
+        )
+        self.assertTrue(
+            (sensitivity_output / "finite_difference_rhs_sensitivity_7p5pct.csv").exists()
+        )
+
+    def test_finite_difference_rhs_sensitivity_rejects_invalid_percentages(self):
+        test_data = get_test_data("basic", optimization=True)
+        problem = CustomGoalOptimizationProblem(
+            model_folder=test_data["model_folder"],
+            model_name=test_data["model_name"],
+            input_folder=test_data["model_input_folder"],
+            output_folder=test_data["output_folder"],
+        )
+
+        problem.optimize()
+
+        with self.assertRaisesRegex(ValueError, "at least one"):
+            problem.get_finite_difference_rhs_sensitivity_analysis([])
+
+        with self.assertRaisesRegex(ValueError, "negative"):
+            problem.get_finite_difference_rhs_sensitivity_analysis([1.0, -2.0])
+
+        with self.assertRaisesRegex(TypeError, "real number"):
+            problem.get_finite_difference_rhs_sensitivity_analysis(["1", 2.0])

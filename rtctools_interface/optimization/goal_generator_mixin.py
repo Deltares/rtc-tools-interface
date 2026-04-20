@@ -1,6 +1,8 @@
 """Module for a basic optimization problem."""
 
 import logging
+from collections.abc import Iterable
+from numbers import Real
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
@@ -54,6 +56,40 @@ def _format_percentage_for_file_name(percentage: float) -> str:
         return f"{int(percentage)}pct"
 
     return f"{str(percentage).replace('.', 'p')}pct"
+
+
+def _normalize_relaxation_percentages(
+    relaxation_percentages: Iterable[Real] | Real | None,
+) -> tuple[float, ...]:
+    """Normalize user-provided relaxation percentages to unique floats."""
+    if relaxation_percentages is None:
+        return (1.0, 2.0, 5.0, 10.0)
+
+    if isinstance(relaxation_percentages, Real):
+        raw_percentages = [relaxation_percentages]
+    else:
+        raw_percentages = list(relaxation_percentages)
+
+    if not raw_percentages:
+        raise ValueError("relaxation_percentages must contain at least one percentage value.")
+
+    normalized_percentages: list[float] = []
+    for percentage in raw_percentages:
+        if not isinstance(percentage, Real):
+            raise TypeError(
+                "Each value in relaxation_percentages must be a real number representing a "
+                "percentage."
+            )
+
+        normalized_percentage = float(percentage)
+        if pd.isna(normalized_percentage):
+            raise ValueError("relaxation_percentages cannot contain NaN values.")
+        if normalized_percentage < 0:
+            raise ValueError("relaxation_percentages cannot contain negative values.")
+        if normalized_percentage not in normalized_percentages:
+            normalized_percentages.append(normalized_percentage)
+
+    return tuple(normalized_percentages)
 
 
 def write_finite_difference_rhs_sensitivity_analysis(
@@ -294,10 +330,12 @@ class GoalGeneratorMixin(ReadGoalsMixin, StatisticsMixin):
 
     def get_finite_difference_rhs_sensitivity_analysis(
         self,
-        relaxation_percentages: tuple[float, ...] = (1.0, 2.0, 5.0, 10.0),
+        relaxation_percentages: Iterable[Real] | Real | None = None,
         output_path: str | Path | None = None,
     ) -> dict[float, pd.DataFrame]:
         """Return finite-difference RHS sensitivity matrices for mixed-integer problems."""
+        relaxation_percentages = _normalize_relaxation_percentages(relaxation_percentages)
+
         if not self.is_mixed_integer_problem():
             logger.info(
                 "Finite-difference RHS sensitivity analysis is only generated for mixed-integer "

@@ -205,7 +205,20 @@ problem.optimize()
 sensitivity_matrices = problem.get_finite_difference_rhs_sensitivity_analysis()
 ```
 
+Custom percentages can also be provided by the user. Any iterable of numbers is accepted, for example a list, tuple, or NumPy array:
+
+```python
+problem.optimize()
+sensitivity_matrices = problem.get_finite_difference_rhs_sensitivity_analysis(
+    relaxation_percentages=[0.5, 1.0, 3.0, 8.0],
+)
+```
+
+Duplicate percentages are ignored, the original order is preserved, and decimal percentages are reflected in the generated file names, for example `finite_difference_rhs_sensitivity_0p5pct.csv`.
+
 If the problem does not expose discrete variables, the method returns an empty dictionary and no sensitivity CSV files are generated.
+
+At the moment, the reruns for the sensitivity analysis are executed sequentially. In principle these runs could be parallelized, but this is not enabled by default because RTC-Tools problems may rely on solver state, temporary files, and model compilation side effects that are safer to isolate in sequential runs.
 
 ### Important when overriding callbacks
 The per-priority rows in `get_performance_metrics()` and `get_active_constraint_metrics()` are collected in the optimization callback `priority_completed()`, while the `final_results` row is collected in `post()`.

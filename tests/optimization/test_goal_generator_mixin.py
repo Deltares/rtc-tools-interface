@@ -2,6 +2,7 @@
 
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from rtctools.optimization.goal_programming_mixin import Goal
 
@@ -54,6 +55,13 @@ class CustomGoalOptimizationProblem(BaseOptimizationProblem):
 
     def path_goals(self):
         return super().path_goals() + [WaterLevelRangeGoal(), MinimizeUGoal()]
+
+
+class DiscreteFlagOptimizationProblem(CustomGoalOptimizationProblem):
+    """Problem exposing one discrete variable for mixed-integer detection tests."""
+
+    def variable_is_discrete(self, variable):
+        return variable == "u" or super().variable_is_discrete(variable)
 
 
 class TestGoalGeneratorMixin(unittest.TestCase):
@@ -190,3 +198,92 @@ class TestGoalGeneratorMixin(unittest.TestCase):
         self.assertIn("From priority 15", html)
         self.assertNotIn("Heatmap view", html)
         self.assertNotIn("Metric-focused view", html)
+
+    def test_is_mixed_integer_problem_detects_discrete_variables(self):
+        test_data = get_test_data("basic", optimization=True)
+        problem = DiscreteFlagOptimizationProblem(
+            model_folder=test_data["model_folder"],
+            model_name=test_data["model_name"],
+            input_folder=test_data["model_input_folder"],
+            output_folder=test_data["output_folder"],
+        )
+
+        self.assertTrue(problem.is_mixed_integer_problem())
+
+    def test_finite_difference_rhs_sensitivity_returns_empty_for_continuous_problem(self):
+        test_data = get_test_data("basic", optimization=True)
+        problem = CustomGoalOptimizationProblem(
+            model_folder=test_data["model_folder"],
+            model_name=test_data["model_name"],
+            input_folder=test_data["model_input_folder"],
+            output_folder=test_data["output_folder"],
+        )
+
+        problem.optimize()
+
+        self.assertEqual(problem.get_finite_difference_rhs_sensitivity_analysis(), {})
+
+    def test_finite_difference_rhs_sensitivity_writes_lower_triangular_csvs(self):
+        test_data = get_test_data("basic", optimization=True)
+        problem = CustomGoalOptimizationProblem(
+            model_folder=test_data["model_folder"],
+            model_name=test_data["model_name"],
+            input_folder=test_data["model_input_folder"],
+            output_folder=test_data["output_folder"],
+        )
+
+        problem.optimize()
+        baseline_objectives = {
+            priority: value
+            for priority, value in problem._priority_objective_values.items()
+            if priority != "final_results"
+        }
+
+        def fake_relaxed_run(*, source_priority, relaxation_percentage):
+            objective_offsets = {
+                10: {
+                    1.0: {15: 1.5, 20: 2.5},
+                    2.0: {15: 2.0, 20: 3.0},
+                },
+                15: {
+                    1.0: {20: 4.0},
+                    2.0: {20: 5.0},
+                },
+            }
+            offsets = objective_offsets[source_priority][relaxation_percentage]
+            return {
+                current_priority: baseline_objectives[current_priority] - improvement
+                for current_priority, improvement in offsets.items()
+            }
+
+        with (
+            patch.object(problem, "is_mixed_integer_problem", return_value=True),
+            patch.object(
+                problem,
+                "_run_relaxed_rhs_sensitivity_analysis",
+                side_effect=fake_relaxed_run,
+            ),
+        ):
+            matrices = problem.get_finite_difference_rhs_sensitivity_analysis(
+                relaxation_percentages=(1.0, 2.0)
+            )
+
+        self.assertEqual(set(matrices), {1.0, 2.0})
+        self.assertEqual(list(matrices[1.0].columns), [10, 15])
+        self.assertIn(10, matrices[1.0].index)
+        self.assertIn(20, matrices[1.0].index)
+        self.assertIn("final_results", matrices[1.0].index)
+        self.assertTrue(matrices[1.0].loc[10].isna().all())
+        self.assertEqual(matrices[1.0].loc[15, 10], 1.5)
+        self.assertEqual(matrices[1.0].loc[20, 10], 2.5)
+        self.assertEqual(matrices[1.0].loc[20, 15], 4.0)
+        self.assertEqual(matrices[1.0].loc["final_results", 10], 2.5)
+        self.assertEqual(matrices[2.0].loc[20, 15], 5.0)
+
+        sensitivity_output = Path(test_data["output_folder"]) / "sensitivity_analysis"
+        self.assertTrue(
+            (sensitivity_output / "finite_difference_rhs_sensitivity_1pct.csv").exists()
+        )
+        self.assertTrue(
+            (sensitivity_output / "finite_difference_rhs_sensitivity_2pct.csv").exists()
+        )

@@ -2,6 +2,7 @@
 
 import logging
 from pathlib import Path
+from tempfile import TemporaryDirectory
 
 import pandas as pd
 
@@ -47,6 +48,29 @@ def write_shadow_price_metrics(shadow_price_metrics: pd.DataFrame, output_path: 
         shadow_price_metrics.to_csv(output_path / "shadow_price_metrics.csv")
 
 
+def _format_percentage_for_file_name(percentage: float) -> str:
+    """Format a percentage value for stable file names."""
+    if float(percentage).is_integer():
+        return f"{int(percentage)}pct"
+
+    return f"{str(percentage).replace('.', 'p')}pct"
+
+
+def write_finite_difference_rhs_sensitivity_analysis(
+    sensitivity_analysis: dict[float, pd.DataFrame], output_path: str | Path
+):
+    """Write finite-difference RHS sensitivity matrices to csv files."""
+    output_path = Path(output_path) / "sensitivity_analysis"
+    output_path.mkdir(parents=True, exist_ok=True)
+    for percentage, matrix in sensitivity_analysis.items():
+        if matrix.empty:
+            continue
+        file_name = (
+            f"finite_difference_rhs_sensitivity_{_format_percentage_for_file_name(percentage)}.csv"
+        )
+        matrix.to_csv(output_path / file_name)
+
+
 class GoalGeneratorMixin(ReadGoalsMixin, StatisticsMixin):
     # TODO: remove pylint disable below once we have more public functions.
     # pylint: disable=too-few-public-methods
@@ -60,7 +84,14 @@ class GoalGeneratorMixin(ReadGoalsMixin, StatisticsMixin):
     calculate_performance_metrics = True
 
     def __init__(self, **kwargs):
+        self._goal_generator_init_kwargs = dict(kwargs)
         super().__init__(**kwargs)
+        self._priority_objective_values = {}
+        self._last_completed_priority = None
+        self._finite_difference_rhs_sensitivity_analysis = {}
+        self._rhs_sensitivity_source_priority = None
+        self._rhs_sensitivity_relaxation_fraction = None
+        self._rhs_sensitivity_relaxation_applied = False
         if not hasattr(self, "_all_goal_generator_goals"):
             goals_to_generate = kwargs.get("goals_to_generate", [])
             read_from = kwargs.get("read_goals_from", "csv_table")
@@ -71,12 +102,19 @@ class GoalGeneratorMixin(ReadGoalsMixin, StatisticsMixin):
             self._performance_metrics = {}
             self._active_constraint_metrics = pd.DataFrame()
             self._shadow_price_metrics = pd.DataFrame()
-            self._last_completed_priority = None
             self._shadow_price_warning_issued = False
             self._performance_metrics_plot_file = None
             self._performance_metrics_plot_figures = {}
             for goal in self._all_goal_generator_goals:
                 self._performance_metrics[str(goal.goal_id)] = pd.DataFrame()
+
+    def get_sensitivity_analysis_problem_kwargs(self) -> dict:
+        """Return the keyword arguments required to recreate this problem instance."""
+        kwargs = dict(self._goal_generator_init_kwargs)
+        goal_table_file = getattr(self, "goal_table_file", None)
+        if goal_table_file is not None:
+            kwargs["goal_table_file"] = goal_table_file
+        return kwargs
 
     def path_goals(self):
         """Return the list of path goals."""
@@ -168,16 +206,40 @@ class GoalGeneratorMixin(ReadGoalsMixin, StatisticsMixin):
                 [self._performance_metrics[goal_id].T, next_row], axis=1
             ).T
 
+    def priority_started(self, priority):
+        """Tasks before a priority is solved."""
+        super().priority_started(priority)
+        if self._rhs_sensitivity_source_priority is None:
+            return
+        if self._rhs_sensitivity_relaxation_fraction is None:
+            return
+        if self._rhs_sensitivity_relaxation_applied:
+            return
+        if int(priority) <= int(self._rhs_sensitivity_source_priority):
+            return
+
+        self.relax_goal_constraints_for_priority(
+            source_priority=int(self._rhs_sensitivity_source_priority),
+            relaxation_fraction=float(self._rhs_sensitivity_relaxation_fraction),
+        )
+        self._rhs_sensitivity_relaxation_applied = True
+
     def priority_completed(self, priority):
         """Tasks after priority optimization."""
         super().priority_completed(priority)
+        self._last_completed_priority = priority
+        self._priority_objective_values[priority] = self.get_current_priority_objective_value()
         if self.calculate_performance_metrics:
-            self._last_completed_priority = priority
             self.store_performance_metrics(priority, current_priority=priority)
 
     def post(self):
         """Tasks after all optimization steps."""
         super().post()
+        if self._last_completed_priority is not None:
+            self._priority_objective_values["final_results"] = self._priority_objective_values.get(
+                self._last_completed_priority,
+                self.get_current_priority_objective_value(),
+            )
         if self.calculate_performance_metrics:
             self.store_performance_metrics(
                 "final_results", current_priority=self._last_completed_priority
@@ -200,6 +262,94 @@ class GoalGeneratorMixin(ReadGoalsMixin, StatisticsMixin):
         if current_priority is not None:
             return self.get_previous_priority_shadow_prices(current_priority=current_priority)
         return self._shadow_price_metrics
+
+    def _run_relaxed_rhs_sensitivity_analysis(
+        self, *, source_priority: int, relaxation_percentage: float
+    ) -> dict[int, float]:
+        """Re-run the optimization with relaxed constraints from one earlier priority."""
+        problem_kwargs = self.get_sensitivity_analysis_problem_kwargs()
+        with TemporaryDirectory(prefix="rtctools_interface_rhs_sensitivity_") as temp_dir:
+            problem_kwargs["output_folder"] = temp_dir
+            rerun_problem = self.__class__(**problem_kwargs)
+            rerun_problem.calculate_performance_metrics = False
+            rerun_problem._rhs_sensitivity_source_priority = int(source_priority)
+            rerun_problem._rhs_sensitivity_relaxation_fraction = (
+                float(relaxation_percentage) / 100.0
+            )
+            rerun_problem._rhs_sensitivity_relaxation_applied = False
+
+            success = rerun_problem.optimize()
+            if not success:
+                raise RuntimeError(
+                    "Finite-difference RHS sensitivity analysis failed while solving "
+                    f"the relaxed problem for source priority {source_priority} at "
+                    f"{relaxation_percentage}% relaxation."
+                )
+
+            return {
+                int(priority): float(value)
+                for priority, value in rerun_problem._priority_objective_values.items()
+                if priority != "final_results" and int(priority) > int(source_priority)
+            }
+
+    def get_finite_difference_rhs_sensitivity_analysis(
+        self,
+        relaxation_percentages: tuple[float, ...] = (1.0, 2.0, 5.0, 10.0),
+        output_path: str | Path | None = None,
+    ) -> dict[float, pd.DataFrame]:
+        """Return finite-difference RHS sensitivity matrices for mixed-integer problems."""
+        if not self.is_mixed_integer_problem():
+            logger.info(
+                "Finite-difference RHS sensitivity analysis is only generated for mixed-integer "
+                "problems. The current problem does not appear to contain discrete variables."
+            )
+            self._finite_difference_rhs_sensitivity_analysis = {}
+            return {}
+
+        if not self._priority_objective_values:
+            raise RuntimeError(
+                "Finite-difference RHS sensitivity analysis requires an optimized problem. "
+                "Call optimize() before requesting the sensitivity matrices."
+            )
+
+        priorities = sorted(
+            int(priority)
+            for priority in self._priority_objective_values
+            if priority != "final_results"
+        )
+        baseline_objectives = {
+            int(priority): float(self._priority_objective_values[priority])
+            for priority in priorities
+        }
+
+        results = {}
+        columns = priorities[:-1]
+        index = priorities + ["final_results"]
+        final_priority = priorities[-1] if priorities else None
+
+        for percentage in relaxation_percentages:
+            matrix = pd.DataFrame(index=index, columns=columns, dtype=float)
+            for source_priority in columns:
+                relaxed_objectives = self._run_relaxed_rhs_sensitivity_analysis(
+                    source_priority=source_priority,
+                    relaxation_percentage=float(percentage),
+                )
+                for current_priority, relaxed_value in relaxed_objectives.items():
+                    objective_improvement = baseline_objectives[current_priority] - relaxed_value
+                    matrix.loc[current_priority, source_priority] = objective_improvement
+
+                if final_priority is not None and final_priority in relaxed_objectives:
+                    matrix.loc["final_results", source_priority] = matrix.loc[
+                        final_priority, source_priority
+                    ]
+
+            results[float(percentage)] = matrix
+
+        self._finite_difference_rhs_sensitivity_analysis = results
+        if output_path is None:
+            output_path = self._output_folder
+        write_finite_difference_rhs_sensitivity_analysis(results, output_path)
+        return results
 
     def get_performance_metrics_with_plot(
         self,

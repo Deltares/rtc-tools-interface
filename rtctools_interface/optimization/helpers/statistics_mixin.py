@@ -228,6 +228,136 @@ class StatisticsMixin:
         logger.warning(message)
         self._shadow_price_warning_issued = True
 
+    @staticmethod
+    def _casadi_symbol_name(symbol) -> str | None:
+        """Return the name of a CasADi symbol if available."""
+        if hasattr(symbol, "name"):
+            return symbol.name()
+        return None
+
+    def get_problem_variable_names(self) -> list[str]:
+        """Return all variable names exposed by the optimization problem."""
+        variable_names: set[str] = set()
+
+        dae_variables = getattr(self, "dae_variables", {})
+        if isinstance(dae_variables, dict):
+            for variables in dae_variables.values():
+                for variable in variables:
+                    variable_name = self._casadi_symbol_name(variable)
+                    if variable_name:
+                        variable_names.add(variable_name)
+
+        for variables in (
+            getattr(self, "path_variables", []),
+            getattr(self, "extra_variables", []),
+        ):
+            for variable in variables:
+                variable_name = self._casadi_symbol_name(variable)
+                if variable_name:
+                    variable_names.add(variable_name)
+
+        return sorted(variable_names)
+
+    def is_mixed_integer_problem(self) -> bool:
+        """Return whether the problem exposes any discrete optimization variables."""
+        return any(
+            self.variable_is_discrete(variable) for variable in self.get_problem_variable_names()
+        )
+
+    def get_current_priority_objective_value(self) -> float:
+        """Return the weighted objective value of the current goal-programming subproblem."""
+        subproblem_objectives = getattr(self, "_GoalProgrammingMixin__subproblem_objectives", [])
+        subproblem_path_objectives = getattr(
+            self, "_GoalProgrammingMixin__subproblem_path_objectives", []
+        )
+
+        if not subproblem_objectives and not subproblem_path_objectives:
+            return 0.0
+
+        objective_value = 0.0
+        for ensemble_member in range(self.ensemble_size):
+            n_objectives = self._gp_n_objectives(
+                subproblem_objectives, subproblem_path_objectives, ensemble_member
+            )
+            expression = self._gp_objective(subproblem_objectives, n_objectives, ensemble_member)
+            expression += ca.sum1(
+                self.map_path_expression(
+                    self._gp_path_objective(
+                        subproblem_path_objectives, n_objectives, ensemble_member
+                    ),
+                    ensemble_member,
+                )
+            )
+
+            evaluator = ca.Function(
+                f"current_priority_objective_eval_{ensemble_member}",
+                [self.solver_input],
+                [expression],
+            )
+            objective_value += self.ensemble_member_probability(ensemble_member) * float(
+                evaluator(self.solver_output)
+            )
+
+        return objective_value
+
+    @staticmethod
+    def _relax_bound(bound, *, relaxation_fraction: float, is_lower_bound: bool):
+        """Relax one constraint bound outward while preserving its original type."""
+        if isinstance(bound, Timeseries):
+            relaxed_values = StatisticsMixin._relax_bound(
+                bound.values,
+                relaxation_fraction=relaxation_fraction,
+                is_lower_bound=is_lower_bound,
+            )
+            return Timeseries(bound.times, relaxed_values)
+
+        bound_array = np.asarray(bound, dtype=float)
+        relaxation_size = relaxation_fraction * np.maximum(np.abs(bound_array), 1.0)
+        relaxation_size = np.where(np.isfinite(bound_array), relaxation_size, 0.0)
+
+        if is_lower_bound:
+            relaxed_bound = bound_array - relaxation_size
+        else:
+            relaxed_bound = bound_array + relaxation_size
+
+        if bound_array.ndim == 0:
+            return float(relaxed_bound)
+        return relaxed_bound
+
+    def relax_goal_constraints_for_priority(
+        self,
+        *,
+        source_priority: int,
+        relaxation_fraction: float,
+        ensemble_member: int | None = None,
+    ):
+        """Relax stored hard constraints that originate from one completed priority."""
+        ensemble_members = range(self.ensemble_size)
+        if ensemble_member is not None:
+            ensemble_members = [ensemble_member]
+
+        for current_ensemble_member in ensemble_members:
+            stores = (
+                self._GoalProgrammingMixin__constraint_store[current_ensemble_member],
+                self._GoalProgrammingMixin__path_constraint_store[current_ensemble_member],
+            )
+            for store in stores:
+                for constraint in store.values():
+                    priority = getattr(getattr(constraint, "goal", None), "priority", None)
+                    if priority is None or int(priority) != int(source_priority):
+                        continue
+
+                    constraint.min = self._relax_bound(
+                        constraint.min,
+                        relaxation_fraction=relaxation_fraction,
+                        is_lower_bound=True,
+                    )
+                    constraint.max = self._relax_bound(
+                        constraint.max,
+                        relaxation_fraction=relaxation_fraction,
+                        is_lower_bound=False,
+                    )
+
     def get_previous_priority_shadow_prices(
         self, *, ensemble_member: int = 0, current_priority: int | None = None
     ) -> dict[int, float]:

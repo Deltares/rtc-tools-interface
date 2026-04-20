@@ -39,6 +39,14 @@ def write_active_constraint_metrics(
         active_constraint_metrics.to_csv(output_path / "active_constraint_metrics.csv")
 
 
+def write_shadow_price_metrics(shadow_price_metrics: pd.DataFrame, output_path: str | Path):
+    """Write the shadow-price summary per priority to a csv file."""
+    output_path = Path(output_path) / "performance_metrics"
+    output_path.mkdir(parents=True, exist_ok=True)
+    if not shadow_price_metrics.empty:
+        shadow_price_metrics.to_csv(output_path / "shadow_price_metrics.csv")
+
+
 class GoalGeneratorMixin(ReadGoalsMixin, StatisticsMixin):
     # TODO: remove pylint disable below once we have more public functions.
     # pylint: disable=too-few-public-methods
@@ -62,7 +70,9 @@ class GoalGeneratorMixin(ReadGoalsMixin, StatisticsMixin):
             # A dataframe for each goal defined by the goal generator
             self._performance_metrics = {}
             self._active_constraint_metrics = pd.DataFrame()
+            self._shadow_price_metrics = pd.DataFrame()
             self._last_completed_priority = None
+            self._shadow_price_warning_issued = False
             self._performance_metrics_plot_file = None
             self._performance_metrics_plot_figures = {}
             for goal in self._all_goal_generator_goals:
@@ -116,6 +126,11 @@ class GoalGeneratorMixin(ReadGoalsMixin, StatisticsMixin):
         self._active_constraint_metrics = pd.concat(
             [self._active_constraint_metrics.T, constraint_metrics], axis=1
         ).T
+        shadow_price_metrics = self.get_shadow_price_metrics(current_priority=current_priority)
+        shadow_price_row = pd.DataFrame([shadow_price_metrics], index=[label], dtype=float)
+        self._shadow_price_metrics = pd.concat(
+            [self._shadow_price_metrics, shadow_price_row], axis=0, sort=False
+        )
 
         for goal in goal_generator_goals:
             goal_id_str = str(goal.goal_id)
@@ -170,6 +185,7 @@ class GoalGeneratorMixin(ReadGoalsMixin, StatisticsMixin):
             self._warn_if_priority_metrics_are_missing()
             write_performance_metrics(self._performance_metrics, self._output_folder)
             write_active_constraint_metrics(self._active_constraint_metrics, self._output_folder)
+            write_shadow_price_metrics(self._shadow_price_metrics, self._output_folder)
 
     def get_performance_metrics(self):
         """Get the plot data and config from the current run."""
@@ -178,6 +194,12 @@ class GoalGeneratorMixin(ReadGoalsMixin, StatisticsMixin):
     def get_active_constraint_metrics(self):
         """Get the active-constraint summary grouped by priority label."""
         return self._active_constraint_metrics
+
+    def get_shadow_price_metrics(self, current_priority=None):
+        """Get aggregated shadow prices for hard constraints from earlier priorities."""
+        if current_priority is not None:
+            return self.get_previous_priority_shadow_prices(current_priority=current_priority)
+        return self._shadow_price_metrics
 
     def get_performance_metrics_with_plot(
         self,
@@ -210,6 +232,7 @@ class GoalGeneratorMixin(ReadGoalsMixin, StatisticsMixin):
         figures, html_path = create_performance_metrics_dashboard(
             performance_metrics,
             active_constraint_metrics=self.get_active_constraint_metrics(),
+            shadow_price_metrics=self.get_shadow_price_metrics(),
             output_folder=output_path,
             file_name=file_name,
         )

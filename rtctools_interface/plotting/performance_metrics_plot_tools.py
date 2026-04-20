@@ -17,6 +17,8 @@ ACTIVE_CONSTRAINT_LABELS = {
     "active_previous_priority_constraints": "Active constraints from earlier priorities",
 }
 
+SHADOW_PRICE_LABEL = "Sum of absolute shadow prices"
+
 GOAL_METRIC_LABELS = {
     "timeseries_sum": "Timeseries Sum",
     "timeseries_min": "Timeseries Minimum",
@@ -276,9 +278,34 @@ def _build_active_constraint_tables_html(active_constraint_metrics: pd.DataFrame
     )
 
 
+def _build_shadow_price_tables_html(shadow_price_metrics: pd.DataFrame | None) -> str:
+    """Create the HTML for the lower-triangular shadow-price summary."""
+    if shadow_price_metrics is None or shadow_price_metrics.empty:
+        return "<p>No shadow price summary available.</p>"
+
+    formatted_columns = [f"From priority {column}" for column in shadow_price_metrics.columns]
+    headers = "".join(f"<th>{html.escape(str(column))}</th>" for column in formatted_columns)
+    rows: list[str] = []
+    for priority, row in shadow_price_metrics.iterrows():
+        cells = "".join(f"<td>{_format_metric_value(value)}</td>" for value in row.tolist())
+        rows.append(f"<tr><th scope='row'>{html.escape(str(priority))}</th>{cells}</tr>")
+
+    return (
+        "<div class='active-constraint-table-panel active'>"
+        "<h3 class='goal-table-title'>Shadow prices from earlier priorities</h3>"
+        f"<p>{html.escape(SHADOW_PRICE_LABEL)} aggregated by source priority.</p>"
+        "<table class='metric-table'>"
+        f"<thead><tr><th>Priority</th>{headers}</tr></thead>"
+        f"<tbody>{''.join(rows)}</tbody>"
+        "</table>"
+        "</div>"
+    )
+
+
 def create_performance_metrics_dashboard(
     performance_metrics: dict[str, pd.DataFrame],
     active_constraint_metrics: pd.DataFrame | None,
+    shadow_price_metrics: pd.DataFrame | None,
     output_folder: str | Path,
     file_name: str = "performance_metrics_dashboard.html",
 ) -> tuple[dict[str, Any], Path]:
@@ -304,10 +331,12 @@ def create_performance_metrics_dashboard(
         "goal_order": goal_order,
         "metric_order": metric_order,
         "active_constraint_metrics": active_constraint_metrics,
+        "shadow_price_metrics": shadow_price_metrics,
     }
 
     goal_tables_html = _build_goal_tables_html(performance_metrics, goal_order)
     active_constraint_tables_html = _build_active_constraint_tables_html(active_constraint_metrics)
+    shadow_price_tables_html = _build_shadow_price_tables_html(shadow_price_metrics)
     default_metric = metric_order[0] if metric_order else ""
     metric_label_to_key = {_metric_display_label(metric): metric for metric in metric_order}
 
@@ -361,6 +390,8 @@ def create_performance_metrics_dashboard(
             "data-target='goal-by-metric'>Tables</button>"
             "<button class='tab-button' type='button' "
             "data-target='active-constraints'>Constraint Activity</button>"
+            "<button class='tab-button' type='button' "
+            "data-target='shadow-prices'>Shadow Prices</button>"
             "</div>"
         ),
         "<div id='metric-by-goal' class='tab-panel active'><h2>Performance Metrics Bar Chart</h2>",
@@ -381,6 +412,9 @@ def create_performance_metrics_dashboard(
         "</div>",
         "<div id='active-constraints' class='tab-panel'><h2>Constraint Activity</h2>",
         active_constraint_tables_html,
+        "</div>",
+        "<div id='shadow-prices' class='tab-panel'><h2>Shadow Prices</h2>",
+        shadow_price_tables_html,
         "</div>",
         "<script>(function () {",
         "  const buttons = document.querySelectorAll('.tab-button');",

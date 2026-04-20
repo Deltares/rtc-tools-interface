@@ -214,6 +214,173 @@ class StatisticsMixin:
         )
         return self._count_active_constraint_entries(values, constraint.min, constraint.max)
 
+    def _get_goal_constraint_entry_count(self, constraint, *, ensemble_member: int) -> int:
+        """Return the number of scalar entries contributed by a hard goal constraint."""
+        total_entries, _ = self._count_goal_constraint_activity(
+            constraint, ensemble_member=ensemble_member
+        )
+        return total_entries
+
+    def _warn_shadow_prices_unavailable_once(self, message: str):
+        """Log a shadow-price availability warning at most once per problem instance."""
+        if getattr(self, "_shadow_price_warning_issued", False):
+            return
+        logger.warning(message)
+        self._shadow_price_warning_issued = True
+
+    def get_previous_priority_shadow_prices(
+        self, *, ensemble_member: int = 0, current_priority: int | None = None
+    ) -> dict[int, float]:
+        """Aggregate absolute shadow prices for hard constraints from earlier priorities."""
+        if current_priority is None:
+            current_priority = getattr(self, "_gp_current_priority", None)
+        if current_priority is None:
+            return {}
+
+        previous_priority_constraints = [
+            constraint
+            for constraint in self._GoalProgrammingMixin__constraint_store[ensemble_member].values()
+            if getattr(getattr(constraint, "goal", None), "priority", None) is not None
+            and int(constraint.goal.priority) < int(current_priority)
+        ]
+        previous_priority_constraints.extend(
+            constraint
+            for constraint in self._GoalProgrammingMixin__path_constraint_store[
+                ensemble_member
+            ].values()
+            if getattr(getattr(constraint, "goal", None), "priority", None) is not None
+            and int(constraint.goal.priority) < int(current_priority)
+        )
+        if not previous_priority_constraints:
+            return {}
+
+        lam_g = getattr(self, "_OptimizationProblem__lam_g", None)
+        if lam_g is None:
+            return {}
+
+        multiplier_values = np.asarray(lam_g, dtype=float).reshape(-1, order="F")
+        if multiplier_values.size == 0:
+            return {}
+        if not np.isfinite(multiplier_values).any():
+            self._warn_shadow_prices_unavailable_once(
+                "Shadow prices are unavailable because the solver did not return finite "
+                "constraint multipliers. This commonly happens for mixed-integer solves, "
+                "where shadow prices are generally not well-defined."
+            )
+            return {}
+
+        base_constraints = super(GoalProgrammingMixin, self).constraints(ensemble_member)
+        full_constraints = self.constraints(ensemble_member)
+        base_path_constraints = super(GoalProgrammingMixin, self).path_constraints(ensemble_member)
+        full_path_constraints = self.path_constraints(ensemble_member)
+
+        total_base_constraints = sum(
+            self._count_tuple_constraint_activity(
+                constraint, ensemble_member=ensemble_member, is_path_constraint=False
+            )[0]
+            for constraint in base_constraints
+        )
+        total_full_constraints = sum(
+            self._count_tuple_constraint_activity(
+                constraint, ensemble_member=ensemble_member, is_path_constraint=False
+            )[0]
+            for constraint in full_constraints
+        )
+        total_base_path_constraints = sum(
+            self._count_tuple_constraint_activity(
+                constraint, ensemble_member=ensemble_member, is_path_constraint=True
+            )[0]
+            for constraint in base_path_constraints
+        )
+        total_full_path_constraints = sum(
+            self._count_tuple_constraint_activity(
+                constraint, ensemble_member=ensemble_member, is_path_constraint=True
+            )[0]
+            for constraint in full_path_constraints
+        )
+
+        total_additional_constraints = total_full_constraints - total_base_constraints
+        total_additional_path_constraints = (
+            total_full_path_constraints - total_base_path_constraints
+        )
+        if total_additional_constraints < 0 or total_additional_path_constraints < 0:
+            self._warn_shadow_prices_unavailable_once(
+                "Cannot extract shadow prices because the computed number of additional goal "
+                "constraints is inconsistent with the full constraint set."
+            )
+            return {}
+
+        total_goal_constraint_entries = (
+            total_additional_constraints + total_additional_path_constraints
+        )
+        if total_goal_constraint_entries == 0:
+            return {}
+        if total_goal_constraint_entries > multiplier_values.size:
+            self._warn_shadow_prices_unavailable_once(
+                "Cannot extract shadow prices for previous priorities because the number of "
+                "goal-programming constraint entries exceeds the available Lagrange multipliers."
+            )
+            return {}
+
+        path_multiplier_tail = multiplier_values[-total_full_path_constraints:]
+        additional_path_multiplier_tail = path_multiplier_tail[-total_additional_path_constraints:]
+
+        constraint_multiplier_end = multiplier_values.size - total_full_path_constraints
+        constraint_multiplier_tail = multiplier_values[
+            constraint_multiplier_end - total_full_constraints : constraint_multiplier_end
+        ]
+        additional_constraint_multiplier_tail = constraint_multiplier_tail[
+            -total_additional_constraints:
+        ]
+
+        shadow_prices: dict[int, float] = {}
+
+        offset = 0
+        for constraint in self._GoalProgrammingMixin__constraint_store[ensemble_member].values():
+            entry_count = self._get_goal_constraint_entry_count(
+                constraint, ensemble_member=ensemble_member
+            )
+            multiplier_slice = additional_constraint_multiplier_tail[offset : offset + entry_count]
+            offset += entry_count
+
+            priority = getattr(getattr(constraint, "goal", None), "priority", None)
+            if priority is None or int(priority) >= int(current_priority):
+                continue
+
+            finite_multiplier_slice = multiplier_slice[np.isfinite(multiplier_slice)]
+            if finite_multiplier_slice.size == 0:
+                continue
+
+            priority_int = int(priority)
+            shadow_prices[priority_int] = shadow_prices.get(priority_int, 0.0) + float(
+                np.sum(np.abs(finite_multiplier_slice))
+            )
+
+        offset = 0
+        for constraint in self._GoalProgrammingMixin__path_constraint_store[
+            ensemble_member
+        ].values():
+            entry_count = self._get_goal_constraint_entry_count(
+                constraint, ensemble_member=ensemble_member
+            )
+            multiplier_slice = additional_path_multiplier_tail[offset : offset + entry_count]
+            offset += entry_count
+
+            priority = getattr(getattr(constraint, "goal", None), "priority", None)
+            if priority is None or int(priority) >= int(current_priority):
+                continue
+
+            finite_multiplier_slice = multiplier_slice[np.isfinite(multiplier_slice)]
+            if finite_multiplier_slice.size == 0:
+                continue
+
+            priority_int = int(priority)
+            shadow_prices[priority_int] = shadow_prices.get(priority_int, 0.0) + float(
+                np.sum(np.abs(finite_multiplier_slice))
+            )
+
+        return shadow_prices
+
     def get_constraint_activity_metrics(
         self, *, ensemble_member: int = 0, current_priority: int | None = None
     ) -> dict[str, float | int]:

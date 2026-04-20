@@ -71,6 +71,7 @@ class TestGoalGeneratorMixin(unittest.TestCase):
         problem.optimize()
         metrics = problem.get_performance_metrics()
         active_constraint_metrics = problem.get_active_constraint_metrics()
+        shadow_price_metrics = problem.get_shadow_price_metrics()
 
         range_goal_id = "WaterLevelRangeGoal__x__path__priority_10__idx_0"
         smooth_goal_id = "MinimizeUGoal__path__priority_15__idx_1"
@@ -118,6 +119,24 @@ class TestGoalGeneratorMixin(unittest.TestCase):
             0,
         )
 
+        self.assertFalse(shadow_price_metrics.empty)
+        self.assertEqual(list(shadow_price_metrics.columns), [10, 15])
+        self.assertIn(10, shadow_price_metrics.index)
+        self.assertIn(15, shadow_price_metrics.index)
+        self.assertIn(20, shadow_price_metrics.index)
+        self.assertIn("final_results", shadow_price_metrics.index)
+        self.assertTrue(shadow_price_metrics.loc[10].isna().all())
+        self.assertEqual(int(shadow_price_metrics.loc[15].count()), 1)
+        self.assertGreater(shadow_price_metrics.loc[15, 10], 0)
+        self.assertGreater(shadow_price_metrics.loc[20, 10], 0)
+        self.assertGreater(shadow_price_metrics.loc[20, 15], 0)
+        self.assertEqual(
+            shadow_price_metrics.loc["final_results", 10], shadow_price_metrics.loc[20, 10]
+        )
+        self.assertEqual(
+            shadow_price_metrics.loc["final_results", 15], shadow_price_metrics.loc[20, 15]
+        )
+
         self.assertEqual(
             metrics[integral_goal_id].loc["final_results", "mean_absolute_difference"], 0
         )
@@ -140,14 +159,19 @@ class TestGoalGeneratorMixin(unittest.TestCase):
             / "performance_metrics"
             / "performance_metrics_dashboard.html"
         )
+        expected_shadow_csv = (
+            Path(test_data["output_folder"]) / "performance_metrics" / "shadow_price_metrics.csv"
+        )
 
         self.assertTrue(expected_html.exists())
+        self.assertTrue(expected_shadow_csv.exists())
         self.assertEqual(metrics.keys(), problem.get_performance_metrics().keys())
 
         html = expected_html.read_text(encoding="utf-8")
         self.assertIn("Bar Charts", html)
         self.assertIn("Tables", html)
         self.assertIn("Constraint Activity", html)
+        self.assertIn("Shadow Prices", html)
         self.assertIn("Performance Metrics Bar Chart", html)
         self.assertIn("Performance Metrics Tables", html)
         self.assertIn("Select all goals", html)
@@ -161,5 +185,8 @@ class TestGoalGeneratorMixin(unittest.TestCase):
         self.assertIn("Fraction of active hard constraints", html)
         self.assertIn("Active constraints from earlier priorities", html)
         self.assertIn("Constraint activity by priority", html)
+        self.assertIn("Shadow prices from earlier priorities", html)
+        self.assertIn("From priority 10", html)
+        self.assertIn("From priority 15", html)
         self.assertNotIn("Heatmap view", html)
         self.assertNotIn("Metric-focused view", html)

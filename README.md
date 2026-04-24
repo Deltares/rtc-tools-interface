@@ -178,7 +178,7 @@ For mixed-integer problems, a shadow price is typically not available. To still 
 
 - `get_finite_difference_rhs_sensitivity_analysis()`
 
-This method is intended for problems with discrete optimization variables. It recreates and resolves the optimization problem multiple times, each time relaxing the hard constraints introduced by one earlier priority by a fixed percentage. By default, the method evaluates four relaxation levels:
+This method is intended for problems with discrete optimization variables. It recreates and resolves the optimization problem multiple times, each time relaxing the hard constraints introduced by one earlier priority. By default, the method evaluates four relaxation levels:
 
 - `1%`
 - `2%`
@@ -189,7 +189,9 @@ For every relaxation level, the method returns a lower-triangular matrix in whic
 
 - the rows are the current optimization priorities (plus `final_results`),
 - the columns are the earlier priorities that introduced hard constraints,
-- each cell contains the **objective improvement** at the current priority after relaxing the hard constraints from the corresponding earlier priority.
+- each cell contains the **percentage influence on the objective value** at the current priority after relaxing the hard constraints from the corresponding earlier priority.
+
+The reported value is computed relative to the original objective value at that priority. If that original objective value is zero or close to zero, the percentage influence is treated as zero. To make the matrices more informative in those cases, each column is made non-decreasing over the priorities by taking the maximum of the current percentage influence and the highest value from the previous rows in that column.
 
 The analysis is written to `output/sensitivity_analysis/` as one CSV per relaxation level:
 
@@ -205,16 +207,46 @@ problem.optimize()
 sensitivity_matrices = problem.get_finite_difference_rhs_sensitivity_analysis()
 ```
 
-Custom percentages can also be provided by the user. Any iterable of numbers is accepted, for example a list, tuple, or NumPy array:
+Custom relaxation values can also be provided by the user. Any iterable of numbers is accepted, for example a list, tuple, or NumPy array:
 
 ```python
 problem.optimize()
 sensitivity_matrices = problem.get_finite_difference_rhs_sensitivity_analysis(
-    relaxation_percentages=[0.5, 1.0, 3.0, 8.0],
+    relaxation_values=[0.5, 1.0, 3.0, 8.0],
 )
 ```
 
-Duplicate percentages are ignored, the original order is preserved, and decimal percentages are reflected in the generated file names, for example `finite_difference_rhs_sensitivity_0p5pct.csv`.
+The interpretation of `relaxation_values` depends on the selected `mode`:
+
+- `mode="relative"`: each value is interpreted as a percentage of `max(abs(RHS), relative_floor)`. This is the default mode, with `relative_floor=1.0`.
+- `mode="absolute"`: each value is interpreted directly as an absolute outward relaxation of the RHS bound.
+
+Examples:
+
+```python
+problem.optimize()
+
+# Relative percentages with a floor for small or zero RHS values
+sensitivity_matrices = problem.get_finite_difference_rhs_sensitivity_analysis(
+    relaxation_values=[1.0, 2.0, 5.0],
+    mode="relative",
+)
+
+# Relative percentages with a user-defined floor for small or zero RHS values
+sensitivity_matrices = problem.get_finite_difference_rhs_sensitivity_analysis(
+    relaxation_values=[1.0, 2.0, 5.0],
+    mode="relative",
+    relative_floor=0.25,
+)
+
+# Absolute RHS relaxations
+sensitivity_matrices = problem.get_finite_difference_rhs_sensitivity_analysis(
+    relaxation_values=[0.01, 0.05, 0.1],
+    mode="absolute",
+)
+```
+
+Duplicate relaxation values are ignored, the original order is preserved, and decimal values are reflected in the generated file names, for example `finite_difference_rhs_sensitivity_0p5pct.csv` for relative modes and `finite_difference_rhs_sensitivity_absolute_0p1.csv` for absolute mode.
 
 If the problem does not expose discrete variables, the method returns an empty dictionary and no sensitivity CSV files are generated.
 

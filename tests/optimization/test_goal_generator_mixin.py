@@ -239,7 +239,9 @@ class TestGoalGeneratorMixin(unittest.TestCase):
             if priority != "final_results"
         }
 
-        def fake_relaxed_run(*, source_priority, relaxation_percentage):
+        def fake_relaxed_run(*, source_priority, relaxation_value, mode, relative_floor):
+            self.assertEqual(mode, "relative")
+            self.assertEqual(relative_floor, 1.0)
             objective_offsets = {
                 10: {
                     1.0: {15: 1.5, 20: 2.5},
@@ -250,7 +252,7 @@ class TestGoalGeneratorMixin(unittest.TestCase):
                     2.0: {20: 5.0},
                 },
             }
-            offsets = objective_offsets[source_priority][relaxation_percentage]
+            offsets = objective_offsets[source_priority][relaxation_value]
             return {
                 current_priority: baseline_objectives[current_priority] - improvement
                 for current_priority, improvement in offsets.items()
@@ -265,7 +267,7 @@ class TestGoalGeneratorMixin(unittest.TestCase):
             ),
         ):
             matrices = problem.get_finite_difference_rhs_sensitivity_analysis(
-                relaxation_percentages=(1.0, 2.0)
+                relaxation_values=(1.0, 2.0)
             )
 
         self.assertEqual(set(matrices), {1.0, 2.0})
@@ -274,11 +276,11 @@ class TestGoalGeneratorMixin(unittest.TestCase):
         self.assertIn(20, matrices[1.0].index)
         self.assertIn("final_results", matrices[1.0].index)
         self.assertTrue(matrices[1.0].loc[10].isna().all())
-        self.assertEqual(matrices[1.0].loc[15, 10], 1.5)
-        self.assertEqual(matrices[1.0].loc[20, 10], 2.5)
-        self.assertEqual(matrices[1.0].loc[20, 15], 4.0)
-        self.assertEqual(matrices[1.0].loc["final_results", 10], 2.5)
-        self.assertEqual(matrices[2.0].loc[20, 15], 5.0)
+        self.assertGreater(matrices[1.0].loc[15, 10], 0)
+        self.assertGreaterEqual(matrices[1.0].loc[20, 10], matrices[1.0].loc[15, 10])
+        self.assertGreater(matrices[1.0].loc[20, 15], 0)
+        self.assertEqual(matrices[1.0].loc["final_results", 10], matrices[1.0].loc[20, 10])
+        self.assertGreater(matrices[2.0].loc[20, 15], matrices[1.0].loc[20, 15])
 
         sensitivity_output = Path(test_data["output_folder"]) / "sensitivity_analysis"
         self.assertTrue(
@@ -304,9 +306,11 @@ class TestGoalGeneratorMixin(unittest.TestCase):
             if priority != "final_results"
         }
 
-        def fake_relaxed_run(*, source_priority, relaxation_percentage):
+        def fake_relaxed_run(*, source_priority, relaxation_value, mode, relative_floor):
+            self.assertEqual(mode, "relative")
+            self.assertEqual(relative_floor, 1.0)
             return {
-                current_priority: baseline_objectives[current_priority] - relaxation_percentage
+                current_priority: baseline_objectives[current_priority] - relaxation_value
                 for current_priority in baseline_objectives
                 if current_priority > source_priority
             }
@@ -320,7 +324,7 @@ class TestGoalGeneratorMixin(unittest.TestCase):
             ),
         ):
             matrices = problem.get_finite_difference_rhs_sensitivity_analysis(
-                relaxation_percentages=(percentage for percentage in [0.5, 2, 2, 7.5]),
+                relaxation_values=(percentage for percentage in [0.5, 2, 2, 7.5]),
             )
 
         self.assertEqual(list(matrices), [0.5, 2.0, 7.5])
@@ -351,3 +355,141 @@ class TestGoalGeneratorMixin(unittest.TestCase):
 
         with self.assertRaisesRegex(TypeError, "real number"):
             problem.get_finite_difference_rhs_sensitivity_analysis(["1", 2.0])
+
+        with self.assertRaisesRegex(ValueError, "mode"):
+            problem.get_finite_difference_rhs_sensitivity_analysis(mode="unsupported")
+
+        with self.assertRaisesRegex(ValueError, "negative"):
+            problem.get_finite_difference_rhs_sensitivity_analysis(relative_floor=-1.0)
+
+        with self.assertRaisesRegex(
+            ValueError, "either relaxation_values or relaxation_percentages"
+        ):
+            problem.get_finite_difference_rhs_sensitivity_analysis(
+                relaxation_values=[1.0],
+                relaxation_percentages=[2.0],
+            )
+
+    def test_finite_difference_rhs_sensitivity_supports_absolute_mode(self):
+        test_data = get_test_data("basic", optimization=True)
+        problem = CustomGoalOptimizationProblem(
+            model_folder=test_data["model_folder"],
+            model_name=test_data["model_name"],
+            input_folder=test_data["model_input_folder"],
+            output_folder=test_data["output_folder"],
+        )
+
+        problem.optimize()
+        baseline_objectives = {
+            priority: value
+            for priority, value in problem._priority_objective_values.items()
+            if priority != "final_results"
+        }
+
+        def fake_relaxed_run(*, source_priority, relaxation_value, mode, relative_floor):
+            self.assertEqual(mode, "absolute")
+            self.assertEqual(relative_floor, 0.25)
+            return {
+                current_priority: baseline_objectives[current_priority] - relaxation_value
+                for current_priority in baseline_objectives
+                if current_priority > source_priority
+            }
+
+        with (
+            patch.object(problem, "is_mixed_integer_problem", return_value=True),
+            patch.object(
+                problem,
+                "_run_relaxed_rhs_sensitivity_analysis",
+                side_effect=fake_relaxed_run,
+            ),
+        ):
+            matrices = problem.get_finite_difference_rhs_sensitivity_analysis(
+                relaxation_values=[0.25, 1.5],
+                mode="absolute",
+                relative_floor=0.25,
+            )
+
+        self.assertEqual(list(matrices), [0.25, 1.5])
+        sensitivity_output = Path(test_data["output_folder"]) / "sensitivity_analysis"
+        self.assertTrue(
+            (sensitivity_output / "finite_difference_rhs_sensitivity_absolute_0p25.csv").exists()
+        )
+        self.assertTrue(
+            (sensitivity_output / "finite_difference_rhs_sensitivity_absolute_1p5.csv").exists()
+        )
+
+    def test_relax_bound_supports_all_modes(self):
+        self.assertEqual(
+            CustomGoalOptimizationProblem._relax_bound(
+                0.0,
+                relaxation_value=5.0,
+                mode="relative",
+                relative_floor=2.0,
+                is_lower_bound=False,
+            ),
+            0.1,
+        )
+        self.assertEqual(
+            CustomGoalOptimizationProblem._relax_bound(
+                0.0,
+                relaxation_value=0.5,
+                mode="absolute",
+                relative_floor=0.0,
+                is_lower_bound=True,
+            ),
+            -0.5,
+        )
+
+    def test_finite_difference_rhs_sensitivity_uses_percentage_and_columnwise_maximum(self):
+        test_data = get_test_data("basic", optimization=True)
+        problem = CustomGoalOptimizationProblem(
+            model_folder=test_data["model_folder"],
+            model_name=test_data["model_name"],
+            input_folder=test_data["model_input_folder"],
+            output_folder=test_data["output_folder"],
+        )
+
+        problem.optimize()
+        problem._priority_objective_values = {10: 4.0, 15: 10.0, 20: 0.0, "final_results": 0.0}
+
+        def fake_relaxed_run(*, source_priority, relaxation_value, mode, relative_floor):
+            del relaxation_value, mode, relative_floor
+            if source_priority == 10:
+                return {15: 9.0, 20: -1.0}
+            return {20: -0.2}
+
+        with (
+            patch.object(problem, "is_mixed_integer_problem", return_value=True),
+            patch.object(
+                problem,
+                "_run_relaxed_rhs_sensitivity_analysis",
+                side_effect=fake_relaxed_run,
+            ),
+        ):
+            matrices = problem.get_finite_difference_rhs_sensitivity_analysis(
+                relaxation_values=[1.0]
+            )
+
+        matrix = matrices[1.0]
+        self.assertEqual(matrix.loc[15, 10], 10.0)
+        self.assertEqual(matrix.loc[20, 10], 10.0)
+        self.assertEqual(matrix.loc[20, 15], 0.0)
+        self.assertEqual(matrix.loc["final_results", 10], 10.0)
+        self.assertEqual(matrix.loc["final_results", 15], 0.0)
+
+    def test_store_performance_metrics_handles_missing_current_priority_for_shadow_prices(self):
+        test_data = get_test_data("basic", optimization=True)
+        problem = CustomGoalOptimizationProblem(
+            model_folder=test_data["model_folder"],
+            model_name=test_data["model_name"],
+            input_folder=test_data["model_input_folder"],
+            output_folder=test_data["output_folder"],
+        )
+
+        problem.optimize()
+        problem._shadow_price_metrics = problem._shadow_price_metrics.iloc[0:0]
+        problem.store_performance_metrics("final_results", current_priority=None)
+
+        self.assertIn("final_results", problem.get_active_constraint_metrics().index)
+        self.assertIn("final_results", problem.get_shadow_price_metrics().index)
+        self.assertTrue(problem.get_shadow_price_metrics().loc["final_results"].isna().all())

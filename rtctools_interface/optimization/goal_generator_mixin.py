@@ -10,6 +10,7 @@ import pandas as pd
 
 from rtctools_interface.optimization.base_goal import BaseGoal
 from rtctools_interface.optimization.goal_performance_metrics import (
+    ABS_TOL,
     get_custom_performance_metrics,
     get_performance_metrics,
 )
@@ -58,51 +59,84 @@ def _format_percentage_for_file_name(percentage: float) -> str:
     return f"{str(percentage).replace('.', 'p')}pct"
 
 
-def _normalize_relaxation_percentages(
-    relaxation_percentages: Iterable[Real] | Real | None,
+def _format_relaxation_value_for_file_name(relaxation_value: float, *, mode: str) -> str:
+    """Format a relaxation value for stable file names."""
+    formatted_value = (
+        str(int(relaxation_value))
+        if float(relaxation_value).is_integer()
+        else str(relaxation_value).replace(".", "p")
+    )
+    if mode == "absolute":
+        return f"absolute_{formatted_value}"
+    return f"{formatted_value}pct"
+
+
+def _normalize_relaxation_values(
+    relaxation_values: Iterable[Real] | Real | None,
+    *,
+    parameter_name: str,
 ) -> tuple[float, ...]:
-    """Normalize user-provided relaxation percentages to unique floats."""
-    if relaxation_percentages is None:
+    """Normalize user-provided relaxation values to unique floats."""
+    if relaxation_values is None:
         return (1.0, 2.0, 5.0, 10.0)
 
-    if isinstance(relaxation_percentages, Real):
-        raw_percentages = [relaxation_percentages]
+    if isinstance(relaxation_values, Real):
+        raw_values = [relaxation_values]
     else:
-        raw_percentages = list(relaxation_percentages)
+        raw_values = list(relaxation_values)
 
-    if not raw_percentages:
-        raise ValueError("relaxation_percentages must contain at least one percentage value.")
+    if not raw_values:
+        raise ValueError(f"{parameter_name} must contain at least one relaxation value.")
 
-    normalized_percentages: list[float] = []
-    for percentage in raw_percentages:
-        if not isinstance(percentage, Real):
-            raise TypeError(
-                "Each value in relaxation_percentages must be a real number representing a "
-                "percentage."
-            )
+    normalized_values: list[float] = []
+    for value in raw_values:
+        if not isinstance(value, Real):
+            raise TypeError(f"Each value in {parameter_name} must be a real number.")
 
-        normalized_percentage = float(percentage)
-        if pd.isna(normalized_percentage):
-            raise ValueError("relaxation_percentages cannot contain NaN values.")
-        if normalized_percentage < 0:
-            raise ValueError("relaxation_percentages cannot contain negative values.")
-        if normalized_percentage not in normalized_percentages:
-            normalized_percentages.append(normalized_percentage)
+        normalized_value = float(value)
+        if pd.isna(normalized_value):
+            raise ValueError(f"{parameter_name} cannot contain NaN values.")
+        if normalized_value < 0:
+            raise ValueError(f"{parameter_name} cannot contain negative values.")
+        if normalized_value not in normalized_values:
+            normalized_values.append(normalized_value)
 
-    return tuple(normalized_percentages)
+    return tuple(normalized_values)
+
+
+def _validate_sensitivity_mode(mode: str, *, relative_floor: Real) -> float:
+    """Validate the selected sensitivity mode and floor value."""
+    allowed_modes = {"absolute", "relative"}
+    if mode not in allowed_modes:
+        raise ValueError("mode must be one of 'absolute' or 'relative'.")
+
+    if not isinstance(relative_floor, Real):
+        raise TypeError("relative_floor must be a real number.")
+
+    relative_floor = float(relative_floor)
+    if pd.isna(relative_floor):
+        raise ValueError("relative_floor cannot be NaN.")
+    if relative_floor < 0:
+        raise ValueError("relative_floor cannot be negative.")
+
+    return relative_floor
 
 
 def write_finite_difference_rhs_sensitivity_analysis(
-    sensitivity_analysis: dict[float, pd.DataFrame], output_path: str | Path
+    sensitivity_analysis: dict[float, pd.DataFrame],
+    output_path: str | Path,
+    *,
+    mode: str,
 ):
     """Write finite-difference RHS sensitivity matrices to csv files."""
     output_path = Path(output_path) / "sensitivity_analysis"
     output_path.mkdir(parents=True, exist_ok=True)
-    for percentage, matrix in sensitivity_analysis.items():
+    for relaxation_value, matrix in sensitivity_analysis.items():
         if matrix.empty:
             continue
         file_name = (
-            f"finite_difference_rhs_sensitivity_{_format_percentage_for_file_name(percentage)}.csv"
+            "finite_difference_rhs_sensitivity_"
+            f"{_format_relaxation_value_for_file_name(relaxation_value, mode=mode)}.csv"
         )
         matrix.to_csv(output_path / file_name)
 
@@ -126,7 +160,9 @@ class GoalGeneratorMixin(ReadGoalsMixin, StatisticsMixin):
         self._last_completed_priority = None
         self._finite_difference_rhs_sensitivity_analysis = {}
         self._rhs_sensitivity_source_priority = None
-        self._rhs_sensitivity_relaxation_fraction = None
+        self._rhs_sensitivity_relaxation_value = None
+        self._rhs_sensitivity_mode = "relative"
+        self._rhs_sensitivity_relative_floor = 1.0
         self._rhs_sensitivity_relaxation_applied = False
         if not hasattr(self, "_all_goal_generator_goals"):
             goals_to_generate = kwargs.get("goals_to_generate", [])
@@ -200,8 +236,8 @@ class GoalGeneratorMixin(ReadGoalsMixin, StatisticsMixin):
         self._active_constraint_metrics = pd.concat(
             [self._active_constraint_metrics.T, constraint_metrics], axis=1
         ).T
-        shadow_price_metrics = self.get_shadow_price_metrics(current_priority=current_priority)
-        shadow_price_row = pd.DataFrame([shadow_price_metrics], index=[label], dtype=float)
+        shadow_price_metrics = self._get_shadow_price_metric_row(current_priority=current_priority)
+        shadow_price_row = pd.Series(shadow_price_metrics, name=label, dtype=float).to_frame().T
         self._shadow_price_metrics = pd.concat(
             [self._shadow_price_metrics, shadow_price_row], axis=0, sort=False
         )
@@ -247,7 +283,7 @@ class GoalGeneratorMixin(ReadGoalsMixin, StatisticsMixin):
         super().priority_started(priority)
         if self._rhs_sensitivity_source_priority is None:
             return
-        if self._rhs_sensitivity_relaxation_fraction is None:
+        if self._rhs_sensitivity_relaxation_value is None:
             return
         if self._rhs_sensitivity_relaxation_applied:
             return
@@ -256,7 +292,9 @@ class GoalGeneratorMixin(ReadGoalsMixin, StatisticsMixin):
 
         self.relax_goal_constraints_for_priority(
             source_priority=int(self._rhs_sensitivity_source_priority),
-            relaxation_fraction=float(self._rhs_sensitivity_relaxation_fraction),
+            relaxation_value=float(self._rhs_sensitivity_relaxation_value),
+            mode=self._rhs_sensitivity_mode,
+            relative_floor=float(self._rhs_sensitivity_relative_floor),
         )
         self._rhs_sensitivity_relaxation_applied = True
 
@@ -293,6 +331,12 @@ class GoalGeneratorMixin(ReadGoalsMixin, StatisticsMixin):
         """Get the active-constraint summary grouped by priority label."""
         return self._active_constraint_metrics
 
+    def _get_shadow_price_metric_row(self, *, current_priority=None) -> dict[int, float]:
+        """Return one shadow-price summary row for a specific current priority."""
+        if current_priority is None:
+            return {}
+        return self.get_previous_priority_shadow_prices(current_priority=current_priority)
+
     def get_shadow_price_metrics(self, current_priority=None):
         """Get aggregated shadow prices for hard constraints from earlier priorities."""
         if current_priority is not None:
@@ -300,7 +344,12 @@ class GoalGeneratorMixin(ReadGoalsMixin, StatisticsMixin):
         return self._shadow_price_metrics
 
     def _run_relaxed_rhs_sensitivity_analysis(
-        self, *, source_priority: int, relaxation_percentage: float
+        self,
+        *,
+        source_priority: int,
+        relaxation_value: float,
+        mode: str,
+        relative_floor: float,
     ) -> dict[int, float]:
         """Re-run the optimization with relaxed constraints from one earlier priority."""
         problem_kwargs = self.get_sensitivity_analysis_problem_kwargs()
@@ -309,9 +358,9 @@ class GoalGeneratorMixin(ReadGoalsMixin, StatisticsMixin):
             rerun_problem = self.__class__(**problem_kwargs)
             rerun_problem.calculate_performance_metrics = False
             rerun_problem._rhs_sensitivity_source_priority = int(source_priority)
-            rerun_problem._rhs_sensitivity_relaxation_fraction = (
-                float(relaxation_percentage) / 100.0
-            )
+            rerun_problem._rhs_sensitivity_relaxation_value = float(relaxation_value)
+            rerun_problem._rhs_sensitivity_mode = mode
+            rerun_problem._rhs_sensitivity_relative_floor = float(relative_floor)
             rerun_problem._rhs_sensitivity_relaxation_applied = False
 
             success = rerun_problem.optimize()
@@ -319,7 +368,7 @@ class GoalGeneratorMixin(ReadGoalsMixin, StatisticsMixin):
                 raise RuntimeError(
                     "Finite-difference RHS sensitivity analysis failed while solving "
                     f"the relaxed problem for source priority {source_priority} at "
-                    f"{relaxation_percentage}% relaxation."
+                    f"relaxation value {relaxation_value} in mode '{mode}'."
                 )
 
             return {
@@ -328,13 +377,62 @@ class GoalGeneratorMixin(ReadGoalsMixin, StatisticsMixin):
                 if priority != "final_results" and int(priority) > int(source_priority)
             }
 
+    @staticmethod
+    def _objective_influence_percentage(
+        baseline_objective: float, relaxed_objective: float
+    ) -> float:
+        """Return the relative objective improvement as a percentage."""
+        if abs(baseline_objective) <= ABS_TOL:
+            return 0.0
+
+        objective_improvement = baseline_objective - relaxed_objective
+        if objective_improvement <= 0:
+            return 0.0
+
+        return 100.0 * objective_improvement / abs(baseline_objective)
+
+    @staticmethod
+    def _stabilize_influence_column(matrix: pd.DataFrame, *, source_priority: int):
+        """Make one column of the influence matrix non-decreasing over priorities."""
+        row_labels = [label for label in matrix.index if label != "final_results"]
+        applicable_rows = [label for label in row_labels if int(label) > int(source_priority)]
+        if "final_results" in matrix.index:
+            applicable_rows.append("final_results")
+
+        running_max = 0.0
+        for label in applicable_rows:
+            current_value = matrix.loc[label, source_priority]
+            if pd.isna(current_value):
+                current_value = 0.0
+            running_max = max(running_max, float(current_value))
+            matrix.loc[label, source_priority] = running_max
+
     def get_finite_difference_rhs_sensitivity_analysis(
         self,
-        relaxation_percentages: Iterable[Real] | Real | None = None,
+        relaxation_values: Iterable[Real] | Real | None = None,
+        *,
+        mode: str = "relative",
+        relative_floor: Real = 1.0,
         output_path: str | Path | None = None,
+        relaxation_percentages: Iterable[Real] | Real | None = None,
     ) -> dict[float, pd.DataFrame]:
         """Return finite-difference RHS sensitivity matrices for mixed-integer problems."""
-        relaxation_percentages = _normalize_relaxation_percentages(relaxation_percentages)
+        if relaxation_values is not None and relaxation_percentages is not None:
+            raise ValueError("Use either relaxation_values or relaxation_percentages, not both.")
+
+        if relaxation_values is None:
+            relaxation_values = relaxation_percentages
+
+        relaxation_values = _normalize_relaxation_values(
+            relaxation_values,
+            parameter_name=(
+                "relaxation_percentages"
+                if relaxation_percentages is not None
+                and relaxation_values is relaxation_percentages
+                else "relaxation_values"
+            ),
+        )
+        relative_floor = _validate_sensitivity_mode(mode, relative_floor=relative_floor)
 
         if not self.is_mixed_integer_problem():
             logger.info(
@@ -365,28 +463,36 @@ class GoalGeneratorMixin(ReadGoalsMixin, StatisticsMixin):
         index = priorities + ["final_results"]
         final_priority = priorities[-1] if priorities else None
 
-        for percentage in relaxation_percentages:
+        for relaxation_value in relaxation_values:
             matrix = pd.DataFrame(index=index, columns=columns, dtype=float)
             for source_priority in columns:
                 relaxed_objectives = self._run_relaxed_rhs_sensitivity_analysis(
                     source_priority=source_priority,
-                    relaxation_percentage=float(percentage),
+                    relaxation_value=float(relaxation_value),
+                    mode=mode,
+                    relative_floor=relative_floor,
                 )
                 for current_priority, relaxed_value in relaxed_objectives.items():
-                    objective_improvement = baseline_objectives[current_priority] - relaxed_value
-                    matrix.loc[current_priority, source_priority] = objective_improvement
+                    matrix.loc[current_priority, source_priority] = (
+                        self._objective_influence_percentage(
+                            baseline_objectives[current_priority],
+                            relaxed_value,
+                        )
+                    )
 
                 if final_priority is not None and final_priority in relaxed_objectives:
                     matrix.loc["final_results", source_priority] = matrix.loc[
                         final_priority, source_priority
                     ]
 
-            results[float(percentage)] = matrix
+                self._stabilize_influence_column(matrix, source_priority=source_priority)
+
+            results[float(relaxation_value)] = matrix
 
         self._finite_difference_rhs_sensitivity_analysis = results
         if output_path is None:
             output_path = self._output_folder
-        write_finite_difference_rhs_sensitivity_analysis(results, output_path)
+        write_finite_difference_rhs_sensitivity_analysis(results, output_path, mode=mode)
         return results
 
     def get_performance_metrics_with_plot(

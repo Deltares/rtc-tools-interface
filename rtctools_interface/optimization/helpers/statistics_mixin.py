@@ -301,18 +301,35 @@ class StatisticsMixin:
         return objective_value
 
     @staticmethod
-    def _relax_bound(bound, *, relaxation_fraction: float, is_lower_bound: bool):
+    def _relax_bound(
+        bound,
+        *,
+        relaxation_value: float,
+        mode: str,
+        relative_floor: float,
+        is_lower_bound: bool,
+    ):
         """Relax one constraint bound outward while preserving its original type."""
         if isinstance(bound, Timeseries):
             relaxed_values = StatisticsMixin._relax_bound(
                 bound.values,
-                relaxation_fraction=relaxation_fraction,
+                relaxation_value=relaxation_value,
+                mode=mode,
+                relative_floor=relative_floor,
                 is_lower_bound=is_lower_bound,
             )
             return Timeseries(bound.times, relaxed_values)
 
         bound_array = np.asarray(bound, dtype=float)
-        relaxation_size = relaxation_fraction * np.maximum(np.abs(bound_array), 1.0)
+        if mode == "absolute":
+            relaxation_size = np.full_like(bound_array, relaxation_value, dtype=float)
+        elif mode == "relative":
+            relaxation_size = (relaxation_value / 100.0) * np.maximum(
+                np.abs(bound_array), relative_floor
+            )
+        else:
+            raise ValueError("mode must be one of 'absolute' or 'relative'.")
+
         relaxation_size = np.where(np.isfinite(bound_array), relaxation_size, 0.0)
 
         if is_lower_bound:
@@ -328,7 +345,9 @@ class StatisticsMixin:
         self,
         *,
         source_priority: int,
-        relaxation_fraction: float,
+        relaxation_value: float,
+        mode: str,
+        relative_floor: float,
         ensemble_member: int | None = None,
     ):
         """Relax stored hard constraints that originate from one completed priority."""
@@ -349,12 +368,16 @@ class StatisticsMixin:
 
                     constraint.min = self._relax_bound(
                         constraint.min,
-                        relaxation_fraction=relaxation_fraction,
+                        relaxation_value=relaxation_value,
+                        mode=mode,
+                        relative_floor=relative_floor,
                         is_lower_bound=True,
                     )
                     constraint.max = self._relax_bound(
                         constraint.max,
-                        relaxation_fraction=relaxation_fraction,
+                        relaxation_value=relaxation_value,
+                        mode=mode,
+                        relative_floor=relative_floor,
                         is_lower_bound=False,
                     )
 

@@ -47,16 +47,7 @@ def write_shadow_price_metrics(shadow_price_metrics: pd.DataFrame, output_path: 
     """Write the shadow-price summary per priority to a csv file."""
     output_path = Path(output_path) / "performance_metrics"
     output_path.mkdir(parents=True, exist_ok=True)
-    if not shadow_price_metrics.empty:
-        shadow_price_metrics.to_csv(output_path / "shadow_price_metrics.csv")
-
-
-def _format_percentage_for_file_name(percentage: float) -> str:
-    """Format a percentage value for stable file names."""
-    if float(percentage).is_integer():
-        return f"{int(percentage)}pct"
-
-    return f"{str(percentage).replace('.', 'p')}pct"
+    shadow_price_metrics.to_csv(output_path / "shadow_price_metrics.csv")
 
 
 def _format_relaxation_value_for_file_name(relaxation_value: float, *, mode: str) -> str:

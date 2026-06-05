@@ -2,11 +2,14 @@
 
 import unittest
 from pathlib import Path
+from tempfile import TemporaryDirectory
 from unittest.mock import patch
 
+import pandas as pd
 from rtctools.optimization.goal_programming_mixin import Goal
 
 from rtctools_interface.optimization.base_optimization_problem import BaseOptimizationProblem
+from rtctools_interface.optimization.goal_generator_mixin import write_shadow_price_metrics
 from tests.utils.get_test import get_test_data
 
 
@@ -66,6 +69,16 @@ class DiscreteFlagOptimizationProblem(CustomGoalOptimizationProblem):
 
 class TestGoalGeneratorMixin(unittest.TestCase):
     """Validate metric collection for goals not defined via a goal table."""
+
+    def test_write_shadow_price_metrics_writes_empty_csv(self):
+        with TemporaryDirectory() as output_folder:
+            write_shadow_price_metrics(pd.DataFrame(), output_folder)
+
+            shadow_price_metrics_file = (
+                Path(output_folder) / "performance_metrics" / "shadow_price_metrics.csv"
+            )
+
+            self.assertTrue(shadow_price_metrics_file.exists())
 
     def test_custom_goals_are_included_in_performance_metrics(self):
         test_data = get_test_data("basic", optimization=True)

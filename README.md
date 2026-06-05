@@ -132,10 +132,8 @@ class MyOptimizationProblem(ActiveConstraintMixin, BaseOptimizationProblem):
     pass
 ```
 
-After optimization, the mixin creates `output/active_constraints` with two CSV files:
-
-- `active_constraints_by_priority.csv`: one row per completed priority with the total number of transcribed constraints, the number of active constraints, and lower/upper/equality active-bound counts.
-- `previous_goal_constraints.csv`: detailed rows for constraints that RTC-Tools created from goals optimized in previous priorities. For each priority it reports the total number of previous-goal constraints, how many are active, and for active rows which bound (`lower`, `upper`, or `both`) was hit and the corresponding bound value.
+After optimization, the mixin creates `output/active_constraints/active_constraints_of_previous_goals.csv`.
+This file contains detailed rows for active constraints that RTC-Tools created from goals optimized in previous priorities. For each priority with active previous-goal constraints, it reports the total number of previous-goal constraints, how many are active, which bound (`lower`, `upper`, or `both`) was hit, and the corresponding bound value. Path-goal constraints are reported in one row per active path goal; the `active_times` column lists the timesteps at which that path-goal constraint is active.
 
 
 ## Automatic plotting of results

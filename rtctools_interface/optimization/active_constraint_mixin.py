@@ -1,7 +1,6 @@
 """Mixin for reporting active constraints after goal-programming priorities."""
 
 import csv
-import logging
 from pathlib import Path
 from typing import Any
 
@@ -9,33 +8,19 @@ import casadi as ca
 import numpy as np
 from rtctools.optimization.timeseries import Timeseries
 
-logger = logging.getLogger("rtctools")
-
 
 class ActiveConstraintMixin:
     """Write active-constraint diagnostics for RTC-Tools optimizations.
 
     Add this mixin before ``GoalProgrammingMixin``/``BaseOptimizationProblem`` in
-    the inheritance list. After optimization, two CSV files are written to
-    ``<output_folder>/active_constraints``:
-
-    * ``active_constraints_by_priority.csv`` with counts for all transcribed
-      constraints after every priority solve.
-    * ``previous_goal_constraints.csv`` with details for constraints that RTC-Tools
-      created from goals optimized in previous priorities.
+    the inheritance list. After optimization,
+    ``active_constraints_of_previous_goals.csv`` is written to
+    ``<output_folder>/active_constraints`` with details for active constraints that
+    RTC-Tools created from goals optimized in previous priorities.
     """
 
     active_constraint_output_folder = "active_constraints"
     active_constraint_tolerance = 1e-7
-
-    _ACTIVE_CONSTRAINT_SUMMARY_FIELDS = [
-        "priority",
-        "total_constraints",
-        "active_constraints",
-        "active_lower_bounds",
-        "active_upper_bounds",
-        "active_equalities",
-    ]
 
     _PREVIOUS_GOAL_CONSTRAINT_FIELDS = [
         "priority",
@@ -44,27 +29,22 @@ class ActiveConstraintMixin:
         "ensemble_member",
         "constraint_source",
         "function_key",
-        "goal_id",
         "goal_priority",
         "goal_class",
-        "component_index",
-        "time",
+        "active_times",
         "value",
         "lower_bound",
         "upper_bound",
-        "is_active",
         "active_bound",
         "active_bound_value",
     ]
 
     def __init__(self, **kwargs):
-        self._active_constraint_summary_rows = []
         self._previous_goal_constraint_rows = []
         super().__init__(**kwargs)
 
     def priority_completed(self, priority: int) -> None:
         """Collect active-constraint diagnostics after a priority is solved."""
-        self._collect_active_constraint_summary(priority)
         self._collect_previous_goal_constraint_details(priority)
         super().priority_completed(priority)
 
@@ -106,44 +86,6 @@ class ActiveConstraintMixin:
         )
         return lower_active, upper_active
 
-    def _collect_active_constraint_summary(self, priority: int) -> None:
-        """Collect active-constraint counts for the full transcribed NLP."""
-        transcribed_problem = self.transcribed_problem
-        constraint_expression = transcribed_problem["nlp"]["g"]
-        constraint_function = ca.Function(
-            f"active_constraints_g_priority_{priority}",
-            [transcribed_problem["nlp"]["x"]],
-            [constraint_expression],
-        )
-
-        values = self._as_flat_float_array(constraint_function(self.solver_output))
-        lower_bounds = self._as_flat_float_array(transcribed_problem["lbg"])
-        upper_bounds = self._as_flat_float_array(transcribed_problem["ubg"])
-
-        lower_active, upper_active = self._active_bound_masks(values, lower_bounds, upper_bounds)
-        active = lower_active | upper_active
-        equalities = (
-            np.isfinite(lower_bounds)
-            & np.isfinite(upper_bounds)
-            & np.isclose(
-                lower_bounds,
-                upper_bounds,
-                rtol=self.active_constraint_tolerance,
-                atol=self.active_constraint_tolerance,
-            )
-        )
-
-        self._active_constraint_summary_rows.append(
-            {
-                "priority": priority,
-                "total_constraints": int(values.size),
-                "active_constraints": int(np.count_nonzero(active)),
-                "active_lower_bounds": int(np.count_nonzero(lower_active)),
-                "active_upper_bounds": int(np.count_nonzero(upper_active)),
-                "active_equalities": int(np.count_nonzero(active & equalities)),
-            }
-        )
-
     def _collect_previous_goal_constraint_details(self, priority: int) -> None:
         """Collect rows for constraints created from goals of previous priorities."""
         rows = []
@@ -164,34 +106,12 @@ class ActiveConstraintMixin:
         )
 
         total_constraints = len(rows)
-        active_constraints = sum(row["is_active"] for row in rows)
-        if rows:
-            for row in rows:
-                row["total_previous_goal_constraints"] = total_constraints
-                row["active_previous_goal_constraints"] = active_constraints
-            self._previous_goal_constraint_rows.extend(rows)
-        else:
-            self._previous_goal_constraint_rows.append(
-                {
-                    "priority": priority,
-                    "total_previous_goal_constraints": 0,
-                    "active_previous_goal_constraints": 0,
-                    "ensemble_member": "",
-                    "constraint_source": "",
-                    "function_key": "",
-                    "goal_id": "",
-                    "goal_priority": "",
-                    "goal_class": "",
-                    "component_index": "",
-                    "time": "",
-                    "value": "",
-                    "lower_bound": "",
-                    "upper_bound": "",
-                    "is_active": False,
-                    "active_bound": "",
-                    "active_bound_value": "",
-                }
-            )
+        active_rows = [row for row in rows if row.pop("is_active")]
+        active_constraints = len(active_rows)
+        for row in active_rows:
+            row["total_previous_goal_constraints"] = total_constraints
+            row["active_previous_goal_constraints"] = active_constraints
+        self._previous_goal_constraint_rows.extend(active_rows)
 
     def _goal_constraint_rows(
         self,
@@ -223,6 +143,24 @@ class ActiveConstraintMixin:
                     values, lower_bounds, upper_bounds
                 )
 
+                if is_path_goal:
+                    rows.append(
+                        self._path_goal_constraint_row(
+                            priority,
+                            constraint_source,
+                            function_key,
+                            ensemble_member,
+                            goal,
+                            times,
+                            values,
+                            lower_bounds,
+                            upper_bounds,
+                            lower_active,
+                            upper_active,
+                        )
+                    )
+                    continue
+
                 for component_index, value in enumerate(values):
                     active_bound, active_bound_value = self._active_bound_description(
                         lower_active[component_index],
@@ -238,13 +176,11 @@ class ActiveConstraintMixin:
                             "ensemble_member": ensemble_member,
                             "constraint_source": constraint_source,
                             "function_key": function_key,
-                            "goal_id": getattr(goal, "goal_id", "") if goal is not None else "",
                             "goal_priority": (
                                 getattr(goal, "priority", "") if goal is not None else ""
                             ),
                             "goal_class": goal.__class__.__name__ if goal is not None else "",
-                            "component_index": component_index,
-                            "time": self._component_time(times, component_index),
+                            "active_times": "",
                             "value": value,
                             "lower_bound": lower_bounds[component_index],
                             "upper_bound": upper_bounds[component_index],
@@ -256,6 +192,55 @@ class ActiveConstraintMixin:
                         }
                     )
         return rows
+
+    def _path_goal_constraint_row(
+        self,
+        priority: int,
+        constraint_source: str,
+        function_key: str,
+        ensemble_member: int,
+        goal: Any,
+        times: np.ndarray | None,
+        values: np.ndarray,
+        lower_bounds: np.ndarray,
+        upper_bounds: np.ndarray,
+        lower_active: np.ndarray,
+        upper_active: np.ndarray,
+    ) -> dict[str, Any]:
+        """Build a single summary row for a path-goal constraint."""
+        active = lower_active | upper_active
+        active_indices = np.flatnonzero(active)
+        active_bound_descriptions = [
+            self._active_bound_description(
+                lower_active[index],
+                upper_active[index],
+                lower_bounds[index],
+                upper_bounds[index],
+            )
+            for index in active_indices
+        ]
+
+        return {
+            "priority": priority,
+            "total_previous_goal_constraints": "",
+            "active_previous_goal_constraints": "",
+            "ensemble_member": ensemble_member,
+            "constraint_source": constraint_source,
+            "function_key": function_key,
+            "goal_priority": getattr(goal, "priority", "") if goal is not None else "",
+            "goal_class": goal.__class__.__name__ if goal is not None else "",
+            "active_times": self._format_active_times(times, active_indices),
+            "value": self._format_indexed_values(values, active_indices),
+            "lower_bound": self._format_indexed_values(lower_bounds, active_indices),
+            "upper_bound": self._format_indexed_values(upper_bounds, active_indices),
+            "is_active": bool(np.any(active)),
+            "active_bound": self._format_values(
+                [description[0] for description in active_bound_descriptions]
+            ),
+            "active_bound_value": self._format_values(
+                [description[1] for description in active_bound_descriptions]
+            ),
+        }
 
     def _get_goal_constraint_collections(
         self, *, is_path_goal: bool, include_problem_constraints: bool
@@ -313,6 +298,29 @@ class ActiveConstraintMixin:
             return ""
         return times[component_index % len(times)]
 
+    @classmethod
+    def _format_active_times(cls, times: np.ndarray | None, active_indices: np.ndarray) -> str:
+        """Format unique active timesteps for a flattened path-constraint vector."""
+        active_times = [cls._component_time(times, int(index)) for index in active_indices]
+        return cls._format_values(active_times)
+
+    @classmethod
+    def _format_indexed_values(cls, values: np.ndarray, indices: np.ndarray) -> str:
+        """Format values at selected indices for aggregated CSV cells."""
+        return cls._format_values([values[index] for index in indices])
+
+    @staticmethod
+    def _format_values(values: list[Any]) -> str:
+        """Format unique, non-empty values as a semicolon-separated string."""
+        formatted_values = []
+        for value in values:
+            if value == "" or (isinstance(value, float) and np.isnan(value)):
+                continue
+            formatted_value = str(value)
+            if formatted_value not in formatted_values:
+                formatted_values.append(formatted_value)
+        return ";".join(formatted_values)
+
     @staticmethod
     def _active_bound_description(
         lower_active: bool, upper_active: bool, lower_bound: float, upper_bound: float
@@ -334,16 +342,10 @@ class ActiveConstraintMixin:
         output_folder.mkdir(parents=True, exist_ok=True)
 
         self._write_csv(
-            output_folder / "active_constraints_by_priority.csv",
-            self._ACTIVE_CONSTRAINT_SUMMARY_FIELDS,
-            self._active_constraint_summary_rows,
-        )
-        self._write_csv(
-            output_folder / "previous_goal_constraints.csv",
+            output_folder / "active_constraints_of_previous_goals.csv",
             self._PREVIOUS_GOAL_CONSTRAINT_FIELDS,
             self._previous_goal_constraint_rows,
         )
-        logger.info("Active constraint diagnostics written to %s", output_folder)
 
     @staticmethod
     def _write_csv(file_path: Path, fieldnames: list[str], rows: list[dict[str, Any]]) -> None:

@@ -35,25 +35,29 @@ class TestActiveConstraintMixin(unittest.TestCase):
 
         self.assertTrue(problem.optimize())
 
-        summary_file = active_constraint_folder / "active_constraints_by_priority.csv"
-        previous_goal_file = active_constraint_folder / "previous_goal_constraints.csv"
-        self.assertTrue(summary_file.exists())
+        previous_goal_file = active_constraint_folder / "active_constraints_of_previous_goals.csv"
+        self.assertFalse((active_constraint_folder / "active_constraints_by_priority.csv").exists())
+        self.assertFalse((active_constraint_folder / "previous_goal_constraints.csv").exists())
         self.assertTrue(previous_goal_file.exists())
 
-        summary = pd.read_csv(summary_file)
-        self.assertEqual(list(summary["priority"]), [10, 15, 20])
-        self.assertTrue((summary["total_constraints"] > 0).all())
-        self.assertTrue((summary["active_constraints"] >= 0).all())
-        self.assertTrue((summary["active_constraints"] <= summary["total_constraints"]).all())
-
         previous_goal_constraints = pd.read_csv(previous_goal_file)
+        self.assertNotIn("goal_id", previous_goal_constraints.columns)
+        self.assertNotIn("component_index", previous_goal_constraints.columns)
+        self.assertNotIn("time", previous_goal_constraints.columns)
+        self.assertNotIn("is_active", previous_goal_constraints.columns)
+        self.assertIn("active_times", previous_goal_constraints.columns)
         self.assertIn("active_bound_value", previous_goal_constraints.columns)
-        self.assertEqual(
-            int(previous_goal_constraints.loc[0, "total_previous_goal_constraints"]), 0
-        )
+        self.assertNotIn(10, previous_goal_constraints["priority"].to_list())
+        self.assertTrue((previous_goal_constraints["total_previous_goal_constraints"] > 0).all())
+        self.assertTrue((previous_goal_constraints["active_previous_goal_constraints"] > 0).all())
+
+        path_goal_constraints = previous_goal_constraints[
+            previous_goal_constraints["constraint_source"] == "path_goal"
+        ]
+        self.assertEqual(len(path_goal_constraints[path_goal_constraints["priority"] == 15]), 0)
+        self.assertEqual(len(path_goal_constraints[path_goal_constraints["priority"] == 20]), 2)
         self.assertTrue(
-            (previous_goal_constraints["total_previous_goal_constraints"].fillna(0) > 0).any()
-        )
-        self.assertTrue(
-            previous_goal_constraints["active_previous_goal_constraints"].fillna(0).max() > 0
+            path_goal_constraints[path_goal_constraints["priority"] == 20]["active_times"]
+            .notna()
+            .all()
         )

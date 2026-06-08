@@ -119,7 +119,7 @@ The calculated metrics are:
 - `mean_absolute_difference`: The mean absolute difference per timestep of the state variable over all timesteps (only for range goals).
 
 ## Active constraint diagnostics
-The `ActiveConstraintMixin` writes diagnostics about active constraints after each RTC-Tools goal-programming priority. A constraint is considered active when its evaluated value hits either its lower or upper bound within `active_constraint_tolerance` (default `1e-7`).
+The `ActiveConstraintMixin` writes diagnostics about active constraints after each RTC-Tools goal-programming priority. A constraint is considered active when its evaluated value hits either its lower or upper bound within `active_constraint_tolerance` (default `1e-6`).
 
 To enable the diagnostics, import the mixin and add it before `BaseOptimizationProblem` or before RTC-Tools' `GoalProgrammingMixin` in the class inheritance order:
 

@@ -47,10 +47,36 @@ class TestActiveConstraintMixin(unittest.TestCase):
         self.assertNotIn("is_active", previous_goal_constraints.columns)
         self.assertIn("active_times", previous_goal_constraints.columns)
         self.assertIn("active_bound_value", previous_goal_constraints.columns)
-        self.assertNotIn(10, previous_goal_constraints["priority"].to_list())
-        self.assertTrue((previous_goal_constraints["total_previous_goal_constraints"] > 0).all())
-        self.assertTrue((previous_goal_constraints["active_previous_goal_constraints"] > 0).all())
-
+        self.assertNotIn("active_previous_goal_constraints", previous_goal_constraints.columns)
+        self.assertIn("active_previous_goals_constraints", previous_goal_constraints.columns)
+        self.assertEqual(set(previous_goal_constraints["priority"].to_list()), {10, 15, 20})
+        self.assertTrue((previous_goal_constraints["total_previous_goal_constraints"] >= 0).all())
+        self.assertTrue(
+            (
+                previous_goal_constraints["total_previous_goal_constraints"]
+                >= previous_goal_constraints["active_previous_goals_constraints"]
+            ).all()
+        )
+        self.assertEqual(
+            previous_goal_constraints[previous_goal_constraints["priority"] == 10][
+                "active_previous_goals_constraints"
+            ].iloc[0],
+            0,
+        )
+        self.assertEqual(
+            previous_goal_constraints[previous_goal_constraints["priority"] == 15][
+                "active_previous_goals_constraints"
+            ].iloc[0],
+            0,
+        )
+        self.assertTrue(
+            (
+                previous_goal_constraints[previous_goal_constraints["priority"] == 20][
+                    "active_previous_goals_constraints"
+                ]
+                > 0
+            ).all()
+        )
         path_goal_constraints = previous_goal_constraints[
             previous_goal_constraints["constraint_source"] == "path_goal"
         ]

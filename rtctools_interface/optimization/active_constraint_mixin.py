@@ -20,12 +20,12 @@ class ActiveConstraintMixin:
     """
 
     active_constraint_output_folder = "active_constraints"
-    active_constraint_tolerance = 1e-7
+    active_constraint_tolerance = 1e-6
 
     _PREVIOUS_GOAL_CONSTRAINT_FIELDS = [
         "priority",
         "total_previous_goal_constraints",
-        "active_previous_goal_constraints",
+        "active_previous_goals_constraints",
         "ensemble_member",
         "constraint_source",
         "function_key",
@@ -108,10 +108,29 @@ class ActiveConstraintMixin:
         total_constraints = len(rows)
         active_rows = [row for row in rows if row.pop("is_active")]
         active_constraints = len(active_rows)
+        if active_constraints == 0:
+            self._previous_goal_constraint_rows.append(
+                self._inactive_priority_row(priority, total_constraints)
+            )
+            return
+
         for row in active_rows:
             row["total_previous_goal_constraints"] = total_constraints
-            row["active_previous_goal_constraints"] = active_constraints
+            row["active_previous_goals_constraints"] = active_constraints
         self._previous_goal_constraint_rows.extend(active_rows)
+
+    @classmethod
+    def _inactive_priority_row(cls, priority: int, total_constraints: int) -> dict[str, int | str]:
+        """Build a summary row for a priority without active previous-goal constraints."""
+        row = dict.fromkeys(cls._PREVIOUS_GOAL_CONSTRAINT_FIELDS, "")
+        row.update(
+            {
+                "priority": priority,
+                "total_previous_goal_constraints": total_constraints,
+                "active_previous_goals_constraints": 0,
+            }
+        )
+        return row
 
     def _goal_constraint_rows(
         self,
@@ -172,7 +191,7 @@ class ActiveConstraintMixin:
                         {
                             "priority": priority,
                             "total_previous_goal_constraints": "",
-                            "active_previous_goal_constraints": "",
+                            "active_previous_goals_constraints": "",
                             "ensemble_member": ensemble_member,
                             "constraint_source": constraint_source,
                             "function_key": function_key,
@@ -223,7 +242,7 @@ class ActiveConstraintMixin:
         return {
             "priority": priority,
             "total_previous_goal_constraints": "",
-            "active_previous_goal_constraints": "",
+            "active_previous_goals_constraints": "",
             "ensemble_member": ensemble_member,
             "constraint_source": constraint_source,
             "function_key": function_key,

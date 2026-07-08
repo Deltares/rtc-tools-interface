@@ -6,10 +6,24 @@ from tempfile import TemporaryDirectory
 from unittest.mock import patch
 
 import pandas as pd
+from rtctools.optimization.collocated_integrated_optimization_problem import (
+    CollocatedIntegratedOptimizationProblem,
+)
+from rtctools.optimization.csv_mixin import CSVMixin
 from rtctools.optimization.goal_programming_mixin import Goal
+from rtctools.optimization.linearized_order_goal_programming_mixin import (
+    LinearizedOrderGoalProgrammingMixin,
+)
+from rtctools.optimization.modelica_mixin import ModelicaMixin
+from rtctools.optimization.single_pass_goal_programming_mixin import (
+    SinglePassGoalProgrammingMixin,
+)
 
 from rtctools_interface.optimization.base_optimization_problem import BaseOptimizationProblem
-from rtctools_interface.optimization.goal_generator_mixin import write_shadow_price_metrics
+from rtctools_interface.optimization.goal_generator_mixin import (
+    GoalGeneratorMixin,
+    write_shadow_price_metrics,
+)
 from tests.utils.get_test import get_test_data
 
 
@@ -65,6 +79,23 @@ class DiscreteFlagOptimizationProblem(CustomGoalOptimizationProblem):
 
     def variable_is_discrete(self, variable):
         return variable == "u" or super().variable_is_discrete(variable)
+
+
+class SinglePassCustomGoalOptimizationProblem(
+    GoalGeneratorMixin,
+    LinearizedOrderGoalProgrammingMixin,
+    SinglePassGoalProgrammingMixin,
+    CSVMixin,
+    ModelicaMixin,
+    CollocatedIntegratedOptimizationProblem,
+):
+    """Single-pass goal-programming variant used for regression testing."""
+
+    def goals(self):
+        return super().goals() + [MinimizeIntegralUGoal()]
+
+    def path_goals(self):
+        return super().path_goals() + [WaterLevelRangeGoal(), MinimizeUGoal()]
 
 
 class TestGoalGeneratorMixin(unittest.TestCase):
@@ -211,6 +242,27 @@ class TestGoalGeneratorMixin(unittest.TestCase):
         self.assertIn("From priority 15", html)
         self.assertNotIn("Heatmap view", html)
         self.assertNotIn("Metric-focused view", html)
+
+    def test_single_pass_goal_programming_supports_performance_metrics(self):
+        test_data = get_test_data("basic", optimization=True)
+        problem = SinglePassCustomGoalOptimizationProblem(
+            model_folder=test_data["model_folder"],
+            model_name=test_data["model_name"],
+            input_folder=test_data["model_input_folder"],
+            output_folder=test_data["output_folder"],
+        )
+
+        problem.optimize()
+        metrics = problem.get_performance_metrics_with_plot()
+
+        range_goal_id = "WaterLevelRangeGoal__x__path__priority_10__idx_0"
+        smooth_goal_id = "MinimizeUGoal__path__priority_15__idx_1"
+        integral_goal_id = "MinimizeIntegralUGoal__goal__priority_20__idx_0"
+
+        self.assertEqual(set(metrics), {range_goal_id, smooth_goal_id, integral_goal_id})
+        self.assertTrue(Path(problem.performance_metrics_plot_file).exists())
+        self.assertFalse(problem.get_active_constraint_metrics().empty)
+        self.assertIn("final_results", problem.get_active_constraint_metrics().index)
 
     def test_is_mixed_integer_problem_detects_discrete_variables(self):
         test_data = get_test_data("basic", optimization=True)

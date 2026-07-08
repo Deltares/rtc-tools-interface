@@ -5,8 +5,14 @@ import re
 
 import casadi as ca
 import numpy as np
-from rtctools.optimization.goal_programming_mixin import GoalProgrammingMixin
 from rtctools.optimization.timeseries import Timeseries
+
+try:
+    from rtctools.optimization.single_pass_goal_programming_mixin import (
+        SinglePassGoalProgrammingMixin,
+    )
+except ImportError:  # pragma: no cover - depends on rtc-tools version
+    SinglePassGoalProgrammingMixin = None
 
 from rtctools_interface.optimization.base_goal import BaseGoal
 from rtctools_interface.optimization.goal_performance_metrics import ABS_TOL
@@ -20,6 +26,42 @@ class StatisticsMixin:
     # pylint: disable=too-few-public-methods
     """A mixin class providing methods for collecting data and statistics from optimization results,
     useful for solution performance analysis."""
+
+    @staticmethod
+    def _goal_programming_private_attr_candidates(attribute_name: str) -> tuple[str, ...]:
+        """Return private attribute names used by supported RTC-Tools goal-programming mixins."""
+        candidates = [f"_GoalProgrammingMixin__{attribute_name}"]
+        if SinglePassGoalProgrammingMixin is not None:
+            candidates.append(f"_SinglePassGoalProgrammingMixin__{attribute_name}")
+        return tuple(candidates)
+
+    def _get_goal_programming_private_attr(self, attribute_name: str, default=None):
+        """Return a private RTC-Tools goal-programming attribute across supported mixins."""
+        for candidate in self._goal_programming_private_attr_candidates(attribute_name):
+            if hasattr(self, candidate):
+                return getattr(self, candidate)
+        return default
+
+    def _get_goal_constraint_store_for_ensemble(
+        self, ensemble_member: int, *, is_path_constraint: bool
+    ):
+        """Return the hard-constraint store for one ensemble member."""
+        attribute_name = "path_constraint_store" if is_path_constraint else "constraint_store"
+        store = self._get_goal_programming_private_attr(attribute_name)
+        if store is None:
+            return {}
+
+        try:
+            return store[ensemble_member]
+        except (IndexError, KeyError, TypeError):
+            return {}
+
+    def _iter_goal_constraints(self, ensemble_member: int, *, is_path_constraint: bool):
+        """Iterate over stored RTC-Tools hard goal constraints for one ensemble member."""
+        store = self._get_goal_constraint_store_for_ensemble(
+            ensemble_member, is_path_constraint=is_path_constraint
+        )
+        return tuple(store.values())
 
     def collect_range_target_values(
         self,
@@ -266,13 +308,26 @@ class StatisticsMixin:
 
     def get_current_priority_objective_value(self) -> float:
         """Return the weighted objective value of the current goal-programming subproblem."""
-        subproblem_objectives = getattr(self, "_GoalProgrammingMixin__subproblem_objectives", [])
-        subproblem_path_objectives = getattr(
-            self, "_GoalProgrammingMixin__subproblem_path_objectives", []
+        subproblem_objectives = self._get_goal_programming_private_attr("subproblem_objectives", [])
+        subproblem_path_objectives = self._get_goal_programming_private_attr(
+            "subproblem_path_objectives", []
         )
 
         if not subproblem_objectives and not subproblem_path_objectives:
-            return 0.0
+            objectives = self._get_goal_programming_private_attr("objectives")
+            current_priority_index = self._get_goal_programming_private_attr("current_priority")
+
+            if objectives is None or current_priority_index is None:
+                return 0.0
+            if not 0 <= int(current_priority_index) < len(objectives):
+                return 0.0
+
+            evaluator = ca.Function(
+                "current_priority_objective_eval",
+                [self.solver_input],
+                [objectives[int(current_priority_index)]],
+            )
+            return float(evaluator(self.solver_output))
 
         objective_value = 0.0
         for ensemble_member in range(self.ensemble_size):
@@ -357,8 +412,12 @@ class StatisticsMixin:
 
         for current_ensemble_member in ensemble_members:
             stores = (
-                self._GoalProgrammingMixin__constraint_store[current_ensemble_member],
-                self._GoalProgrammingMixin__path_constraint_store[current_ensemble_member],
+                self._get_goal_constraint_store_for_ensemble(
+                    current_ensemble_member, is_path_constraint=False
+                ),
+                self._get_goal_constraint_store_for_ensemble(
+                    current_ensemble_member, is_path_constraint=True
+                ),
             )
             for store in stores:
                 for constraint in store.values():
@@ -392,15 +451,13 @@ class StatisticsMixin:
 
         previous_priority_constraints = [
             constraint
-            for constraint in self._GoalProgrammingMixin__constraint_store[ensemble_member].values()
+            for constraint in self._iter_goal_constraints(ensemble_member, is_path_constraint=False)
             if getattr(getattr(constraint, "goal", None), "priority", None) is not None
             and int(constraint.goal.priority) < int(current_priority)
         ]
         previous_priority_constraints.extend(
             constraint
-            for constraint in self._GoalProgrammingMixin__path_constraint_store[
-                ensemble_member
-            ].values()
+            for constraint in self._iter_goal_constraints(ensemble_member, is_path_constraint=True)
             if getattr(getattr(constraint, "goal", None), "priority", None) is not None
             and int(constraint.goal.priority) < int(current_priority)
         )
@@ -422,28 +479,13 @@ class StatisticsMixin:
             )
             return {}
 
-        base_constraints = super(GoalProgrammingMixin, self).constraints(ensemble_member)
         full_constraints = self.constraints(ensemble_member)
-        base_path_constraints = super(GoalProgrammingMixin, self).path_constraints(ensemble_member)
         full_path_constraints = self.path_constraints(ensemble_member)
-
-        total_base_constraints = sum(
-            self._count_tuple_constraint_activity(
-                constraint, ensemble_member=ensemble_member, is_path_constraint=False
-            )[0]
-            for constraint in base_constraints
-        )
         total_full_constraints = sum(
             self._count_tuple_constraint_activity(
                 constraint, ensemble_member=ensemble_member, is_path_constraint=False
             )[0]
             for constraint in full_constraints
-        )
-        total_base_path_constraints = sum(
-            self._count_tuple_constraint_activity(
-                constraint, ensemble_member=ensemble_member, is_path_constraint=True
-            )[0]
-            for constraint in base_path_constraints
         )
         total_full_path_constraints = sum(
             self._count_tuple_constraint_activity(
@@ -452,16 +494,14 @@ class StatisticsMixin:
             for constraint in full_path_constraints
         )
 
-        total_additional_constraints = total_full_constraints - total_base_constraints
-        total_additional_path_constraints = (
-            total_full_path_constraints - total_base_path_constraints
+        total_additional_constraints = sum(
+            self._get_goal_constraint_entry_count(constraint, ensemble_member=ensemble_member)
+            for constraint in self._iter_goal_constraints(ensemble_member, is_path_constraint=False)
         )
-        if total_additional_constraints < 0 or total_additional_path_constraints < 0:
-            self._warn_shadow_prices_unavailable_once(
-                "Cannot extract shadow prices because the computed number of additional goal "
-                "constraints is inconsistent with the full constraint set."
-            )
-            return {}
+        total_additional_path_constraints = sum(
+            self._get_goal_constraint_entry_count(constraint, ensemble_member=ensemble_member)
+            for constraint in self._iter_goal_constraints(ensemble_member, is_path_constraint=True)
+        )
 
         total_goal_constraint_entries = (
             total_additional_constraints + total_additional_path_constraints
@@ -489,7 +529,7 @@ class StatisticsMixin:
         shadow_prices: dict[int, float] = {}
 
         offset = 0
-        for constraint in self._GoalProgrammingMixin__constraint_store[ensemble_member].values():
+        for constraint in self._iter_goal_constraints(ensemble_member, is_path_constraint=False):
             entry_count = self._get_goal_constraint_entry_count(
                 constraint, ensemble_member=ensemble_member
             )
@@ -510,9 +550,7 @@ class StatisticsMixin:
             )
 
         offset = 0
-        for constraint in self._GoalProgrammingMixin__path_constraint_store[
-            ensemble_member
-        ].values():
+        for constraint in self._iter_goal_constraints(ensemble_member, is_path_constraint=True):
             entry_count = self._get_goal_constraint_entry_count(
                 constraint, ensemble_member=ensemble_member
             )
@@ -538,13 +576,13 @@ class StatisticsMixin:
         self, *, ensemble_member: int = 0, current_priority: int | None = None
     ) -> dict[str, float | int]:
         """Return summary metrics for active hard constraints in the current subproblem."""
-        base_constraints = super(GoalProgrammingMixin, self).constraints(ensemble_member)
-        base_path_constraints = super(GoalProgrammingMixin, self).path_constraints(ensemble_member)
+        full_constraints = self.constraints(ensemble_member)
+        full_path_constraints = self.path_constraints(ensemble_member)
 
         total_hard_constraints = 0
         active_hard_constraints = 0
 
-        for constraint in base_constraints:
+        for constraint in full_constraints:
             total_entries, active_entries = self._count_tuple_constraint_activity(
                 constraint,
                 ensemble_member=ensemble_member,
@@ -553,7 +591,7 @@ class StatisticsMixin:
             total_hard_constraints += total_entries
             active_hard_constraints += active_entries
 
-        for constraint in base_path_constraints:
+        for constraint in full_path_constraints:
             total_entries, active_entries = self._count_tuple_constraint_activity(
                 constraint,
                 ensemble_member=ensemble_member,
@@ -563,10 +601,10 @@ class StatisticsMixin:
             active_hard_constraints += active_entries
 
         goal_constraints = list(
-            self._GoalProgrammingMixin__constraint_store[ensemble_member].values()
+            self._iter_goal_constraints(ensemble_member, is_path_constraint=False)
         )
         goal_constraints.extend(
-            self._GoalProgrammingMixin__path_constraint_store[ensemble_member].values()
+            self._iter_goal_constraints(ensemble_member, is_path_constraint=True)
         )
 
         if current_priority is None:
@@ -574,11 +612,9 @@ class StatisticsMixin:
         active_previous_priority_constraints = 0
 
         for constraint in goal_constraints:
-            total_entries, active_entries = self._count_goal_constraint_activity(
+            _, active_entries = self._count_goal_constraint_activity(
                 constraint, ensemble_member=ensemble_member
             )
-            total_hard_constraints += total_entries
-            active_hard_constraints += active_entries
 
             goal_priority = getattr(constraint.goal, "priority", None)
             if current_priority is not None and goal_priority is not None:

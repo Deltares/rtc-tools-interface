@@ -228,7 +228,7 @@ class ActiveConstraintMixin:
             "function_key": function_key,
             "goal_priority": int(goal.priority) if goal is not None else "",
             "goal_class": goal.__class__.__name__ if goal is not None else "",
-            "active_times": format_active_times(times, active_indices),
+            "active_times": format_active_times(times, active_indices, values.size),
             "value": format_indexed_values(values, active_indices),
             "lower_bound": format_indexed_values(lower_bounds, active_indices),
             "upper_bound": format_indexed_values(upper_bounds, active_indices),

@@ -33,16 +33,30 @@ def bound_to_array(bound: object, size: int) -> np.ndarray:
     return array.reshape(-1)
 
 
-def component_time(times: np.ndarray | None, component_index: int) -> float | str:
+def component_time(
+    times: np.ndarray | None, component_index: int, n_components_per_time: int
+) -> float | str:
     """Return the time associated with a flattened path-constraint component."""
     if times is None or len(times) == 0:
         return ""
-    return times[component_index % len(times)]
+    return times[component_index // n_components_per_time]
 
 
-def format_active_times(times: np.ndarray | None, active_indices: np.ndarray) -> str:
+def format_active_times(
+    times: np.ndarray | None, active_indices: np.ndarray, values_size: int
+) -> str:
     """Format unique active timesteps for a flattened path-constraint vector."""
-    active_times = [component_time(times, int(index)) for index in active_indices]
+    if times is None or len(times) == 0:
+        return ""
+    if values_size % len(times) != 0:
+        raise ValueError(
+            "Cannot map path-goal constraint components to times: "
+            f"values size {values_size} is not divisible by {len(times)} timesteps."
+        )
+    n_components_per_time = values_size // len(times)
+    active_times = [
+        component_time(times, int(index), n_components_per_time) for index in active_indices
+    ]
     return format_values(active_times)
 
 

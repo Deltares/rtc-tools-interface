@@ -1,7 +1,7 @@
 """Mixin for reporting active constraints after goal-programming priorities."""
 
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import casadi as ca
 import numpy as np
@@ -15,6 +15,13 @@ from rtctools_interface.optimization.active_constraint_helpers import (
     format_values,
     write_csv,
 )
+from rtctools_interface.utils.type_definitions import PreviousGoalConstraintRow
+
+
+class _PreviousGoalConstraintInternalRow(PreviousGoalConstraintRow):
+    """Previous-goal constraint row while active-state filtering is still needed."""
+
+    is_active: bool
 
 
 class ActiveConstraintMixin:
@@ -30,25 +37,8 @@ class ActiveConstraintMixin:
     active_constraint_output_folder = "active_constraints"
     active_constraint_tolerance = 1e-6
 
-    _PREVIOUS_GOAL_CONSTRAINT_FIELDS = [
-        "priority",
-        "total_previous_goal_constraints",
-        "active_previous_goals_constraints",
-        "ensemble_member",
-        "constraint_source",
-        "function_key",
-        "goal_priority",
-        "goal_class",
-        "active_times",
-        "value",
-        "lower_bound",
-        "upper_bound",
-        "active_bound",
-        "active_bound_value",
-    ]
-
     def __init__(self, **kwargs):
-        self._previous_goal_constraint_rows = []
+        self._previous_goal_constraint_rows: list[PreviousGoalConstraintRow] = []
         super().__init__(**kwargs)
 
     def priority_completed(self, priority: int) -> None:
@@ -108,10 +98,13 @@ class ActiveConstraintMixin:
             row["active_previous_goals_constraints"] = active_constraints
         self._previous_goal_constraint_rows.extend(active_rows)
 
-    @classmethod
-    def _inactive_priority_row(cls, priority: int, total_constraints: int) -> dict[str, int | str]:
+    @staticmethod
+    def _inactive_priority_row(priority: int, total_constraints: int) -> PreviousGoalConstraintRow:
         """Build a summary row for a priority without active previous-goal constraints."""
-        row = dict.fromkeys(cls._PREVIOUS_GOAL_CONSTRAINT_FIELDS, "")
+        row = cast(
+            PreviousGoalConstraintRow,
+            dict.fromkeys(PreviousGoalConstraintRow.__annotations__, ""),
+        )
         row.update(
             {
                 "priority": priority,
@@ -128,9 +121,9 @@ class ActiveConstraintMixin:
         *,
         is_path_goal: bool,
         include_problem_constraints: bool = False,
-    ) -> list[dict[str, Any]]:
+    ) -> list[_PreviousGoalConstraintInternalRow]:
         """Evaluate private RTC-Tools goal constraints and build detail rows."""
-        rows = []
+        rows: list[_PreviousGoalConstraintInternalRow] = []
         constraint_collections = self._get_goal_constraint_collections(
             is_path_goal=is_path_goal, include_problem_constraints=include_problem_constraints
         )
@@ -184,14 +177,12 @@ class ActiveConstraintMixin:
                             "ensemble_member": ensemble_member,
                             "constraint_source": constraint_source,
                             "function_key": function_key,
-                            "goal_priority": (
-                                getattr(goal, "priority", "") if goal is not None else ""
-                            ),
+                            "goal_priority": (int(goal.priority) if goal is not None else ""),
                             "goal_class": goal.__class__.__name__ if goal is not None else "",
                             "active_times": "",
-                            "value": value,
-                            "lower_bound": lower_bounds[component_index],
-                            "upper_bound": upper_bounds[component_index],
+                            "value": float(value),
+                            "lower_bound": float(lower_bounds[component_index]),
+                            "upper_bound": float(upper_bounds[component_index]),
                             "is_active": bool(
                                 lower_active[component_index] or upper_active[component_index]
                             ),
@@ -214,7 +205,7 @@ class ActiveConstraintMixin:
         upper_bounds: np.ndarray,
         lower_active: np.ndarray,
         upper_active: np.ndarray,
-    ) -> dict[str, Any]:
+    ) -> _PreviousGoalConstraintInternalRow:
         """Build a single summary row for a path-goal constraint."""
         active = lower_active | upper_active
         active_indices = np.flatnonzero(active)
@@ -235,7 +226,7 @@ class ActiveConstraintMixin:
             "ensemble_member": ensemble_member,
             "constraint_source": constraint_source,
             "function_key": function_key,
-            "goal_priority": getattr(goal, "priority", "") if goal is not None else "",
+            "goal_priority": int(goal.priority) if goal is not None else "",
             "goal_class": goal.__class__.__name__ if goal is not None else "",
             "active_times": format_active_times(times, active_indices),
             "value": format_indexed_values(values, active_indices),
@@ -306,6 +297,6 @@ class ActiveConstraintMixin:
 
         write_csv(
             output_folder / "active_constraints_of_previous_goals.csv",
-            self._PREVIOUS_GOAL_CONSTRAINT_FIELDS,
+            list(PreviousGoalConstraintRow.__annotations__),
             self._previous_goal_constraint_rows,
         )

@@ -1,25 +1,29 @@
 """Helper functions for active-constraint diagnostics."""
 
 import csv
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Any
 
 import casadi as ca
 import numpy as np
 from rtctools.optimization.timeseries import Timeseries
 
+from rtctools_interface.utils.type_definitions import PreviousGoalConstraintRow
 
-def as_flat_float_array(value: Any) -> np.ndarray:
+
+def as_flat_float_array(value: object) -> np.ndarray:
     """Convert CasADi/numeric values to a one-dimensional float array."""
     if isinstance(value, Timeseries):
         value = value.values
     if isinstance(value, (list, tuple)):
-        value = ca.veccat(*value) if value else ca.DM.zeros(0)
+        if not value:
+            return np.array([], dtype=float)
+        value = ca.veccat(*value)
     array = np.array(value, dtype=float)
     return array.reshape(-1)
 
 
-def bound_to_array(bound: Any, size: int) -> np.ndarray:
+def bound_to_array(bound: object, size: int) -> np.ndarray:
     """Return a flat bound array matching an evaluated constraint size."""
     if isinstance(bound, Timeseries):
         bound = bound.values
@@ -47,7 +51,7 @@ def format_indexed_values(values: np.ndarray, indices: np.ndarray) -> str:
     return format_values([values[index] for index in indices])
 
 
-def format_values(values: list[Any]) -> str:
+def format_values(values: Iterable[object]) -> str:
     """Format unique, non-empty values as a semicolon-separated string."""
     formatted_values = []
     for value in values:
@@ -74,7 +78,9 @@ def active_bound_description(
     return "", ""
 
 
-def write_csv(file_path: Path, fieldnames: list[str], rows: list[dict[str, Any]]) -> None:
+def write_csv(
+    file_path: Path, fieldnames: list[str], rows: list[PreviousGoalConstraintRow]
+) -> None:
     """Write rows to a CSV file with a stable header."""
     with file_path.open("w", newline="") as csv_file:
         writer = csv.DictWriter(csv_file, fieldnames=fieldnames)

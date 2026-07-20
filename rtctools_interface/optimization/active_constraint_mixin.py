@@ -1,12 +1,20 @@
 """Mixin for reporting active constraints after goal-programming priorities."""
 
-import csv
 from pathlib import Path
 from typing import Any
 
 import casadi as ca
 import numpy as np
-from rtctools.optimization.timeseries import Timeseries
+
+from rtctools_interface.optimization.active_constraint_helpers import (
+    active_bound_description,
+    as_flat_float_array,
+    bound_to_array,
+    format_active_times,
+    format_indexed_values,
+    format_values,
+    write_csv,
+)
 
 
 class ActiveConstraintMixin:
@@ -51,27 +59,8 @@ class ActiveConstraintMixin:
     def post(self) -> None:
         """Write active-constraint diagnostics after optimization."""
         super().post()
-        self._write_active_constraint_csv_files()
-
-    @staticmethod
-    def _as_flat_float_array(value: Any) -> np.ndarray:
-        """Convert CasADi/numeric values to a one-dimensional float array."""
-        if isinstance(value, Timeseries):
-            value = value.values
-        if isinstance(value, (list, tuple)):
-            value = ca.veccat(*value) if value else ca.DM.zeros(0)
-        array = np.array(value, dtype=float)
-        return array.reshape(-1)
-
-    @staticmethod
-    def _bound_to_array(bound: Any, size: int) -> np.ndarray:
-        """Return a flat bound array matching an evaluated constraint size."""
-        if isinstance(bound, Timeseries):
-            bound = bound.values
-        array = np.array(bound, dtype=float)
-        if array.size == 1 and size != 1:
-            return np.full(size, float(array.reshape(-1)[0]))
-        return array.reshape(-1)
+        if self.solver_stats["success"]:
+            self._write_active_constraint_csv_files()
 
     def _active_bound_masks(
         self, values: np.ndarray, lower_bounds: np.ndarray, upper_bounds: np.ndarray
@@ -79,10 +68,10 @@ class ActiveConstraintMixin:
         """Return masks for lower-bound and upper-bound active components."""
         tolerance = self.active_constraint_tolerance
         lower_active = np.isfinite(lower_bounds) & np.isclose(
-            values, lower_bounds, rtol=tolerance, atol=tolerance
+            values, lower_bounds, rtol=0, atol=tolerance
         )
         upper_active = np.isfinite(upper_bounds) & np.isclose(
-            values, upper_bounds, rtol=tolerance, atol=tolerance
+            values, upper_bounds, rtol=0, atol=tolerance
         )
         return lower_active, upper_active
 
@@ -156,8 +145,8 @@ class ActiveConstraintMixin:
                 values = self._evaluate_goal_constraint(
                     constraint, ensemble_member, is_path_goal=is_path_goal
                 )
-                lower_bounds = self._bound_to_array(constraint.min, values.size)
-                upper_bounds = self._bound_to_array(constraint.max, values.size)
+                lower_bounds = bound_to_array(constraint.min, values.size)
+                upper_bounds = bound_to_array(constraint.max, values.size)
                 lower_active, upper_active = self._active_bound_masks(
                     values, lower_bounds, upper_bounds
                 )
@@ -181,7 +170,7 @@ class ActiveConstraintMixin:
                     continue
 
                 for component_index, value in enumerate(values):
-                    active_bound, active_bound_value = self._active_bound_description(
+                    active_bound, active_bound_value = active_bound_description(
                         lower_active[component_index],
                         upper_active[component_index],
                         lower_bounds[component_index],
@@ -230,7 +219,7 @@ class ActiveConstraintMixin:
         active = lower_active | upper_active
         active_indices = np.flatnonzero(active)
         active_bound_descriptions = [
-            self._active_bound_description(
+            active_bound_description(
                 lower_active[index],
                 upper_active[index],
                 lower_bounds[index],
@@ -248,15 +237,15 @@ class ActiveConstraintMixin:
             "function_key": function_key,
             "goal_priority": getattr(goal, "priority", "") if goal is not None else "",
             "goal_class": goal.__class__.__name__ if goal is not None else "",
-            "active_times": self._format_active_times(times, active_indices),
-            "value": self._format_indexed_values(values, active_indices),
-            "lower_bound": self._format_indexed_values(lower_bounds, active_indices),
-            "upper_bound": self._format_indexed_values(upper_bounds, active_indices),
+            "active_times": format_active_times(times, active_indices),
+            "value": format_indexed_values(values, active_indices),
+            "lower_bound": format_indexed_values(lower_bounds, active_indices),
+            "upper_bound": format_indexed_values(upper_bounds, active_indices),
             "is_active": bool(np.any(active)),
-            "active_bound": self._format_values(
+            "active_bound": format_values(
                 [description[0] for description in active_bound_descriptions]
             ),
-            "active_bound_value": self._format_values(
+            "active_bound_value": format_values(
                 [description[1] for description in active_bound_descriptions]
             ),
         }
@@ -308,68 +297,15 @@ class ActiveConstraintMixin:
             [self.solver_input],
             [expression],
         )
-        return self._as_flat_float_array(function(self.solver_output))
-
-    @staticmethod
-    def _component_time(times: np.ndarray | None, component_index: int) -> float | str:
-        """Return the time associated with a flattened path-constraint component."""
-        if times is None or len(times) == 0:
-            return ""
-        return times[component_index % len(times)]
-
-    @classmethod
-    def _format_active_times(cls, times: np.ndarray | None, active_indices: np.ndarray) -> str:
-        """Format unique active timesteps for a flattened path-constraint vector."""
-        active_times = [cls._component_time(times, int(index)) for index in active_indices]
-        return cls._format_values(active_times)
-
-    @classmethod
-    def _format_indexed_values(cls, values: np.ndarray, indices: np.ndarray) -> str:
-        """Format values at selected indices for aggregated CSV cells."""
-        return cls._format_values([values[index] for index in indices])
-
-    @staticmethod
-    def _format_values(values: list[Any]) -> str:
-        """Format unique, non-empty values as a semicolon-separated string."""
-        formatted_values = []
-        for value in values:
-            if value == "" or (isinstance(value, float) and np.isnan(value)):
-                continue
-            formatted_value = str(value)
-            if formatted_value not in formatted_values:
-                formatted_values.append(formatted_value)
-        return ";".join(formatted_values)
-
-    @staticmethod
-    def _active_bound_description(
-        lower_active: bool, upper_active: bool, lower_bound: float, upper_bound: float
-    ) -> tuple[str, str | float]:
-        """Return a text label and value for the bound hit by a constraint."""
-        if lower_active and upper_active:
-            if np.isclose(lower_bound, upper_bound, rtol=0.0, atol=0.0):
-                return "both", lower_bound
-            return "both", f"{lower_bound};{upper_bound}"
-        if lower_active:
-            return "lower", lower_bound
-        if upper_active:
-            return "upper", upper_bound
-        return "", ""
+        return as_flat_float_array(function(self.solver_output))
 
     def _write_active_constraint_csv_files(self) -> None:
         """Write collected active-constraint diagnostics to CSV files."""
         output_folder = Path(self._output_folder) / self.active_constraint_output_folder
         output_folder.mkdir(parents=True, exist_ok=True)
 
-        self._write_csv(
+        write_csv(
             output_folder / "active_constraints_of_previous_goals.csv",
             self._PREVIOUS_GOAL_CONSTRAINT_FIELDS,
             self._previous_goal_constraint_rows,
         )
-
-    @staticmethod
-    def _write_csv(file_path: Path, fieldnames: list[str], rows: list[dict[str, Any]]) -> None:
-        """Write rows to a CSV file with a stable header."""
-        with file_path.open("w", newline="") as csv_file:
-            writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
-            writer.writeheader()
-            writer.writerows(rows)

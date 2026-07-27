@@ -11,8 +11,9 @@ pip install rtc-tools-interface
 ## Table of Contents
 1. [Goal generator](#goal-generator)
 2. [Goal performance metrics](#goal-performance-metrics)
-3. [Automatic plotting of results](#automatic-plotting-of-results)
-4. [Closed loop runner](#closed-loop-runner)
+3. [Active constraint diagnostics](#active-constraint-diagnostics)
+4. [Automatic plotting of results](#automatic-plotting-of-results)
+5. [Closed loop runner](#closed-loop-runner)
 
 ## Goal generator
 The `goal generator` can be used to automatically add goals based on a csv file. Currently, the following goal types are supported:
@@ -116,6 +117,23 @@ The calculated metrics are:
 - `max_difference`: The maximum difference in one timestep.
 - `mean_absolute_percentual_difference`: The mean of the absolute percentual difference per timestep over all timesteps (only for range goals).
 - `mean_absolute_difference`: The mean absolute difference per timestep of the state variable over all timesteps (only for range goals).
+
+## Active constraint diagnostics
+The `ActiveConstraintMixin` writes diagnostics about active constraints after each RTC-Tools goal-programming priority. A constraint is considered active when its evaluated value hits either its lower or upper bound within `active_constraint_tolerance` (default `1e-6`).
+
+To enable the diagnostics, import the mixin and add it before `BaseOptimizationProblem` or before RTC-Tools' `GoalProgrammingMixin` in the class inheritance order:
+
+```python
+from rtctools_interface.optimization.active_constraint_mixin import ActiveConstraintMixin
+from rtctools_interface.optimization.base_optimization_problem import BaseOptimizationProblem
+
+
+class MyOptimizationProblem(ActiveConstraintMixin, BaseOptimizationProblem):
+    pass
+```
+
+After optimization, the mixin creates `output/active_constraints/active_constraints_of_previous_goals.csv`.
+This file contains detailed rows for active constraints that RTC-Tools created from goals optimized in previous priorities. For each priority with active previous-goal constraints, it reports the total number of previous-goal constraints, how many are active, which bound (`lower`, `upper`, or `both`) was hit, and the corresponding bound value. Path-goal constraints are reported in one row per active path goal; the `active_times` column lists the timesteps at which that path-goal constraint is active.
 
 
 ## Automatic plotting of results

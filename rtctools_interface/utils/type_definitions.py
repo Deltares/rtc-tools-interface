@@ -58,6 +58,25 @@ class IntermediateResult(TypedDict):
     timeseries_data: dict[str, np.ndarray]
 
 
+class PreviousGoalConstraintRow(TypedDict):
+    """CSV row for active constraints created from previous goals."""
+
+    priority: int
+    total_previous_goal_constraints: int | str
+    active_previous_goals_constraints: int | str
+    ensemble_member: int | str
+    constraint_source: str
+    function_key: str
+    goal_priority: int | str
+    goal_class: str
+    active_times: str
+    value: float | str
+    lower_bound: float | str
+    upper_bound: float | str
+    active_bound: str
+    active_bound_value: float | str
+
+
 class PlotDataAndConfig(TypedDict):
     """All data and options required to create all plots for one optimization run."""
 

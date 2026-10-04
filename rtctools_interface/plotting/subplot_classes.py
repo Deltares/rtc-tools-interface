@@ -3,7 +3,6 @@
 The classes generate one subplot in the full figure."""
 
 import logging
-import random
 from abc import ABC, abstractmethod
 from typing import Any
 
@@ -31,6 +30,7 @@ def get_timedeltas(times):
 
 def generate_unique_color(used_colors):
     """Get a color. Adds the new color to used_colors."""
+    """
     color_palette = [
         "#1f77b4",
         "#ff7f0e",
@@ -43,7 +43,11 @@ def generate_unique_color(used_colors):
         "#bcbd22",
         "#17becf",
     ]
-
+    """
+    color_palette = ["#000000", "#C0C0C0"] * 20
+    new_color = color_palette[len(used_colors) % len(color_palette)]
+    used_colors.append(new_color)
+    """
     available_colors = [color for color in color_palette if color not in used_colors]
 
     if available_colors:
@@ -53,6 +57,7 @@ def generate_unique_color(used_colors):
             f"#{random.randint(0, 255):02x}{random.randint(0, 255):02x}{random.randint(0, 255):02x}"
         )
     used_colors.append(new_color)
+    """
     return new_color
 
 
@@ -265,6 +270,7 @@ class SubplotMatplotlib(SubplotBase):
         data_format_str = "%d%b%H"
         date_format = mdates.DateFormatter(data_format_str)
         self.axis.xaxis.set_major_formatter(date_format)
+        self.axis.tick_params(axis="x", rotation=45)
         self.axis.set_xlabel("Time")
         # Format y-axis for rate-of-change-goals
         if self.rate_of_change:
@@ -388,6 +394,13 @@ class SubplotPlotly(SubplotBase):
         self.figure.layout.annotations[self.i_plot]["text"] = self.subplot_title
         # Format x-axis
         data_format_str = "%d%b%H"
+        data_format_str = "%d-%b"
+        data_format_str = "%d-%b %Hh"
+        self.figure.update_xaxes(
+            tickangle=45,
+            row=self.row_num,
+            col=self.col_num,
+        )
         self.figure.update_xaxes(tickformat=data_format_str, row=self.row_num, col=self.col_num)
         # Format y-axis for rate-of-change-goals
         if self.rate_of_change:
@@ -397,3 +410,9 @@ class SubplotPlotly(SubplotBase):
             showgrid=True, row=self.row_num, col=self.col_num, gridwidth=1, gridcolor="gray"
         )
         self.figure.update_xaxes(showticklabels=True, row=self.row_num, col=self.col_num)
+        self.figure.update_layout(
+            plot_bgcolor="rgba(0,0,0,0)",
+            paper_bgcolor="rgba(0,0,0,0)",
+        )
+        self.figure.update_xaxes(gridcolor="lightgray")
+        self.figure.update_yaxes(gridcolor="lightgray")

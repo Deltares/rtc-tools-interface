@@ -58,8 +58,12 @@ class PlotMixin(PlottingBaseMixin):
 
         if self.plot_final_results:
             create_plot_final_results(
-                current_run, self._previous_run, plotting_library=self.plotting_library
+                current_run,
+                self._previous_run,
+                plotting_library=self.plotting_library,
+                output_folder=self.output_folder,
             )
+            # TODO: check if self.output_folder exists
 
     def collect_timeseries_data(self, all_variables_to_store: list[str]) -> dict[str, np.ndarray]:
         return {

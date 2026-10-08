@@ -160,9 +160,9 @@ def run_optimization_problem_closed_loop(
     modelling_period_input_folder.mkdir(exist_ok=True)
 
     modelling_periods_output_folder = original_output_folder / "output_modelling_periods"
-    if modelling_periods_output_folder.exists():
-        shutil.rmtree(modelling_periods_output_folder)
-    modelling_periods_output_folder.mkdir(exist_ok=True)
+    # if modelling_periods_output_folder.exists():
+    #    shutil.rmtree(modelling_periods_output_folder)
+    # modelling_periods_output_folder.mkdir(exist_ok=True)
 
     if config is None:
         config = ClosedLoopConfig(original_input_folder / "closed_loop_dates.csv")
@@ -182,9 +182,9 @@ def run_optimization_problem_closed_loop(
         modelling_period_output_folder_i = modelling_periods_output_folder / modelling_period_name
         modelling_period_output_folder_i.mkdir(exist_ok=True)
         modelling_period_input_folder_i = modelling_period_input_folder / modelling_period_name
-        write_input_folder(
-            modelling_period_input_folder_i, original_input_folder, timeseries_import
-        )
+        # write_input_folder(
+        #    modelling_period_input_folder_i, original_input_folder, timeseries_import
+        # )
 
         logger.info(f"Running optimization for period {i}: {(str(start_time), str(end_time))}.")
         run_number_in_fallback_list = 1

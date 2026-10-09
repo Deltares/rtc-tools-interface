@@ -155,14 +155,14 @@ def run_optimization_problem_closed_loop(
 
     if modelling_period_input_folder is None:
         modelling_period_input_folder = base_folder / "input_modelling_periods"
-    if modelling_period_input_folder.exists():
-        shutil.rmtree(modelling_period_input_folder)
-    modelling_period_input_folder.mkdir(exist_ok=True)
+    # if modelling_period_input_folder.exists():
+    #    shutil.rmtree(modelling_period_input_folder)
+    # modelling_period_input_folder.mkdir(exist_ok=True)
 
     modelling_periods_output_folder = original_output_folder / "output_modelling_periods"
-    # if modelling_periods_output_folder.exists():
-    #    shutil.rmtree(modelling_periods_output_folder)
-    # modelling_periods_output_folder.mkdir(exist_ok=True)
+    if modelling_periods_output_folder.exists():
+        shutil.rmtree(modelling_periods_output_folder)
+    modelling_periods_output_folder.mkdir(exist_ok=True)
 
     if config is None:
         config = ClosedLoopConfig(original_input_folder / "closed_loop_dates.csv")

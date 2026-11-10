@@ -1,6 +1,6 @@
 # rtc-tools-interface
 
-This is rtc-tools-interface, a toolbox for user-interfaces for [rtc-tools](https://gitlab.com/deltares/rtc-tools).
+This is rtc-tools-interface, a toolbox for user-interfaces for [rtc-tools](https://github.com/rtc-tools/rtc-tools).
 
 ## Install
 
@@ -185,9 +185,9 @@ The table could thus look like:
 
 |    id   |  y_axis_title   | variables_style_1 | variables_style_2 | variables_with_previous_result | custom_title | specified_in
 |---------|-----------------|------------------|------------------|------------------|------------------|------------------|
-| goal_1  | Volume (\$m^3\$)  |      "PowerPlant1.QOut.Q"            |                  | | | goal_generator
-| goal_2  | Volume (\$m^3\$)  |      "PowerPlant1.QOut.Q, PowerPlant2.QOut.Q"            |   | |               | goal_generator
-|  | Volume (\$m^3\$)  |                |                  | electricity_cost | "Goal for minimizing electricity cost, at priority 10" | python
+| goal_1  | Volume (\$\mathrm{m}^3\$)  |      "PowerPlant1.QOut.Q"            |                  | | | goal_generator
+| goal_2  | Volume (\$\mathrm{m}^3\$)  |      "PowerPlant1.QOut.Q, PowerPlant2.QOut.Q"            |   | |               | goal_generator
+|  | Volume (\$\mathrm{m}^3\$)  |                |                  | electricity_cost | "Goal for minimizing electricity cost, at priority 10" | python
 
 
 After running the model, in your output folder the folder `figures` containing the figures is created.

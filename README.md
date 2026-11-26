@@ -236,14 +236,10 @@ from datetime import timedelta
 
 from rtctools_interface.closed_loop.config import ClosedLoopConfig
 
-config_from_file = ClosedLoopConfig(
-    file="path/to/closed_loop_dates.csv",
-    round_to_dates=True
-)
+config_from_file = ClosedLoopConfig(file="path/to/closed_loop_dates.csv", round_to_dates=True)
 
 config_from_fixed_periods = ClosedLoopConfig.from_fixed_periods(
-    optimization_period=timedelta(days=3),
-    forecast_timestep=timedelta(days=2)
+    optimization_period=timedelta(days=3), forecast_timestep=timedelta(days=2)
 )
 ```
 

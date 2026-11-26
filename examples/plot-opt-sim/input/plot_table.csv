@@ -1,0 +1,5 @@
+id,y_axis_title,variables_style_1,variables_style_2,variables_with_previous_result,custom_title,specified_in
+1,Water level [m NAP],,,,Boezem level (goal 1),goal_generator
+2,Pump cost [-],,,,Pump cost (goal 2),goal_generator
+,Discharge [m3/s],"Q_KGM155, Q_DenDeel",Q_polders,,Pump and polder discharges,python
+,Price [-],price,,,Electricity price,python

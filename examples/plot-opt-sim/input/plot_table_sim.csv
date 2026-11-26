@@ -1,0 +1,5 @@
+id,y_axis_title,variables_style_1,variables_style_2,variables_with_previous_result,custom_title,specified_in
+,Water level [m NAP],H,"H_min, H_max",,Boezem level,python
+,Pump cost [-],pump_cost,,,Pump cost,python
+,Discharge [m3/s],"Q_KGM155, Q_DenDeel",Q_polders,,Pump and polder discharges,python
+,Price [-],price,,,Electricity price,python

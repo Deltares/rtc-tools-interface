@@ -31,6 +31,7 @@ dist
 *.pickle
 *.csv
 !tests/data/**/*.csv
+!examples/plot-opt-sim/input/*.csv
 *.json
 output/
 input_modelling_periods/
